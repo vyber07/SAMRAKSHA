@@ -1,0 +1,247 @@
+{
+  "communities": {
+    "0": [
+      "agent_skills_ui_ux_pro_max_scripts_core",
+      "agent_skills_ui_ux_pro_max_scripts_core_bm25",
+      "agent_skills_ui_ux_pro_max_scripts_core_bm25_fit",
+      "agent_skills_ui_ux_pro_max_scripts_core_bm25_init",
+      "agent_skills_ui_ux_pro_max_scripts_core_bm25_score",
+      "agent_skills_ui_ux_pro_max_scripts_core_bm25_tokenize",
+      "agent_skills_ui_ux_pro_max_scripts_core_detect_domain",
+      "agent_skills_ui_ux_pro_max_scripts_core_load_csv",
+      "agent_skills_ui_ux_pro_max_scripts_core_rationale_110",
+      "agent_skills_ui_ux_pro_max_scripts_core_rationale_115",
+      "agent_skills_ui_ux_pro_max_scripts_core_rationale_134",
+      "agent_skills_ui_ux_pro_max_scripts_core_rationale_160",
+      "agent_skills_ui_ux_pro_max_scripts_core_rationale_166",
+      "agent_skills_ui_ux_pro_max_scripts_core_rationale_191",
+      "agent_skills_ui_ux_pro_max_scripts_core_rationale_213",
+      "agent_skills_ui_ux_pro_max_scripts_core_rationale_235",
+      "agent_skills_ui_ux_pro_max_scripts_core_rationale_97",
+      "agent_skills_ui_ux_pro_max_scripts_core_search",
+      "agent_skills_ui_ux_pro_max_scripts_core_search_csv",
+      "agent_skills_ui_ux_pro_max_scripts_core_search_stack"
+    ],
+    "1": [
+      "agents_skills_uiux_pro_max_scripts_core",
+      "agents_skills_uiux_pro_max_scripts_core_bm25",
+      "agents_skills_uiux_pro_max_scripts_core_bm25_fit",
+      "agents_skills_uiux_pro_max_scripts_core_bm25_init",
+      "agents_skills_uiux_pro_max_scripts_core_bm25_score",
+      "agents_skills_uiux_pro_max_scripts_core_bm25_tokenize",
+      "agents_skills_uiux_pro_max_scripts_core_detect_domain",
+      "agents_skills_uiux_pro_max_scripts_core_load_csv",
+      "agents_skills_uiux_pro_max_scripts_core_rationale_110",
+      "agents_skills_uiux_pro_max_scripts_core_rationale_115",
+      "agents_skills_uiux_pro_max_scripts_core_rationale_134",
+      "agents_skills_uiux_pro_max_scripts_core_rationale_160",
+      "agents_skills_uiux_pro_max_scripts_core_rationale_166",
+      "agents_skills_uiux_pro_max_scripts_core_rationale_191",
+      "agents_skills_uiux_pro_max_scripts_core_rationale_213",
+      "agents_skills_uiux_pro_max_scripts_core_rationale_235",
+      "agents_skills_uiux_pro_max_scripts_core_rationale_97",
+      "agents_skills_uiux_pro_max_scripts_core_search",
+      "agents_skills_uiux_pro_max_scripts_core_search_csv",
+      "agents_skills_uiux_pro_max_scripts_core_search_stack"
+    ],
+    "2": [
+      "agent_skills_ui_ux_pro_max_scripts_design_system",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_detect_page_type",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_format_ascii_box",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_format_markdown",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_format_master_md",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_format_page_override_md",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_generate_design_system",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_generate_intelligent_overrides",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_persist_design_system",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_1021",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_243",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_368",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_464",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_492",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_543",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_806",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_915"
+    ],
+    "3": [
+      "agent_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator_apply_reasoning",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator_extract_results",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator_find_reasoning_rule",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator_generate",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator_init",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator_load_reasoning",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator_multi_domain_search",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator_select_best_match",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_123",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_160",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_164",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_38",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_44",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_52",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_65",
+      "agent_skills_ui_ux_pro_max_scripts_design_system_rationale_89"
+    ],
+    "4": [
+      "agents_skills_uiux_pro_max_scripts_design_system",
+      "agents_skills_uiux_pro_max_scripts_design_system_detect_page_type",
+      "agents_skills_uiux_pro_max_scripts_design_system_format_ascii_box",
+      "agents_skills_uiux_pro_max_scripts_design_system_format_markdown",
+      "agents_skills_uiux_pro_max_scripts_design_system_format_master_md",
+      "agents_skills_uiux_pro_max_scripts_design_system_format_page_override_md",
+      "agents_skills_uiux_pro_max_scripts_design_system_generate_design_system",
+      "agents_skills_uiux_pro_max_scripts_design_system_generate_intelligent_overrides",
+      "agents_skills_uiux_pro_max_scripts_design_system_persist_design_system",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_1021",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_243",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_368",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_464",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_492",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_543",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_806",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_915"
+    ],
+    "5": [
+      "agents_skills_uiux_pro_max_scripts_design_system_designsystemgenerator",
+      "agents_skills_uiux_pro_max_scripts_design_system_designsystemgenerator_apply_reasoning",
+      "agents_skills_uiux_pro_max_scripts_design_system_designsystemgenerator_extract_results",
+      "agents_skills_uiux_pro_max_scripts_design_system_designsystemgenerator_find_reasoning_rule",
+      "agents_skills_uiux_pro_max_scripts_design_system_designsystemgenerator_generate",
+      "agents_skills_uiux_pro_max_scripts_design_system_designsystemgenerator_init",
+      "agents_skills_uiux_pro_max_scripts_design_system_designsystemgenerator_load_reasoning",
+      "agents_skills_uiux_pro_max_scripts_design_system_designsystemgenerator_multi_domain_search",
+      "agents_skills_uiux_pro_max_scripts_design_system_designsystemgenerator_select_best_match",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_123",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_160",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_164",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_38",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_44",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_52",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_65",
+      "agents_skills_uiux_pro_max_scripts_design_system_rationale_89"
+    ],
+    "6": [
+      "agent_skills_ui_ux_pro_max_scripts_search",
+      "agent_skills_ui_ux_pro_max_scripts_search_format_output",
+      "agent_skills_ui_ux_pro_max_scripts_search_rationale_31"
+    ],
+    "7": [
+      "agents_skills_uiux_pro_max_scripts_search",
+      "agents_skills_uiux_pro_max_scripts_search_format_output",
+      "agents_skills_uiux_pro_max_scripts_search_rationale_31"
+    ]
+  },
+  "cohesion": {
+    "0": 0.14736842105263157,
+    "1": 0.14736842105263157,
+    "2": 0.16911764705882354,
+    "3": 0.16176470588235295,
+    "4": 0.16911764705882354,
+    "5": 0.16176470588235295,
+    "6": 0.6666666666666666,
+    "7": 0.6666666666666666
+  },
+  "gods": [
+    {
+      "id": "agent_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator",
+      "label": "DesignSystemGenerator",
+      "degree": 11
+    },
+    {
+      "id": "agents_skills_uiux_pro_max_scripts_design_system_designsystemgenerator",
+      "label": "DesignSystemGenerator",
+      "degree": 11
+    },
+    {
+      "id": "agent_skills_ui_ux_pro_max_scripts_core_search_csv",
+      "label": "_search_csv()",
+      "degree": 8
+    },
+    {
+      "id": "agents_skills_uiux_pro_max_scripts_core_search_csv",
+      "label": "_search_csv()",
+      "degree": 8
+    },
+    {
+      "id": "agent_skills_ui_ux_pro_max_scripts_core_bm25",
+      "label": "BM25",
+      "degree": 7
+    },
+    {
+      "id": "agent_skills_ui_ux_pro_max_scripts_core_search",
+      "label": "search()",
+      "degree": 7
+    },
+    {
+      "id": "agent_skills_ui_ux_pro_max_scripts_design_system_generate_design_system",
+      "label": "generate_design_system()",
+      "degree": 7
+    },
+    {
+      "id": "agents_skills_uiux_pro_max_scripts_core_bm25",
+      "label": "BM25",
+      "degree": 7
+    },
+    {
+      "id": "agents_skills_uiux_pro_max_scripts_core_search",
+      "label": "search()",
+      "degree": 7
+    },
+    {
+      "id": "agents_skills_uiux_pro_max_scripts_design_system_generate_design_system",
+      "label": "generate_design_system()",
+      "degree": 7
+    }
+  ],
+  "surprises": [
+    {
+      "source": "_generate_intelligent_overrides()",
+      "target": "search()",
+      "source_files": [
+        ".agent/skills/ui-ux-pro-max/scripts/design_system.py",
+        ".agent/skills/ui-ux-pro-max/scripts/core.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "_generate_intelligent_overrides()",
+      "target": "search()",
+      "source_files": [
+        ".agents/skills/uiux-pro-max/scripts/design_system.py",
+        ".agents/skills/uiux-pro-max/scripts/core.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `search()` connect `_search_csv` to `design_system.py`, `DesignSystemGenerator`?",
+      "why": "High betweenness centrality (0.109) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `search()` connect `_search_csv` to `design_system.py`, `DesignSystemGenerator`?",
+      "why": "High betweenness centrality (0.109) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `BM25 ranking algorithm for text search`, `Lowercase, split, remove punctuation, filter short words`, `Build BM25 index from documents` to the rest of the system?",
+      "why": "52 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `_search_csv` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.14736842105263157 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `_search_csv` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.14736842105263157 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

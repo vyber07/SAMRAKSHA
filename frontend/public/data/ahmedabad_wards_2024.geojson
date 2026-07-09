@@ -1,0 +1,133 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Satellite" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.500, 23.020], [72.520, 23.020], [72.520, 23.040], [72.500, 23.040], [72.500, 23.020]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Bodakdev" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.490, 23.035], [72.510, 23.035], [72.510, 23.055], [72.490, 23.055], [72.490, 23.035]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Vastrapur" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.510, 23.030], [72.535, 23.030], [72.535, 23.045], [72.510, 23.045], [72.510, 23.030]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Ambawadi" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.540, 23.010], [72.560, 23.010], [72.560, 23.030], [72.540, 23.030], [72.540, 23.010]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Navrangpura" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.550, 23.020], [72.570, 23.020], [72.570, 23.035], [72.550, 23.035], [72.550, 23.020]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Maninagar" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.590, 22.980], [72.615, 22.980], [72.615, 23.000], [72.590, 23.000], [72.590, 22.980]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Vatwa" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.620, 22.960], [72.650, 22.960], [72.650, 22.985], [72.620, 22.985], [72.620, 22.960]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Gomtipur" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.610, 23.025], [72.640, 23.025], [72.640, 23.045], [72.610, 23.045], [72.610, 23.025]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Jamalpur" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.590, 23.020], [72.610, 23.020], [72.610, 23.045], [72.590, 23.045], [72.590, 23.020]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Kalupur" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.585, 23.015], [72.605, 23.015], [72.605, 23.030], [72.585, 23.030], [72.585, 23.015]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Shahibaug" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.580, 23.050], [72.600, 23.050], [72.600, 23.070], [72.580, 23.070], [72.580, 23.050]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Chandkheda" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.570, 23.090], [72.600, 23.090], [72.600, 23.110], [72.570, 23.110], [72.570, 23.090]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Bopal" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.450, 23.000], [72.480, 23.000], [72.480, 23.030], [72.450, 23.030], [72.450, 23.000]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Ghatlodiya" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.540, 23.055], [72.565, 23.055], [72.565, 23.075], [72.540, 23.075], [72.540, 23.055]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Naranpura" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.545, 23.040], [72.565, 23.040], [72.565, 23.060], [72.545, 23.060], [72.545, 23.040]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ward_name": "Ellisbridge" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.560, 23.010], [72.580, 23.010], [72.580, 23.030], [72.560, 23.030], [72.560, 23.010]]]
+      }
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: samraksha
+      POSTGRES_USER: samraksha_user
+      POSTGRES_PASSWORD: change_this_strong_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U samraksha_user -d samraksha"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    build: ./backend
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://samraksha_user:change_this_strong_password@postgres/samraksha
+      - SECRET_KEY=7c8d9263ba82cf9173c52a0a2df39c1b7e45ad2b3c4f9a0c1d2e3f4b5a6d7c8e
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_HOURS=8
+      - REDIS_URL=redis://redis:6379
+      - ENVIRONMENT=development
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:80,http://localhost
+      - DEMO_MODE=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/templates:/app/templates
+      - uploads:/app/uploads
+
+  frontend:
+    build: ./frontend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000
+      - VITE_DEMO_MODE=true
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+      - frontend
+
+volumes:
+  postgres_data:
+  uploads:
