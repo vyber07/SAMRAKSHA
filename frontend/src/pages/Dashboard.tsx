@@ -19,6 +19,7 @@ export function Dashboard() {
   const [stats, setStats]   = useState<DashboardStats | null>(null)
   const [alerts, setAlerts] = useState<any[]>([])
   const [recent, setRecent] = useState<any[]>([])
+  const [escalations, setEscalations] = useState<any[]>([])
   const demoMode = import.meta.env.VITE_DEMO_MODE === 'true'
 
   const fetchDashboardData = () => {
@@ -72,7 +73,11 @@ export function Dashboard() {
         active_alerts: prev.active_alerts + 1
       } : prev)
     }
+    if (event.type === 'DCP_ESCALATION') {
+      setEscalations(prev => [event, ...prev])
+    }
   })
+
 
   const formatTimeAgo = (tsStr: string) => {
     try {
@@ -107,11 +112,26 @@ export function Dashboard() {
         </div>
       )}
 
+      {escalations.map((esc, i) => (
+        <div key={i} style={{
+          background: '#FEE2E2', border: '1px solid #FCA5A5',
+          borderRadius: '6px', padding: '12px 16px',
+          fontSize: '13.5px', color: '#B52A2A',
+          marginBottom: '16px', fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: '10px',
+          boxShadow: '0 2px 4px rgba(181, 42, 42, 0.1)'
+        }}>
+          <AlertTriangle size={16} />
+          <span>{esc.message}</span>
+        </div>
+      ))}
+
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{
           fontSize: '22px', fontWeight: 600,
           color: '#1C2B3A', margin: 0
         }}>
+
           Command Centre Dashboard
         </h1>
         <div style={{

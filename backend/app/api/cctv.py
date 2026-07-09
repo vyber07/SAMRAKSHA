@@ -59,6 +59,12 @@ async def ingest_alert(
             check_anpr_match, body.plate_no, body.camera_id, result['id']
         )
 
+    # Schedule DCP escalation simulation (escalates after 15s representing 15 minutes in demo mode)
+    if body.confidence > 0.90 or body.alert_type in ('crowd_density', 'anomaly'):
+        background_tasks.add_task(
+            simulate_dcp_escalation, result['id'], body.camera_name or body.camera_id, body.alert_type
+        )
+
     # WebSocket update
     try:
         from app.api.websocket import manager
@@ -81,6 +87,23 @@ async def ingest_alert(
         logger.warning("Failed to broadcast CCTV alert WebSocket", error=str(ws_err))
 
     return {"id": result['id'], "status": "ingested"}
+
+async def simulate_dcp_escalation(alert_id: int, camera_name: str, alert_type: str):
+    import asyncio
+    # Sleep 15 seconds to simulate 15 minutes in demo mode
+    await asyncio.sleep(15)
+    try:
+        from app.api.websocket import manager
+        await manager.broadcast({
+            'type': 'DCP_ESCALATION',
+            'alert_id': alert_id,
+            'camera': camera_name,
+            'alert_type': alert_type,
+            'message': f"CRITICAL: alert '{alert_type.replace('_',' ')}' at {camera_name} unaddressed for 15 minutes. Escalated to DCP."
+        })
+    except Exception as ws_err:
+        logger.warning("Failed to broadcast DCP escalation WebSocket", error=str(ws_err))
+
 
 async def check_anpr_match(
     plate_no: str,

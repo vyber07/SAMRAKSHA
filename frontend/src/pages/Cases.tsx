@@ -42,6 +42,33 @@ export function CasesPage() {
     }
   }
 
+  const exportCSV = () => {
+    if (cases.length === 0) return
+    const headers = ['FIR No.', 'Victim Name', 'Accused Name', 'Crime Type', 'Ward', 'Date', 'Status']
+    const rows = cases.map(c => [
+      c.fir_no,
+      c.victim_name,
+      c.accused_name || 'Not identified',
+      c.crime_type,
+      c.ward,
+      c.crime_date,
+      c.case_status
+    ])
+    const csvContent = [
+      headers.join(','), 
+      ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `samraksha_cases_export_${new Date().toISOString().slice(0, 10)}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div style={{ padding: '24px' }}>
       <div style={{
@@ -52,10 +79,16 @@ export function CasesPage() {
           <h2 style={{ fontSize: '22px', fontWeight: 600, color: '#1C2B3A', margin: 0 }}>Registered Cases</h2>
           <p style={{ fontSize: '13px', color: '#5A6A7E', margin: '4px 0 0' }}>Forensic Case Files Directory</p>
         </div>
-        <Link to="/fir/new" style={{ ...PRIMARY_BTN, textDecoration: 'none', display: 'inline-block' }}>
-          + Register New FIR
-        </Link>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={exportCSV} style={SECONDARY_BTN}>
+            📥 Export CSV
+          </button>
+          <Link to="/fir/new" style={{ ...PRIMARY_BTN, textDecoration: 'none', display: 'inline-block' }}>
+            + Register New FIR
+          </Link>
+        </div>
       </div>
+
 
       {/* Search Input */}
       <div style={{ marginBottom: '20px' }}>

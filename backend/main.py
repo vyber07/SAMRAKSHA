@@ -11,7 +11,7 @@ import os
 from app.api import (
     auth, cases, incidents, documents,
     patrol, hotspot, cctv, assistant,
-    legal, websocket
+    legal, websocket, cctns
 )
 from app.db.connection import init_db, close_db
 from app.middleware.auth import AuthMiddleware
@@ -75,6 +75,8 @@ app.include_router(cctv.router,       prefix="/cctv",      tags=["CCTV"])
 app.include_router(assistant.router,  prefix="/assistant", tags=["Assistant"])
 app.include_router(legal.router,      prefix="/legal",     tags=["Legal"])
 app.include_router(websocket.router,  prefix="/ws",        tags=["WebSocket"])
+app.include_router(cctns.router,      prefix="/cctns",     tags=["CCTNS"])
+
 
 # FIR create (top level — most important endpoint)
 from app.api.cases import create_fir_handler

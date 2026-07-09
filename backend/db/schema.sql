@@ -196,3 +196,63 @@ CREATE TABLE IF NOT EXISTS patrol_units (
                 ('available','deployed','unavailable','responding')),
     last_update TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- PL/pgSQL Trigger function to log case alterations to case_audit and auto-update case_diary on state transition
+CREATE OR REPLACE FUNCTION log_case_changes()
+RETURNS TRIGGER AS $$
+DECLARE
+    changed_row jsonb;
+    old_row jsonb;
+    key_name text;
+    val_old text;
+    val_new text;
+    off_id UUID;
+BEGIN
+    off_id := COALESCE(NEW.io_id, '00000000-0000-0000-0000-000000000000'::uuid);
+    
+    IF (TG_OP = 'UPDATE') THEN
+        old_row := to_jsonb(OLD);
+        changed_row := to_jsonb(NEW);
+        
+        FOR key_name IN SELECT jsonb_object_keys(changed_row) LOOP
+            IF key_name NOT IN ('search_vector', 'updated_at') THEN
+                val_old := old_row ->> key_name;
+                val_new := changed_row ->> key_name;
+                
+                IF val_old IS DISTINCT FROM val_new THEN
+                    INSERT INTO case_audit (case_id, officer_id, action, field_name, old_value, new_value)
+                    VALUES (NEW.case_id, off_id, 'UPDATE', key_name, val_old, val_new);
+                END IF;
+            END IF;
+        END LOOP;
+        
+        -- Auto-log status transitions to case_diary
+        IF OLD.case_status IS DISTINCT FROM NEW.case_status THEN
+            INSERT INTO case_diary (case_id, entry_type, description, officer_id, auto_generated)
+            VALUES (
+                NEW.case_id,
+                CASE 
+                    WHEN NEW.case_status = 'arrested' THEN 'arrest'
+                    WHEN NEW.case_status = 'chargesheeted' THEN 'court'
+                    WHEN NEW.case_status = 'closed' THEN 'court'
+                    ELSE 'note'
+                END,
+                'Case status updated from ' || OLD.case_status || ' to ' || NEW.case_status,
+                off_id,
+                TRUE
+            );
+        END IF;
+    ELSIF (TG_OP = 'INSERT') THEN
+        INSERT INTO case_audit (case_id, officer_id, action, field_name, old_value, new_value)
+        VALUES (NEW.case_id, off_id, 'INSERT', 'case_status', NULL, NEW.case_status);
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Bind trigger to cases table
+CREATE OR REPLACE TRIGGER trg_case_audit
+AFTER INSERT OR UPDATE ON cases
+FOR EACH ROW EXECUTE FUNCTION log_case_changes();
+
