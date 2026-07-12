@@ -139,9 +139,6 @@ class Translator:
                     num_beams=5,
                     num_return_sequences=1,
                     max_length=256,
-                    forced_bos_token_id=tokenizer.convert_tokens_to_ids(
-                        tokenizer.tokenize(tgt_flores)
-                    )[0] if tgt_flores else None,
                 )
 
             decoded = tokenizer.batch_decode(outputs, skip_special_tokens=True)
