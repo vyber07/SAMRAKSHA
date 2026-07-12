@@ -1,13 +1,378 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SAMRAKSHA - Register FIR</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#e6e8ed",
+                        "outline": "#727785",
+                        "on-tertiary-container": "#ffe5e2",
+                        "on-primary-fixed": "#001a40",
+                        "primary": "#004ea6",
+                        "on-secondary-fixed-variant": "#444749",
+                        "surface-dim": "#d8dadf",
+                        "surface-container": "#eceef2",
+                        "inverse-surface": "#2d3134",
+                        "tertiary-container": "#ca282a",
+                        "tertiary-fixed-dim": "#ffb3ac",
+                        "on-surface-variant": "#424753",
+                        "primary-fixed": "#d8e2ff",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#dee0e2",
+                        "surface-container-highest": "#e0e2e7",
+                        "secondary-fixed": "#e1e2e5",
+                        "error-container": "#ffdad6",
+                        "background": "#f8f9fe",
+                        "primary-container": "#0b66d2",
+                        "on-surface": "#191c1f",
+                        "surface-bright": "#f8f9fe",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#ffdad6",
+                        "on-background": "#191c1f",
+                        "on-secondary-container": "#606365",
+                        "surface-container-low": "#f2f3f8",
+                        "outline-variant": "#c2c6d5",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#eff1f5",
+                        "inverse-primary": "#acc7ff",
+                        "tertiary": "#a60415",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed": "#191c1e",
+                        "surface-variant": "#e0e2e7",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#5c5f61",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#e3eaff",
+                        "on-primary-fixed-variant": "#004492",
+                        "on-tertiary-fixed-variant": "#930010",
+                        "primary-fixed-dim": "#acc7ff",
+                        "surface-tint": "#005bbf",
+                        "secondary-fixed-dim": "#c5c7c9",
+                        "on-tertiary-fixed": "#410003",
+                        "surface": "#f8f9fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "32px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "unit": "4px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "data-mono": ["monospace"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "data-mono": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "label-lg": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "title-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #f8f9fe; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0; }
+        /* Focus state for inputs based on guidelines */
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #0b66d2 !important;
+            border-width: 2px !important;
+            box-shadow: none !important;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col md:flex-row">
+<!-- Mobile Nav Override (Hidden on Desktop, Placeholder for Mobile Layout) -->
+<div class="md:hidden w-full h-16 bg-surface-container-lowest border-b border-outline-variant flex items-center px-4 justify-between sticky top-0 z-50">
+<span class="font-headline-md text-headline-md text-primary font-bold tracking-tight">SAMRAKSHA</span>
+<span class="material-symbols-outlined text-on-surface">menu</span>
+</div>
+<!-- SideNavBar (Desktop Only) -->
+<nav class="hidden md:flex bg-surface-container-lowest dark:bg-surface-dim h-screen w-64 flex-col border-r border-outline-variant fixed left-0 top-0 z-40 pb-4">
+<div class="p-lg border-b border-outline-variant flex flex-col gap-sm">
+<h1 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed-dim uppercase tracking-tighter">SAMRAKSHA</h1>
+<div class="flex items-center gap-sm mt-4">
+<div class="w-10 h-10 bg-surface-variant rounded-full flex items-center justify-center overflow-hidden">
+<img alt="Officer Profile Badge #SHO001" class="w-full h-full object-cover" data-alt="A highly detailed professional portrait of a police officer in uniform. The image is taken in a well-lit, modern institutional setting with sharp focus on the officer's face, conveying authority and reliability. The lighting is balanced, studio quality, fitting a secure law enforcement portal context. High contrast, neutral colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYpHCatVwsHA1Y5epeLBx5PWv1KBSZ0kIeJIeU3j3t-0JA5FoFyldbZ1KV65CbCd1snqxoVUEy3DOMZMyE40j2vppTXU1kAn0lJUl9H_XyWw3M_vaNZ4axKBDbQ7XBKtTW8MhrCX1M6XuVACGMqaTnb12bMdxRkR_spJ06b90BVvnJj6vwf1Ia2E42B4D7EF0GSOihZOkRkiaHwBA1GwgQ8mvqbmc8YUNXS3LMYbMSn3TXWuPPL8bZEp0HMkzQdIGppWkO-XJnEfc"/>
+</div>
+<div>
+<div class="font-title-lg text-title-lg text-primary dark:text-primary-fixed">Officer Portal</div>
+<div class="font-label-md text-label-md text-secondary">Badge #SHO001</div>
+</div>
+</div>
+</div>
+<ul class="flex flex-col mt-sm px-sm gap-xs flex-1">
+<li class="flex items-center gap-md px-md py-sm rounded text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-high transition-colors cursor-pointer active:bg-secondary-container">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-lg text-label-lg">Dashboard</span>
+</li>
+<li class="flex items-center gap-md px-md py-sm rounded text-primary dark:text-primary-fixed-dim border-l-4 border-primary font-bold bg-surface-container-low cursor-pointer active:bg-secondary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">description</span>
+<span class="font-label-lg text-label-lg">Register FIR</span>
+</li>
+<li class="flex items-center gap-md px-md py-sm rounded text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-high transition-colors cursor-pointer active:bg-secondary-container">
+<span class="material-symbols-outlined">translate</span>
+<span class="font-label-lg text-label-lg">Translate</span>
+</li>
+<li class="flex items-center gap-md px-md py-sm rounded text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-high transition-colors cursor-pointer active:bg-secondary-container">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-lg text-label-lg">Settings</span>
+</li>
+</ul>
+<div class="px-md mt-auto">
+<button class="w-full flex items-center gap-sm justify-center py-sm border border-outline-variant text-on-surface hover:bg-surface-variant transition-colors rounded">
+<span class="material-symbols-outlined text-sm">logout</span>
+<span class="font-label-lg text-label-lg">Logout</span>
+</button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col md:ml-64 w-full min-h-screen">
+<!-- TopAppBar (Desktop Only) -->
+<header class="hidden md:flex bg-surface-container-lowest dark:bg-surface-dim docked full-width top-0 h-16 border-b border-outline-variant justify-between items-center w-full px-md sticky z-50 transition-all duration-150">
+<!-- Search Bar (on_left logic handled in layout if needed, omitted here for clean layout as per instructions to focus on form) -->
+<div class="flex-1">
+<div class="relative max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 border border-outline-variant rounded bg-surface-bright font-body-sm text-on-surface focus:border-primary" placeholder="Search records..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="flex items-center gap-sm text-secondary">
+<button class="p-xs hover:bg-surface-container-high rounded transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="p-xs hover:bg-surface-container-high rounded transition-colors"><span class="material-symbols-outlined">account_circle</span></button>
+</div>
+<div class="h-8 w-px bg-outline-variant"></div>
+<div class="font-label-lg text-label-lg text-primary dark:text-primary-fixed">Officer Profile</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 p-gutter md:p-margin-desktop overflow-y-auto">
+<div class="mb-lg flex justify-between items-end border-b border-outline-variant pb-sm">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-background">Register New FIR</h2>
+<p class="font-body-md text-body-md text-secondary mt-xs">Complete the structured form below to log a First Information Report.</p>
+</div>
+<div class="flex gap-sm">
+<button class="px-md py-sm bg-surface-lowest border border-outline-variant text-on-surface font-label-lg text-label-lg rounded hover:bg-surface-variant transition-colors">Save Draft</button>
+<button class="px-md py-sm bg-primary-container text-on-primary font-label-lg text-label-lg rounded hover:bg-surface-tint transition-colors">Submit FIR</button>
+</div>
+</div>
+<!-- Form Container -->
+<div class="max-w-5xl mx-auto flex flex-col gap-lg">
+<!-- Section 1: Incident Details -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded">
+<div class="bg-surface-container px-md py-sm border-b border-outline-variant flex items-center gap-sm rounded-t">
+<span class="material-symbols-outlined text-primary">event_note</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">1. Incident Details</h3>
+</div>
+<div class="p-md grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="flex flex-col gap-xs">
+<label class="font-label-lg text-label-lg text-on-surface-variant">Crime Type</label>
+<select class="w-full p-sm border border-outline-variant rounded bg-surface-bright font-body-sm text-on-surface focus:border-primary">
+<option>Select category...</option>
+<option>Theft / Burglary</option>
+<option>Assault</option>
+<option>Fraud / Cybercrime</option>
+<option>Missing Person</option>
+<option>Other</option>
+</select>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-lg text-label-lg text-on-surface-variant">Date &amp; Time of Incident</label>
+<input class="w-full p-sm border border-outline-variant rounded bg-surface-bright font-body-sm text-on-surface focus:border-primary" type="datetime-local"/>
+</div>
+<div class="flex flex-col gap-xs md:col-span-2">
+<label class="font-label-lg text-label-lg text-on-surface-variant">Location of Incident</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">location_on</span>
+<input class="w-full pl-10 p-sm border border-outline-variant rounded bg-surface-bright font-body-sm text-on-surface focus:border-primary" placeholder="Enter full address or landmark" type="text"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Person of Interest -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded">
+<div class="bg-surface-container px-md py-sm border-b border-outline-variant flex items-center gap-sm rounded-t">
+<span class="material-symbols-outlined text-primary">person_search</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">2. Person of Interest (Suspect Details)</h3>
+<span class="ml-auto bg-surface-variant text-on-surface-variant font-label-md text-label-md px-2 py-1 rounded">Optional</span>
+</div>
+<div class="p-md grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="flex flex-col gap-xs">
+<label class="font-label-lg text-label-lg text-on-surface-variant">Suspect Name (if known)</label>
+<input class="w-full p-sm border border-outline-variant rounded bg-surface-bright font-body-sm text-on-surface focus:border-primary" placeholder="John Doe / Unknown" type="text"/>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-lg text-label-lg text-on-surface-variant">Estimated Age / Gender</label>
+<div class="flex gap-2">
+<input class="w-1/2 p-sm border border-outline-variant rounded bg-surface-bright font-body-sm text-on-surface focus:border-primary" placeholder="Age" type="number"/>
+<select class="w-1/2 p-sm border border-outline-variant rounded bg-surface-bright font-body-sm text-on-surface focus:border-primary">
+<option>Select...</option>
+<option>Male</option>
+<option>Female</option>
+<option>Other</option>
+</select>
+</div>
+</div>
+<div class="flex flex-col gap-xs md:col-span-2">
+<label class="font-label-lg text-label-lg text-on-surface-variant">Physical Description</label>
+<textarea class="w-full p-sm border border-outline-variant rounded bg-surface-bright font-body-sm text-on-surface focus:border-primary resize-none" placeholder="Height, build, distinguishing marks, clothing..." rows="3"></textarea>
+</div>
+</div>
+</section>
+<!-- Section 4: Translation Integration (Moved up slightly for priority flow) -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded border-l-4 border-l-primary-container">
+<div class="bg-surface-container px-md py-sm border-b border-outline-variant flex items-center justify-between rounded-t">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary-container">translate</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">IndicTrans2 Statement Processor</h3>
+</div>
+<span class="bg-primary-fixed text-on-primary-fixed font-label-md text-label-md px-2 py-1 rounded">AI Assisted</span>
+</div>
+<div class="p-md flex flex-col gap-md">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-md">
+<!-- Original Statement -->
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-lg text-label-lg text-on-surface-variant">Original Statement (Local Language)</label>
+<select id="source-lang" class="p-1 border border-outline-variant rounded bg-surface-bright font-label-md text-label-md text-on-surface">
+<option value="hi">Hindi</option>
+<option value="mr">Marathi</option>
+<option value="ta">Tamil</option>
+</select>
+</div>
+<textarea id="source-text" class="w-full p-sm border border-outline-variant rounded bg-surface-bright font-body-sm text-on-surface focus:border-primary resize-y" placeholder="Enter the exact statement as provided by the complainant or witness..." rows="8"></textarea>
+<button id="translate-btn" class="mt-2 self-start flex items-center gap-xs px-md py-sm bg-surface-variant border border-outline-variant text-on-surface font-label-lg text-label-lg rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm">g_translate</span>
+                                    Translate to English
+                                </button>
+</div>
+<!-- Translated Output -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-lg text-label-lg text-on-surface-variant">Translated Output (English)</label>
+<textarea id="target-text" class="w-full p-sm border border-outline-variant rounded bg-surface-bright font-body-sm text-on-surface focus:border-primary resize-y bg-surface-container-lowest" placeholder="Translated text will appear here. Review and edit as necessary for official records." readonly="" rows="8"></textarea>
+<div class="mt-2 self-start flex items-center gap-xs text-secondary font-label-md">
+<span class="material-symbols-outlined text-sm text-outline">info</span>
+                                    Machine translated. Verification required before final submission.
+                                </div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 3: Evidence & Statements (Attachments) -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded mb-xl">
+<div class="bg-surface-container px-md py-sm border-b border-outline-variant flex items-center gap-sm rounded-t">
+<span class="material-symbols-outlined text-primary">attachment</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">3. Evidence &amp; Attachments</h3>
+</div>
+<div class="p-md">
+<div class="border-2 border-dashed border-outline-variant rounded p-lg flex flex-col items-center justify-center text-center bg-surface-bright hover:bg-surface-container-low transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-outline text-3xl mb-sm">cloud_upload</span>
+<div class="font-title-lg text-title-lg text-on-surface mb-xs">Drag and drop files here</div>
+<div class="font-body-sm text-body-sm text-secondary mb-md">or click to browse from local storage</div>
+<button class="px-md py-sm bg-surface-lowest border border-outline-variant text-on-surface font-label-lg text-label-lg rounded">Select Files</button>
+<div class="mt-sm font-label-md text-label-md text-outline">Supported formats: PDF, JPG, PNG, MP4 (Max 50MB)</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+<script>
+    // Translate Logic
+    document.addEventListener("DOMContentLoaded", async () => {
+        const sourceLang = document.getElementById("source-lang");
+        const sourceText = document.getElementById("source-text");
+        const targetText = document.getElementById("target-text");
+        const translateBtn = document.getElementById("translate-btn");
+
+        // Simple auth for demo
+        let token = "";
+        try {
+            const authRes = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ badge_no: "SHO001", password: "Demo@1234" })
+            });
+            const data = await authRes.json();
+            token = data.access_token;
+        } catch (e) {
+            console.error("Auth failed", e);
+        }
+
+        translateBtn.addEventListener("click", async () => {
+            const text = sourceText.value.trim();
+            if (!text) return;
+            
+            translateBtn.disabled = true;
+            translateBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> Translating...';
+            targetText.value = "Translating...";
+
+            try {
+                // Fetch to Nginx exposed route -> /api goes to backend:8000
+                const res = await fetch("/api/translate/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        source_lang: sourceLang.value,
+                        target_lang: "en"
+                    })
+                });
+
+                if (res.ok) {
+                    const result = await res.json();
+                    targetText.value = result.translated;
+                } else {
+                    targetText.value = "Translation failed. Please try again.";
+                }
+            } catch (err) {
+                targetText.value = "Error connecting to service.";
+            } finally {
+                translateBtn.disabled = false;
+                translateBtn.innerHTML = '<span class="material-symbols-outlined text-sm">g_translate</span> Translate to English';
+            }
+        });
+    });
+</script>
+</body></html>
