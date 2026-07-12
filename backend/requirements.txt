@@ -1,49 +1,43 @@
-# backend/requirements.txt — ALL versions pinned
+# SAMRAKSHA backend dependencies
 
-# Core
+# Core API
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
 
 # Database
 asyncpg
-sqlalchemy
+sqlalchemy[asyncio]
 alembic
 
-# Security
-python-jose
-passlib
+# Security & Auth
+python-jose[cryptography]
+passlib[bcrypt]
 slowapi
 
-# ML & Prediction
+# ML & Prediction (hotspot, risk scoring)
 xgboost
 scikit-learn
 scipy
 numpy
 pandas
 
-# Routing
+# Patrol Routing
 ortools
 
-# Documents
+# Document Generation
 python-docx
 python-magic
 
-# CCTV
+# CCTV / Computer Vision
 mediapipe
 opencv-python-headless
 
-# Translation
-# IndicTrans2: install from GitHub
-# pip install git+https://github.com/AI4Bharat/IndicTrans2
-
-# HTTP client (Indian Kanoon, OSRM)
+# HTTP client (OSRM, Indian Kanoon)
 httpx
 
-# WebSocket + real-time
+# WebSocket
 websockets
-
-# Hashing
 
 # Geocoding
 geopy
@@ -52,21 +46,10 @@ geopy
 pydantic
 pydantic-settings
 
-# Logging
-structlog
-
-# Testing
-pytest
-pytest-asyncio
-httpx
-python-jose[cryptography]
-passlib[bcrypt]
-uvicorn[standard]
-sqlalchemy[asyncio]
+# NLP / AI (voice, translation, assistant)
 transformers<4.40.0
 torch
 openai-whisper
 
-pytest
-pytest-asyncio
-httpx
+# Logging
+structlog

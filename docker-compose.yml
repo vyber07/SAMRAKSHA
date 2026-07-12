@@ -1,47 +1,97 @@
 version: '3.9'
 
 services:
+
+  # ─── Database ──────────────────────────────────────────────────────────
   postgres:
-    image: postgis/postgis:15-3.3
+    image: postgis/postgis:16-3.4
+    container_name: samraksha-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: samraksha
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB:       samraksha
+      POSTGRES_USER:     samraksha
+      POSTGRES_PASSWORD: samraksha_secret
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    networks:
+      - samraksha-net
     healthcheck:
-      test: ["CMD-SHELL","pg_isready -U ${DB_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U samraksha -d samraksha"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ─── Cache / Pub-Sub ───────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: samraksha-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - samraksha-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-
+  # ─── Backend API (FastAPI + ML/AI models) ──────────────────────────────
   api:
-    build: ./backend
-    env_file: .env
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: samraksha-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL:    postgresql+asyncpg://samraksha:samraksha_secret@postgres:5432/samraksha
+      REDIS_URL:       redis://redis:6379/0
+      ENVIRONMENT:     development
+      DEMO_MODE:       "true"
+      SECRET_KEY:      samraksha-super-secret-jwt-key-change-in-prod
+      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/templates:/app/templates
-      - ./backend/app:/app/app
-      - ./backend/tests:/app/tests
       - uploads:/app/uploads
+    networks:
+      - samraksha-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
+  # ─── Frontend (Nginx + Vite production build) ──────────────────────────
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: samraksha-frontend
+    restart: unless-stopped
     ports:
-      - "80:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - "80:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    networks:
+      - samraksha-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+networks:
+  samraksha-net:
+    driver: bridge
 
 volumes:
   postgres_data:

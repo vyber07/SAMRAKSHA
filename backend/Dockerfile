@@ -2,8 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies needed for PostgreSQL, OpenCV, MediaPipe, etc.
-RUN apt-get update && apt-get install -y \
+# System deps: postgres client, opencv, mediapipe, ffmpeg, curl for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     ffmpeg \
@@ -11,15 +11,17 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libgl1 \
     libglib2.0-0 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install python deps first (layer cache)
 COPY requirements.txt .
-
-# Install python dependencies without cache
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Copy source
 COPY . .
 
-# Run uvicorn (main module is in the root directory)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
