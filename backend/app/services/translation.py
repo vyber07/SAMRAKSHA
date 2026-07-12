@@ -3,8 +3,9 @@ IndicTrans2 translation service.
 Model: ai4bharat/indictrans2-en-indic-1B  (English → 22 Indian languages)
        ai4bharat/indictrans2-indic-en-1B  (22 Indian languages → English)
 
-IndicTrans2 requires its own IndicProcessor (not generic HuggingFace tokenizer).
-We install it via: pip install git+https://github.com/VarunGumma/IndicTransTokenizer
+Requires: pip install git+https://github.com/VarunGumma/IndicTransTokenizer
+Package installs as: indictranstoolkit
+Python module name:  IndicTransToolkit  (IndicProcessor inside it)
 
 Lazy-loaded at first use — startup is not blocked.
 """
@@ -53,12 +54,13 @@ def _get_model_and_processor(direction: str):
 
     try:
         logger.info("Loading IndicTrans2 model", model=model_name)
-        from transformers import AutoModelForSeq2SeqLM
-        from IndicTransTokenizer import IndicProcessor, IndicTransTokenizer
+        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+        from IndicTransToolkit import IndicProcessor
 
         processor = IndicProcessor(inference=True)
-        tokenizer = IndicTransTokenizer(
-            src_lang="eng_Latn" if direction == "en-indic" else "hin_Deva",
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_name,
+            trust_remote_code=True,
         )
         model = AutoModelForSeq2SeqLM.from_pretrained(
             model_name,
@@ -120,14 +122,12 @@ class Translator:
         model, tokenizer, device = model_tuple
 
         try:
-            from IndicTransTokenizer import IndicTransTokenizer  # noqa
-            # Pre-process
+            # Pre-process with IndicProcessor
             batch = processor.preprocess_batch(
                 [text], src_lang=src_flores, tgt_lang=tgt_flores
             )
             inputs = tokenizer(
                 batch,
-                src=True,
                 truncation=True,
                 padding="longest",
                 return_tensors="pt",
@@ -139,9 +139,12 @@ class Translator:
                     num_beams=5,
                     num_return_sequences=1,
                     max_length=256,
+                    forced_bos_token_id=tokenizer.convert_tokens_to_ids(
+                        tokenizer.tokenize(tgt_flores)
+                    )[0] if tgt_flores else None,
                 )
 
-            decoded = tokenizer.batch_decode(outputs, src=False)
+            decoded = tokenizer.batch_decode(outputs, skip_special_tokens=True)
             result = processor.postprocess_batch(decoded, lang=tgt_flores)
             return result[0] if result else text
 
