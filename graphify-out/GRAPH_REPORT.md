@@ -1,16 +1,16 @@
 # Graph Report - sam  (2026-07-09)
 
 ## Corpus Check
-- 64 files · ~37,632 words
+- 66 files · ~38,905 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 483 nodes · 748 edges · 28 communities (20 shown, 8 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 63 edges (avg confidence: 0.8)
+- 496 nodes · 761 edges · 29 communities (21 shown, 8 thin omitted)
+- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 64 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `dc086ac9`
+- Built from commit: `aa4f06b2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -41,6 +41,7 @@
 - graphify.md
 - graphify.md
 - setup.sh
+- 1. Compliance Matrix Mapping
 
 ## God Nodes (most connected - your core abstractions)
 1. `fetch_one()` - 21 edges
@@ -69,7 +70,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (28 total, 8 thin omitted)
+## Communities (29 total, 8 thin omitted)
 
 ### Community 0 - "_search_csv"
 Cohesion: 0.15
@@ -84,8 +85,8 @@ Cohesion: 0.09
 Nodes (25): DesignSystemGenerator, _detect_page_type(), format_ascii_box(), format_markdown(), format_master_md(), format_page_override_md(), generate_design_system(), _generate_intelligent_overrides() (+17 more)
 
 ### Community 3 - "DesignSystemGenerator"
-Cohesion: 0.06
-Nodes (54): api, App(), PrivateRoute(), PublicRoute(), CaseAssistant(), Message, CaseDiary(), DiaryEntry (+46 more)
+Cohesion: 0.05
+Nodes (61): api, App(), PrivateRoute(), PublicRoute(), CaseAssistant(), Message, CaseDiary(), DiaryEntry (+53 more)
 
 ### Community 4 - "design_system.py"
 Cohesion: 0.09
@@ -93,7 +94,7 @@ Nodes (25): DesignSystemGenerator, _detect_page_type(), format_ascii_box(), form
 
 ### Community 5 - "DesignSystemGenerator"
 Cohesion: 0.05
-Nodes (55): AsyncSession, get_dashboard_summary(), get_trends(), BaseModel, simulate_event(), SimulateRequest, AssistantQuery, BaseModel (+47 more)
+Nodes (56): AsyncSession, get_dashboard_summary(), get_trends(), BaseModel, simulate_event(), SimulateRequest, AssistantQuery, BaseModel (+48 more)
 
 ### Community 8 - "ui-ux-pro-max"
 Cohesion: 0.07
@@ -124,7 +125,7 @@ Cohesion: 0.29
 Nodes (8): get_patrol_routes(), BaseModel, register_patrol_unit(), UnitRegister, UnitUpdate, update_patrol_unit(), get_travel_time_matrix(), optimize_patrol_routes()
 
 ### Community 16 - "DashboardManager"
-Cohesion: 0.36
+Cohesion: 0.33
 Nodes (4): DashboardManager, websocket_endpoint(), get_db(), WebSocket
 
 ### Community 17 - "document_gen.py"
@@ -132,8 +133,8 @@ Cohesion: 0.47
 Nodes (8): create_default_template_file(), format_date(), format_evidence(), format_landmark_cases(), format_witnesses(), generate_document(), today_formatted(), translate()
 
 ### Community 18 - "FIRForm.tsx"
-Cohesion: 0.28
-Nodes (7): CRIME_TYPES, EMPTY_FIR, FIRForm(), FIRFormData, SEVERITY_LABELS, WARD_OPTIONS, NewFIRPage()
+Cohesion: 0.33
+Nodes (4): lookup_cctns_suspect(), lookup_cctns_vehicle(), Mock CCTNS national crime registry lookup, Mock national vehicle database lookup
 
 ### Community 19 - "Unified Predictive Policing & AI Case Intelligence Platform"
 Cohesion: 0.22
@@ -143,8 +144,12 @@ Nodes (8): Core Concept, Disclaimer, Features, Legal Notice, Problem Statements 
 Cohesion: 0.33
 Nodes (4): AuthMiddleware, Request, BaseHTTPMiddleware, Response
 
+### Community 28 - "1. Compliance Matrix Mapping"
+Cohesion: 0.33
+Nodes (5): 1. Compliance Matrix Mapping, 2. Identified Notebook Discrepancies & Stubs, PS6 — KANADSHIELD26_P2_06 (CrimeGPT Case Automation), PS7 — KANADSHIELD26_P2_07 (Predictive Hotspot Mapping), SAMRAKSHA — Verification Audit Report
+
 ## Knowledge Gaps
-- **122 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+117 more)
+- **125 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+120 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -152,7 +157,7 @@ Nodes (4): AuthMiddleware, Request, BaseHTTPMiddleware, Response
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `fetch_all()` connect `DesignSystemGenerator` to `DashboardManager`, `RiskPredictor`, `patrol.py`?**
-  _High betweenness centrality (0.020) - this node is a cross-community bridge._
+  _High betweenness centrality (0.019) - this node is a cross-community bridge._
 - **Why does `fetch_one()` connect `DesignSystemGenerator` to `patrol.py`?**
   _High betweenness centrality (0.012) - this node is a cross-community bridge._
 - **Why does `execute()` connect `DesignSystemGenerator` to `patrol.py`?**
@@ -162,6 +167,6 @@ _Questions this graph is uniquely positioned to answer:_
 - **Are the 14 inferred relationships involving `fetch_all()` (e.g. with `get_trends()` and `query_assistant()`) actually correct?**
   _`fetch_all()` has 14 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `BM25 ranking algorithm for text search`, `Lowercase, split, remove punctuation, filter short words`, `Build BM25 index from documents` to the rest of the system?**
-  _174 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _179 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `_search_csv` be split into smaller, more focused modules?**
   _Cohesion score 0.14736842105263157 - nodes in this community are weakly interconnected._

@@ -51,9 +51,10 @@ def build_features(incidents_df: pd.DataFrame) -> pd.DataFrame:
     df['is_weekend']   = df['day_of_week'].apply(lambda d: 1 if d >= 5 else 0)
     df['festival_flag']= df.apply(lambda r: get_festival_flag(r['month'], 1), axis=1).astype(int)
     
-    # Historical density per ward
-    df['crimes_30d']   = df.groupby('ward')['id'].transform(lambda x: x.rolling(30, min_periods=1).count())
-    df['crimes_7d']    = df.groupby('ward')['id'].transform(lambda x: x.rolling(7, min_periods=1).count())
+    # Historical density per ward — use index if 'id' column absent
+    _count_col = 'id' if 'id' in df.columns else df.columns[0]
+    df['crimes_30d']   = df.groupby('ward')[_count_col].transform(lambda x: x.rolling(30, min_periods=1).count())
+    df['crimes_7d']    = df.groupby('ward')[_count_col].transform(lambda x: x.rolling(7, min_periods=1).count())
     return df[[
         'hour','day_of_week','month','is_night','is_weekend',
         'festival_flag','crimes_30d','crimes_7d','lat','lon'

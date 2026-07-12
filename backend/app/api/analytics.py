@@ -142,9 +142,15 @@ async def simulate_event(
         raise HTTPException(400, f"Unknown event: {body.event}")
 
     affected_wards = [
-        'Jamalpur', 'Kalupur', 'Ambawadi',
-        'Ellisbridge', 'Satellite', 'Maninagar'
+        row['ward'] for row in await fetch_all(db,
+            "SELECT DISTINCT ward FROM zone_risk_scores WHERE ward IS NOT NULL ORDER BY ward"
+        )
     ]
+    if not affected_wards:
+        affected_wards = [
+            'Jamalpur', 'Kalupur', 'Ambawadi',
+            'Ellisbridge', 'Satellite', 'Maninagar'
+        ]
 
     hotspots = []
     total_units = 0

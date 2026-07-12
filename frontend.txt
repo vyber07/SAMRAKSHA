@@ -1,0 +1,59 @@
+# SAMRAKSHA Predictive Policing Platform - Frontend Design Requirements
+
+## 1. Project Overview
+SAMRAKSHA is an AI-powered, real-time predictive policing and incident management platform. The frontend must convey a high-security, professional, and institutional aesthetic while being highly responsive and user-friendly for both command center operators (Desktop) and field officers (Mobile).
+
+## 2. Global Design System & Styling (Stitch / Tailwind)
+**Aesthetic:** Uber-Minimalism combined with functional Glassmorphism.
+**Theme Mode:** Dark Mode by default, utilizing translucent overlays.
+
+*   **Color Palette:**
+    *   Primary Accent: `#0B66D2` (Police Blue - used for active states, key buttons).
+    *   Background: Deep Slate `#0F172A` with radial gradients to create depth without clutter.
+    *   Surface/Cards: Glassmorphism panels `bg-white/5` with `backdrop-blur-xl` and a subtle 1px border `border-white/10`.
+    *   Status Colors:
+        *   Success/Clear: `#10B981` (Desaturated Emerald)
+        *   Danger/Alert: `#EF4444` (Desaturated Red)
+        *   Warning: `#F57C00`
+    *   Text: Pure White `#FFFFFF` for headings, Slate Gray `#94A3B8` for secondary/muted text.
+*   **Typography:**
+    *   Headlines/Titles: `Plus Jakarta Sans` or `Hanken Grotesk` (Bold, clean, authoritative).
+    *   Body/Data: `Inter` or `Roboto Flex` for maximum legibility in dense data tables.
+    *   Monospace: `JetBrains Mono` for timestamps, badge numbers, and coordinates.
+*   **Border Radius:** 
+    *   Standard components (cards, modals): `1rem` to `1.5rem` (16px - 24px) for a soft but structured look.
+    *   Buttons/Avatars: `9999px` (fully rounded/pill).
+
+## 3. Core Screens & Layouts
+
+### A. Web Admin Dashboard (Command Center) - `App.tsx`
+**Purpose:** Real-time overview of city-wide operations.
+*   **Top Navigation Bar:** Sticky. Contains the SAMRAKSHA logo, global search bar (glass input), notification bell, settings, and officer profile avatar.
+*   **Left Sidebar:** Fixed navigation with icons (Dashboard, Analytics, Operations, Resources, Security). Active state should have a primary color background tint. Includes a prominent "New Mission" or "Dispatch" action button.
+*   **Top Metrics Cards (Bento Grid):** 3-4 glass cards showing live stats (e.g., Active Patrols, Incidents Today, Avg Response Time). Should include small trend indicators (e.g., +12% in red/green pills) and relevant Material Icons.
+*   **Main Map View (Interactive):** 
+    *   *Requirement:* Must integrate a real mapping library (Leaflet/React-Leaflet, Mapbox, or Google Maps). The current SVG placeholder must be replaced.
+    *   *Features:* Dark mode map tiles (e.g., CartoDB Dark Matter). Must render dynamic markers for active units (Blue/Green) and live incidents (Red pulsing dots). Needs floating map controls (Filter, My Location) as glass buttons over the map.
+*   **Recent Alerts Sidebar (Right):** A vertically scrolling list of incoming incidents fetched dynamically via Axios from the FastAPI backend. Each card should show priority level, time, location, and a status badge (Pending, Dispatched, Resolved).
+
+### B. Case Management System - `Cases.tsx`
+**Purpose:** Deep dive into specific FIRs (First Information Reports) and investigations.
+*   **Layout:** Two-column layout (30% left list, 70% right detail view).
+*   **Left Column (FIR Directory):** Searchable list of cases. Compact rows showing Case ID, Title, Investigating Officer, and Status.
+*   **Right Column (Case Details):** 
+    *   Header with Priority badges and action buttons (Assign Officer, Update Case).
+    *   Meta Grid: Bento-style boxes for Officer details (with photo), Date/Time, and Location.
+    *   Case Summary: Text block detailing the report.
+    *   Case Diary Timeline: A vertical timeline UI showing chronological updates, forensic reports, and witness statements attached to the case.
+
+### C. Mobile Field Officer App (Responsive/APK)
+**Purpose:** For officers in patrol cars or on foot. Needs high contrast and large touch targets.
+*   **Top Header:** Greeting, Officer Rank, and a prominent, highly visible "Panic/SOS" button.
+*   **Active Route/Assignment:** A card dominating the upper half, showing current objective and navigation instructions.
+*   **Bottom Navigation:** Fixed bar with Home, Map, Camera (for evidence upload), and Profile icons.
+
+## 4. Frontend Functional Requirements
+*   **API Integration:** All data (Incidents, Patrols, Cases) must be fetched from the FastAPI backend (`http://SERVER_IP:8000`) using Axios.
+*   **Routing:** Implement `react-router-dom` to connect the Sidebar buttons (Dashboard -> `/`, Cases -> `/cases`, etc.).
+*   **Dynamic Map:** Replace the mock SVG map with a functional `react-leaflet` component that consumes coordinate data from the incident API.
+*   **State Management:** Ensure loading states and error boundaries are styled gracefully (e.g., showing a glass spinner or a sleek error toast) rather than breaking the UI.

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, validator
 from typing import Optional, List
 from datetime import datetime
@@ -21,12 +21,10 @@ async def get_ps_code(db, ps_id: str) -> str:
     name = ps['name'].upper().replace("POLICE STATION", "").strip()
     return name[:3]
 
-async def get_fir_count(db, ps_id: str, year: int) -> int:
-    result = await fetch_one(db, """
-        SELECT COUNT(*) as count FROM cases 
-        WHERE ps_id = $1 AND EXTRACT(YEAR FROM crime_date) = $2
-    """, [ps_id, year])
-    return result['count'] if result else 0
+async def next_fir_number(db, ps_id: str, year: int) -> int:
+    """Atomic FIR sequence — uses fir_sequences table with row-level lock."""
+    result = await fetch_one(db, "SELECT next_fir_number($1, $2) AS seq", [ps_id, year])
+    return result['seq']
 
 async def get_ps_name(db, ps_id: str) -> str:
     ps = await fetch_one(db, "SELECT name FROM police_stations WHERE id = $1", [ps_id])
@@ -55,6 +53,13 @@ class FIRCreateRequest(BaseModel):
     accused_age:     Optional[int] = None
 
     language: str = 'en'
+
+    # Manual section overrides from officer — if provided, use instead of AI suggestion
+    bns_sections:   Optional[List[str]] = None
+    bnss_sections:  Optional[List[str]] = None
+    bsa_sections:   Optional[List[str]] = None
+    ipc_crossref:   Optional[List[str]] = None
+    other_sections: Optional[List[str]] = None
 
     @validator('severity')
     def severity_range(cls, v):
@@ -117,12 +122,19 @@ async def create_fir(
     year = body.crime_date.year
     ps_id = str(officer['ps_id'])
     ps_code = await get_ps_code(db, ps_id)
-    count = await get_fir_count(db, ps_id, year)
-    fir_no = f"{ps_code}/{year}/{str(count+1).zfill(4)}"
+    seq = await next_fir_number(db, ps_id, year)
+    fir_no = f"{ps_code}/{year}/{str(seq).zfill(4)}"
 
     from app.services.legal_intel import suggest_sections, get_ipc_crossref
-    sections = suggest_sections(body.crime_narrative)
-    crossref = get_ipc_crossref(sections)
+    ai_sections = suggest_sections(body.crime_narrative)
+    ai_crossref  = get_ipc_crossref(ai_sections)
+
+    # Use officer-edited sections if provided, otherwise use AI suggestions
+    final_bns   = body.bns_sections   if body.bns_sections   is not None else ai_sections.get('bns', [])
+    final_bnss  = body.bnss_sections  if body.bnss_sections  is not None else ai_sections.get('bnss', [])
+    final_bsa   = body.bsa_sections   if body.bsa_sections   is not None else ai_sections.get('bsa', [])
+    final_ipc   = body.ipc_crossref   if body.ipc_crossref   is not None else ai_crossref
+    sections    = ai_sections  # keep for return value
 
     case_id = str(uuid.uuid4())
 
@@ -157,10 +169,7 @@ async def create_fir(
             body.crime_type, body.crime_code, body.crime_narrative,
             body.crime_date, body.crime_location,
             body.crime_lat, body.crime_lon,
-            sections.get('bns', []),
-            sections.get('bnss', []),
-            sections.get('bsa', []),
-            crossref
+            final_bns, final_bnss, final_bsa, final_ipc
         ])
 
         # Log incident

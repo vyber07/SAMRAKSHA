@@ -3,19 +3,19 @@ import httpx
 import os
 
 SECTION_MAP = {
-    r'snatch|snatching|chain pull':  {'bns':['BNS 309'],'bnss':['BNSS 170']},
-    r'robbery|loot':                 {'bns':['BNS 309','BNS 310'],'bnss':['BNSS 170']},
-    r'theft|chori|stolen|steal':     {'bns':['BNS 303','BNS 304'],'bnss':['BNSS 170']},
-    r'murder|kill|death|homicide':   {'bns':['BNS 101','BNS 103'],'bnss':['BNSS 173']},
-    r'assault|beat|hurt|attack':     {'bns':['BNS 115','BNS 117'],'bnss':['BNSS 170']},
-    r'rape|sexual assault':          {'bns':['BNS 63','BNS 70'],'bnss':['BNSS 173']},
-    r'kidnap|abduct':                {'bns':['BNS 137','BNS 140'],'bnss':['BNSS 170']},
-    r'upi|fraud|phishing|otp':       {'bns':['BNS 318','BNS 316'],'other':['IT Act 66D']},
-    r'organised|gang|conspiracy':    {'bns':['BNS 111','BNS 61'],'bnss':['BNSS 173']},
-    r'drug|narcotic|ganja':          {'other':['NDPS 20','NDPS 22']},
-    r'stalking|harassment':          {'bns':['BNS 78','BNS 79']},
-    r'extortion|blackmail':          {'bns':['BNS 308'],'bnss':['BNSS 170']},
-    r'riot|unlawful assembly':       {'bns':['BNS 190','BNS 191']},
+    r'snatch|snatching|chain pull':  {'bns':['BNS 309'],'bnss':['BNSS 170'],'bsa':['BSA 23','BSA 27']},
+    r'robbery|loot':                 {'bns':['BNS 309','BNS 310'],'bnss':['BNSS 170'],'bsa':['BSA 23','BSA 27']},
+    r'theft|chori|stolen|steal':     {'bns':['BNS 303','BNS 304'],'bnss':['BNSS 170'],'bsa':['BSA 23']},
+    r'murder|kill|death|homicide':   {'bns':['BNS 101','BNS 103'],'bnss':['BNSS 173'],'bsa':['BSA 26','BSA 27']},
+    r'assault|beat|hurt|attack':     {'bns':['BNS 115','BNS 117'],'bnss':['BNSS 170'],'bsa':['BSA 23']},
+    r'rape|sexual assault':          {'bns':['BNS 63','BNS 70'],'bnss':['BNSS 173'],'bsa':['BSA 26','BSA 27']},
+    r'kidnap|abduct':                {'bns':['BNS 137','BNS 140'],'bnss':['BNSS 170'],'bsa':['BSA 23','BSA 27']},
+    r'upi|fraud|phishing|otp':       {'bns':['BNS 318','BNS 316'],'other':['IT Act 66D'],'bsa':['BSA 23']},
+    r'organised|gang|conspiracy':    {'bns':['BNS 111','BNS 61'],'bnss':['BNSS 173'],'bsa':['BSA 27']},
+    r'drug|narcotic|ganja':          {'other':['NDPS 20','NDPS 22'],'bsa':['BSA 23']},
+    r'stalking|harassment':          {'bns':['BNS 78','BNS 79'],'bsa':['BSA 23']},
+    r'extortion|blackmail':          {'bns':['BNS 308'],'bnss':['BNSS 170'],'bsa':['BSA 23','BSA 27']},
+    r'riot|unlawful assembly':       {'bns':['BNS 190','BNS 191'],'bsa':['BSA 27']},
 }
 
 BNS_IPC_MAP = {

@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Header, HTTPException, Depends
 import random
+import os
 
 router = APIRouter()
 
-MOCK_CCTNS_TOKENS = ["CCTNS_SECURE_TOKEN_2026_KANAD", "BHARATPOL_INTEL_TOKEN_XYZ"]
+# Tokens come from environment — never hardcoded
+_env_tokens = os.getenv("CCTNS_TOKENS", "CCTNS_SECURE_TOKEN_2026_KANAD,BHARATPOL_INTEL_TOKEN_XYZ")
+MOCK_CCTNS_TOKENS = [t.strip() for t in _env_tokens.split(",") if t.strip()]
 
 def verify_cctns_auth(authorization: str = Header(None), x_cctns_token: str = Header(None)):
     token = None

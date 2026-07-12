@@ -24,7 +24,8 @@ class CCTVAlertRequest(BaseModel):
 async def ingest_alert(
     body: CCTVAlertRequest,
     background_tasks: BackgroundTasks,
-    db = Depends(get_db)
+    db = Depends(get_db),
+    officer = Depends(get_current_officer)
 ):
     if body.source not in ('iccc', 'samraksha_model'):
         raise HTTPException(400, "source must be 'iccc' or 'samraksha_model'")

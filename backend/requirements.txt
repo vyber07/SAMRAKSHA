@@ -16,6 +16,7 @@ ortools==9.9.3963
 python-docx==1.1.2
 python-magic==0.4.27
 opencv-python-headless==4.10.0.84
+# mediapipe==0.10.14  # optional: install manually post-deploy if CCTV pose detection needed
 httpx==0.27.0
 websockets==12.0
 geopy==2.4.1
@@ -24,3 +25,8 @@ pydantic-settings==2.3.0
 structlog==24.2.0
 pytest==8.2.2
 pytest-asyncio==0.23.7
+
+transformers
+torch
+sentencepiece
+sacremoses

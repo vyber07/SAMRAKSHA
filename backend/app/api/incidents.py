@@ -60,3 +60,18 @@ async def receive_pcr_incident(
         logger.warning("Failed to broadcast PCR incident WebSocket", error=str(ws_err))
 
     return {"incident_id": incident['id'], "status": "received"}
+
+@router.get("/")
+async def get_recent_incidents(db = Depends(get_db)):
+    try:
+        from app.db.connection import fetch_all
+        incidents = await fetch_all(db, """
+            SELECT id, source, crime_type, lat, lon, severity, status, timestamp
+            FROM incidents
+            ORDER BY timestamp DESC
+            LIMIT 20
+        """)
+        return {"incidents": [dict(i) for i in incidents]}
+    except Exception as e:
+        logger.error("Failed to fetch incidents", error=str(e))
+        raise HTTPException(500, "Database fetch failed")

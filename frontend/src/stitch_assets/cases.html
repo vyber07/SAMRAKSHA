@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SAMRAKSHA - Case Management (FIR)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#0b1326",
+                        "on-background": "#dae2fd",
+                        "secondary": "#bcc7de",
+                        "inverse-on-surface": "#283044",
+                        "secondary-fixed-dim": "#bcc7de",
+                        "on-error": "#690005",
+                        "secondary-container": "#3e495d",
+                        "on-secondary-container": "#aeb9d0",
+                        "surface-variant": "#2d3449",
+                        "outline-variant": "#424753",
+                        "error": "#ffb4ab",
+                        "outline": "#8c909f",
+                        "surface-container-lowest": "#060e20",
+                        "surface-dim": "#0b1326",
+                        "surface-container": "#171f33",
+                        "on-surface": "#dae2fd",
+                        "primary-fixed": "#d8e2ff",
+                        "on-primary-container": "#e3eaff",
+                        "on-primary": "#002e68",
+                        "on-secondary-fixed-variant": "#3c475a",
+                        "on-surface-variant": "#c2c6d5",
+                        "tertiary-container": "#b24900",
+                        "inverse-primary": "#005bbf",
+                        "tertiary-fixed": "#ffdbcc",
+                        "tertiary-fixed-dim": "#ffb693",
+                        "tertiary": "#ffb693",
+                        "on-tertiary-container": "#ffe5da",
+                        "on-tertiary-fixed-variant": "#7a3000",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed": "#111c2d",
+                        "surface-container-highest": "#2d3449",
+                        "inverse-surface": "#dae2fd",
+                        "on-error-container": "#ffdad6",
+                        "background": "#0F172A", // Overridden as per prompt Deep Dark Slate
+                        "secondary-fixed": "#d8e3fb",
+                        "primary-fixed-dim": "#acc7ff",
+                        "on-tertiary-fixed": "#351000",
+                        "on-tertiary": "#561f00",
+                        "surface-tint": "#acc7ff",
+                        "on-primary-fixed-variant": "#004492",
+                        "on-secondary": "#263143",
+                        "surface-bright": "#31394d",
+                        "on-primary-fixed": "#001a40",
+                        "primary": "#acc7ff",
+                        "primary-container": "#0B66D2", // Police Blue
+                        "surface-container-high": "#222a3d",
+                        "surface-container-low": "#131b2e",
+                        "slate-input": "#020617" // Dark tint for inputs
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "24px": "24px" // Required by prompt
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "unit": "8px",
+                        "container-padding": "32px",
+                        "component-gap": "16px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["JetBrains Mono", "monospace"],
+                        "display-metrics": ["Hanken Grotesk", "sans-serif"],
+                        "headline-lg-mobile": ["Hanken Grotesk", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "headline-lg": ["Hanken Grotesk", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "display-metrics": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-surface {
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-elevated {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .input-dark {
+            background-color: #020617;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .input-dark:focus {
+            border-color: #0B66D2;
+            outline: none;
+        }
+        .list-row {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .list-row:last-child {
+            border-bottom: none;
+        }
+        .status-open {
+            background-color: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 1);
+            color: rgba(255, 255, 255, 1);
+        }
+        .status-closed {
+            background-color: rgba(156, 163, 175, 0.1);
+            border: 1px solid rgba(156, 163, 175, 1);
+            color: rgba(255, 255, 255, 1);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen pt-24 px-container-padding pb-container-padding flex flex-col antialiased">
+<!-- TopNavBar (Shared Component) -->
+<nav class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 max-w-7xl mx-auto rounded-full mt-4 mx-container-padding h-16 glass-surface transition-transform duration-200">
+<div class="flex items-center gap-4">
+<img alt="SAMRAKSHA Logo" class="h-8 w-8 rounded-sm object-cover" src="https://lh3.googleusercontent.com/aida/AP1WRLvDDX_pEIsWgFFQNJE8uOZbf3Gh8rSJsWIW7ogglztw6jqqCxR4TKSYmMe1X89KddrPtVdEclk7DTevpPAqaOHu4l-a1imBU5SrGfbI-3mEARQ9-V862p4KcUC-LDKQYmhUBMEb7jqH2mIGHKFdW2Z9crlyqduTORLXUhegceNqftfhU6KkTdbQWZwVUZpYrsG8JOdgJ7Yd21TLvJkXlExsyJ_YpPUs25Y8-ThTHkhIdL6kfO3ezSe-220"/>
+<span class="font-display-metrics text-[24px] font-bold text-primary">SAMRAKSHA</span>
+<div class="hidden md:flex ml-8 items-center gap-6">
+<!-- Inferring "Cases" as active since intent is "Case Management (FIR)" -->
+<a class="text-on-surface-variant font-medium hover:bg-white/5 transition-colors px-3 py-1 rounded-md" href="#">Dashboard</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 px-3 py-1 scale-95 duration-200" href="#">Cases</a>
+<a class="text-on-surface-variant font-medium hover:bg-white/5 transition-colors px-3 py-1 rounded-md" href="#">Personnel</a>
+<a class="text-on-surface-variant font-medium hover:bg-white/5 transition-colors px-3 py-1 rounded-md" href="#">Intelligence</a>
+<a class="text-on-surface-variant font-medium hover:bg-white/5 transition-colors px-3 py-1 rounded-md" href="#">Archive</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="input-dark text-on-surface text-sm rounded-full pl-9 pr-4 py-1.5 w-64 placeholder:text-on-surface-variant/50 focus:ring-0 transition-colors" placeholder="Search FIRs..." type="text"/>
+</div>
+<button aria-label="notifications" class="p-2 rounded-full hover:bg-white/5 transition-colors flex items-center justify-center group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">notifications</span>
+</button>
+<button aria-label="settings" class="p-2 rounded-full hover:bg-white/5 transition-colors flex items-center justify-center group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-white/10 ml-2 shrink-0">
+<img alt="Investigating Officer Profile" class="w-full h-full object-cover" data-alt="Close up professional headshot of a police officer in uniform against a dark moody background with subtle blue rim lighting, stoic expression, highly detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuADz8i4wYqYael_QufeQsNOW4ynGubpSJ0LOiB3n2h_4OVy1FtaWQNnFGlLeB0HUn0IYUmIjo0wiLXCfRE8OHhyivNfhPjcYhbivi5SNxvg8UhdVaOpBBrHlD0tLd2Yqxvf5o2AVFYz1rU8NlX-ZZci0qBG4x8SP5F5jLl861uq69YLqbATLz_nWS2vDWm33_2GEBsMf9xw8672txX_oAnArn9vNDHHpzFhjl2NRa1M_SFkZt2Hb89bq5HrSttVHtVSHbcARNScixs"/>
+</div>
+</div>
+</nav>
+<!-- Main Layout -->
+<main class="flex-1 max-w-7xl mx-auto w-full flex flex-col md:flex-row gap-gutter">
+<!-- Left Sidebar (30%) - Case List -->
+<aside class="w-full md:w-[30%] flex-shrink-0 flex flex-col h-[calc(100vh-140px)]">
+<div class="glass-surface rounded-24px h-full flex flex-col overflow-hidden">
+<div class="p-6 border-b border-white/10">
+<h2 class="font-headline-lg-mobile text-on-surface">FIR Directory</h2>
+<p class="text-sm text-on-surface-variant mt-1 font-body-md">Active investigations</p>
+</div>
+<div class="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar">
+<!-- Case Item 1 (Active) -->
+<div class="list-row py-3 px-3 hover:bg-white/5 transition-all cursor-pointer rounded-lg glass-elevated mb-1">
+<div class="flex justify-between items-start mb-1">
+<span class="font-label-caps text-primary">FIR-2026-081</span>
+<span class="font-label-caps status-open px-2 py-0.5 rounded-full text-[10px]">OPEN</span>
+</div>
+<div class="text-sm text-on-surface font-medium truncate mb-1">Narcotics Seizure - Sector 4</div>
+<div class="flex justify-between items-center text-xs text-on-surface-variant">
+<span>IO: Verma, K.</span>
+<span>2 hrs ago</span>
+</div>
+</div>
+<!-- Case Item 2 -->
+<div class="list-row py-3 px-3 hover:bg-white/5 transition-all cursor-pointer rounded-lg mb-1">
+<div class="flex justify-between items-start mb-1">
+<span class="font-label-caps text-on-surface-variant">FIR-2026-079</span>
+<span class="font-label-caps status-open px-2 py-0.5 rounded-full text-[10px]">OPEN</span>
+</div>
+<div class="text-sm text-on-surface font-medium truncate mb-1">Financial Fraud - Syndicate Bank</div>
+<div class="flex justify-between items-center text-xs text-on-surface-variant">
+<span>IO: Singh, R.</span>
+<span>1 day ago</span>
+</div>
+</div>
+<!-- Case Item 3 -->
+<div class="list-row py-3 px-3 hover:bg-white/5 transition-all cursor-pointer rounded-lg mb-1">
+<div class="flex justify-between items-start mb-1">
+<span class="font-label-caps text-on-surface-variant">FIR-2026-078</span>
+<span class="font-label-caps status-closed px-2 py-0.5 rounded-full text-[10px]">CLOSED</span>
+</div>
+<div class="text-sm text-on-surface font-medium truncate mb-1">Vehicle Theft Recovery</div>
+<div class="flex justify-between items-center text-xs text-on-surface-variant">
+<span>IO: Patil, M.</span>
+<span>3 days ago</span>
+</div>
+</div>
+<!-- Case Item 4 -->
+<div class="list-row py-3 px-3 hover:bg-white/5 transition-all cursor-pointer rounded-lg mb-1">
+<div class="flex justify-between items-start mb-1">
+<span class="font-label-caps text-on-surface-variant">FIR-2026-075</span>
+<span class="font-label-caps status-open px-2 py-0.5 rounded-full text-[10px]">OPEN</span>
+</div>
+<div class="text-sm text-on-surface font-medium truncate mb-1">Cyberstalking Investigation</div>
+<div class="flex justify-between items-center text-xs text-on-surface-variant">
+<span>IO: Das, A.</span>
+<span>1 week ago</span>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Right Area (70%) - Case Details -->
+<section class="w-full md:w-[70%] h-[calc(100vh-140px)] flex flex-col">
+<div class="glass-surface rounded-24px h-full flex flex-col overflow-hidden relative">
+<!-- Header -->
+<div class="p-8 border-b border-white/10 flex justify-between items-start">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="font-label-caps text-primary bg-primary/10 px-3 py-1 rounded-md border border-primary/20">FIR-2026-081</span>
+<span class="font-label-caps status-open px-3 py-1 rounded-md">CRITICAL</span>
+</div>
+<h1 class="font-headline-lg text-on-surface mb-2">Narcotics Seizure - Sector 4 Godown</h1>
+<p class="text-on-surface-variant text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">schedule</span> Registered: 14-Oct-2026 09:45 AM
+                        </p>
+</div>
+<div class="flex gap-3">
+<button class="glass-surface text-on-surface px-6 py-2.5 rounded-lg font-medium text-sm hover:bg-white/10 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">person_add</span> Assign Officer
+                        </button>
+<button class="bg-primary-container text-white px-6 py-2.5 rounded-lg font-medium text-sm hover:bg-primary-container/90 transition-colors shadow-none flex items-center gap-2 border border-primary-container">
+<span class="material-symbols-outlined text-[18px]">update</span> Update Case
+                        </button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-8 flex flex-col gap-8 custom-scrollbar">
+<!-- Meta Grid (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="flex flex-col gap-2">
+<label class="font-label-caps text-on-surface-variant">Investigating Officer</label>
+<div class="input-dark rounded-lg p-3 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
+<img class="w-full h-full object-cover" data-alt="Small thumbnail portrait of an Indian male police detective in uniform, stoic expression, dark moody studio lighting, highly detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBL9w8e96h2lqRf8Fp5xm52BnuPUll46lZDOSuCZJywaNxAJHuBmf3XPh6bsy1iUCAbYBVzdM0mZh9sabczkVR2OSVSrbfkSnWOvvyHEDOvnNyvJZr088aVgvtUz43zEIu8_K9GHyo0OpDtLqpv_AqStSbXnHkmzcgjdxqDopG-ViThRwxTOLHmTo2f6JM0z9qPxIPpqmXNrNrAKyyiEnxFeG3Ab916Vcn3I9sawjfAJvDFgXEFcSGyL1xZ_sZD-lnxVIT5eOYKq8w"/>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-on-surface">K. Verma</span>
+<span class="text-xs text-on-surface-variant">Badge: #8921</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-caps text-on-surface-variant">Date of Incident</label>
+<div class="input-dark rounded-lg p-3 flex items-center gap-3 h-[58px]">
+<span class="material-symbols-outlined text-primary">event</span>
+<span class="text-sm text-on-surface">13-Oct-2026, 23:30</span>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-caps text-on-surface-variant">Location</label>
+<div class="input-dark rounded-lg p-3 flex items-center gap-3 h-[58px]">
+<span class="material-symbols-outlined text-primary">location_on</span>
+<span class="text-sm text-on-surface truncate">Sector 4 Industrial Estate, Block C</span>
+</div>
+</div>
+</div>
+<!-- Case Summary -->
+<div class="flex flex-col gap-4">
+<h3 class="font-headline-lg-mobile text-on-surface border-b border-white/10 pb-2">Initial Report</h3>
+<div class="input-dark rounded-xl p-5">
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                                Anonymous tip received regarding suspicious activity at abandoned godown in Sector 4. Patrol unit dispatched. Upon arrival, unit discovered approximately 45kg of suspected contraband (Class A) concealed in agricultural supply crates. Three suspects fled the scene. Immediate perimeter established and forensics team requested. Evidence logged under seal #E-2026-8812.
+                            </p>
+</div>
+</div>
+<!-- Case Diary Timeline -->
+<div class="flex flex-col gap-4 mb-8">
+<h3 class="font-headline-lg-mobile text-on-surface border-b border-white/10 pb-2">Case Diary</h3>
+<div class="relative pl-6 border-l border-white/10 space-y-8 ml-2 mt-2">
+<!-- Timeline Item 1 -->
+<div class="relative">
+<div class="absolute -left-[35px] bg-background border border-primary w-6 h-6 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-primary" style="font-variation-settings: 'FILL' 1;">science</span>
+</div>
+<div class="glass-surface p-4 rounded-lg ml-4">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-sm font-medium text-on-surface">Forensics Report Attached</h4>
+<span class="font-label-caps text-on-surface-variant">Today, 14:30</span>
+</div>
+<p class="text-sm text-on-surface-variant">Preliminary analysis confirms substance as synthetic narcotics. Detailed chemical breakdown pending. Fingerprints lifted from crates match known associate.</p>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative">
+<div class="absolute -left-[35px] bg-background border border-white/20 w-6 h-6 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-on-surface-variant">group</span>
+</div>
+<div class="glass-surface p-4 rounded-lg ml-4">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-sm font-medium text-on-surface">Witness Statements Recorded</h4>
+<span class="font-label-caps text-on-surface-variant">Yesterday, 18:45</span>
+</div>
+<p class="text-sm text-on-surface-variant">Recorded statements from two night-watchmen in adjacent plots. Reported seeing a white commercial van (partial plate: DL-1M-****) leaving scene at high speed.</p>
+</div>
+</div>
+<!-- Timeline Item 3 -->
+<div class="relative">
+<div class="absolute -left-[35px] bg-background border border-white/20 w-6 h-6 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-on-surface-variant" style="font-variation-settings: 'FILL' 1;">policy</span>
+</div>
+<div class="glass-surface p-4 rounded-lg ml-4">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-sm font-medium text-on-surface">FIR Registered</h4>
+<span class="font-label-caps text-on-surface-variant">14-Oct, 09:45</span>
+</div>
+<p class="text-sm text-on-surface-variant">Case formally registered. Officer K. Verma assigned as lead IO.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<style>
+        /* Custom scrollbar for glassmorphism panels */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</body></html>

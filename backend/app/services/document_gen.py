@@ -52,14 +52,15 @@ def translate(text: str, lang: str) -> str:
     if not text:
         return ""
     # Simple dictionary fallback translation logic
-    # In production this would call IndicTrans2
-    # We will translate known glossary terms
     lowered = text.lower()
     if lang in GLOSSARY:
         for en_key, trans_val in GLOSSARY[lang].items():
             if en_key in lowered:
                 return trans_val
-    return text
+                
+    # If not in glossary, use the actual AI translation model
+    from app.services.translation import translate_text
+    return translate_text(text, lang)
 
 def today_formatted() -> str:
     return datetime.now().strftime("%d-%m-%Y")

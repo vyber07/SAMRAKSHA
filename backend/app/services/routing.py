@@ -11,7 +11,7 @@ async def get_travel_time_matrix(locations: list) -> list[list[int]]:
     matrix = [[0] * n for _ in range(n)]
     
     try:
-        coords = ';'.join(f\"{loc['lon']},{loc['lat']}\" for loc in locations)
+        coords = ';'.join(f"{loc['lon']},{loc['lat']}" for loc in locations)
         async with httpx.AsyncClient(timeout=5) as client:
             resp = await client.get(
                 f"http://router.project-osrm.org/table/v1/driving/{coords}",
@@ -78,7 +78,7 @@ async def optimize_patrol_routes(
         params.local_search_metaheuristic = (
             routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
         )
-        params.time_limit.seconds = 5
+        params.time_limit.seconds = 3
         
         solution = routing.SolveWithParameters(params)
         

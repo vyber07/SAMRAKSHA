@@ -41,24 +41,35 @@ async def get_db():
             await session.close()
 
 def convert_query(query: str, params: list = None) -> tuple[str, dict]:
-    # Replace double colons (e.g. ::GEOGRAPHY) with escaped double colons (\:\:GEOGRAPHY)
-    # SQLAlchemy text() interprets single colons as parameters, so we escape all colons first,
-    # except our own parameters. To keep it simple:
-    # 1. Replace all colons with escaped colons \:
-    # 2. Replace all $N with :pN (which SQLAlchemy treats as parameter pN)
-    
-    # We replace ':' with '\:'
-    escaped_query = query.replace(':', '\\:')
-    
-    # Then replace $1, $2 with :p1, :p2
-    converted_query = re.sub(r'\$(\d+)', r':p\1', escaped_query)
-    
+    """
+    Convert PostgreSQL-style query ($1, $2, ::type casts) to SQLAlchemy
+    text() style (:p1, :p2) while preserving :: type casts intact.
+
+    Strategy (two-pass):
+    1. Stash all ::typename tokens so they survive $N substitution.
+    2. Replace $N with :pN.
+    3. Restore the stashed :: tokens.
+    ponytail: simple enough; ceiling is queries with >99 distinct cast types (not a real concern).
+    """
+    CAST_RE = re.compile(r'::([\w.]+(?:\[\])?)')
+    casts: dict[str, str] = {}
+
+    def _stash(m: re.Match) -> str:
+        key = f"__CAST{len(casts)}__"
+        casts[key] = m.group(0)
+        return key
+
+    q = CAST_RE.sub(_stash, query)
+    q = re.sub(r'\$(\d+)', r':p\1', q)
+    for key, cast in casts.items():
+        q = q.replace(key, cast)
+
     param_dict = {}
     if params:
         for idx, val in enumerate(params):
             param_dict[f"p{idx+1}"] = val
-            
-    return converted_query, param_dict
+
+    return q, param_dict
 
 async def execute(
     db: AsyncSession,

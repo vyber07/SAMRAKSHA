@@ -1,0 +1,1 @@
+INSERT INTO officers (badge_no, name, role, password_hash, is_active) VALUES ('ADMIN-001', 'Supreme Commander', 'admin', '$2b$12$2ubAjZElIvuqCvS.MlK5juWF6mZ41zIcfa70bSc8c7JUw0FV/i.RC', true) ON CONFLICT (badge_no) DO UPDATE SET password_hash=EXCLUDED.password_hash;

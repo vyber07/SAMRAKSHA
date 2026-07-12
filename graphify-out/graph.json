@@ -1504,6 +1504,66 @@
       "norm_label": "get_case_audit()"
     },
     {
+      "label": "cctns.py",
+      "file_type": "code",
+      "source_file": "backend/app/api/cctns.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "backend_app_api_cctns",
+      "community": 18,
+      "norm_label": "cctns.py"
+    },
+    {
+      "label": "verify_cctns_auth()",
+      "file_type": "code",
+      "source_file": "backend/app/api/cctns.py",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "backend_app_api_cctns_verify_cctns_auth",
+      "community": 18,
+      "norm_label": "verify_cctns_auth()"
+    },
+    {
+      "label": "lookup_cctns_suspect()",
+      "file_type": "code",
+      "source_file": "backend/app/api/cctns.py",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "backend_app_api_cctns_lookup_cctns_suspect",
+      "community": 18,
+      "norm_label": "lookup_cctns_suspect()"
+    },
+    {
+      "label": "lookup_cctns_vehicle()",
+      "file_type": "code",
+      "source_file": "backend/app/api/cctns.py",
+      "source_location": "L55",
+      "_origin": "ast",
+      "id": "backend_app_api_cctns_lookup_cctns_vehicle",
+      "community": 18,
+      "norm_label": "lookup_cctns_vehicle()"
+    },
+    {
+      "label": "Mock CCTNS national crime registry lookup",
+      "file_type": "rationale",
+      "source_file": "backend/app/api/cctns.py",
+      "source_location": "L21",
+      "_origin": "ast",
+      "id": "backend_app_api_cctns_rationale_21",
+      "community": 18,
+      "norm_label": "mock cctns national crime registry lookup"
+    },
+    {
+      "label": "Mock national vehicle database lookup",
+      "file_type": "rationale",
+      "source_file": "backend/app/api/cctns.py",
+      "source_location": "L56",
+      "_origin": "ast",
+      "id": "backend_app_api_cctns_rationale_56",
+      "community": 18,
+      "norm_label": "mock national vehicle database lookup"
+    },
+    {
       "label": "cctv.py",
       "file_type": "code",
       "source_file": "backend/app/api/cctv.py",
@@ -1554,10 +1614,20 @@
       "norm_label": "backgroundtasks"
     },
     {
+      "label": "simulate_dcp_escalation()",
+      "file_type": "code",
+      "source_file": "backend/app/api/cctv.py",
+      "source_location": "L91",
+      "_origin": "ast",
+      "id": "backend_app_api_cctv_simulate_dcp_escalation",
+      "community": 5,
+      "norm_label": "simulate_dcp_escalation()"
+    },
+    {
       "label": "check_anpr_match()",
       "file_type": "code",
       "source_file": "backend/app/api/cctv.py",
-      "source_location": "L85",
+      "source_location": "L108",
       "_origin": "ast",
       "id": "backend_app_api_cctv_check_anpr_match",
       "community": 5,
@@ -1860,7 +1930,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_api_websocket",
-      "community": 5,
+      "community": 16,
       "norm_label": "websocket.py"
     },
     {
@@ -2587,7 +2657,7 @@
       "label": "health()",
       "file_type": "code",
       "source_file": "backend/main.py",
-      "source_location": "L84",
+      "source_location": "L86",
       "_origin": "ast",
       "id": "backend_main_health",
       "community": 5,
@@ -3080,7 +3150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_cases_firform",
-      "community": 18,
+      "community": 3,
       "norm_label": "firform.tsx"
     },
     {
@@ -3090,7 +3160,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "frontend_src_components_cases_firform_crime_types",
-      "community": 18,
+      "community": 3,
       "norm_label": "crime_types"
     },
     {
@@ -3100,7 +3170,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "frontend_src_components_cases_firform_ward_options",
-      "community": 18,
+      "community": 3,
       "norm_label": "ward_options"
     },
     {
@@ -3110,7 +3180,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "frontend_src_components_cases_firform_severity_labels",
-      "community": 18,
+      "community": 3,
       "norm_label": "severity_labels"
     },
     {
@@ -3120,7 +3190,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "frontend_src_components_cases_firform_firformdata",
-      "community": 18,
+      "community": 3,
       "norm_label": "firformdata"
     },
     {
@@ -3130,7 +3200,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "frontend_src_components_cases_firform_empty_fir",
-      "community": 18,
+      "community": 3,
       "norm_label": "empty_fir"
     },
     {
@@ -3140,7 +3210,7 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "frontend_src_components_cases_firform_firform",
-      "community": 18,
+      "community": 3,
       "norm_label": "firform()"
     },
     {
@@ -3757,7 +3827,7 @@
       "label": "StatCard()",
       "file_type": "code",
       "source_file": "frontend/src/pages/Dashboard.tsx",
-      "source_location": "L283",
+      "source_location": "L303",
       "_origin": "ast",
       "id": "frontend_src_pages_dashboard_statcard",
       "community": 3,
@@ -3767,7 +3837,7 @@
       "label": "AlertCard()",
       "file_type": "code",
       "source_file": "frontend/src/pages/Dashboard.tsx",
-      "source_location": "L306",
+      "source_location": "L326",
       "_origin": "ast",
       "id": "frontend_src_pages_dashboard_alertcard",
       "community": 3,
@@ -3820,7 +3890,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_pages_newfir",
-      "community": 18,
+      "community": 3,
       "norm_label": "newfir.tsx"
     },
     {
@@ -3830,7 +3900,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "frontend_src_pages_newfir_newfirpage",
-      "community": 18,
+      "community": 3,
       "norm_label": "newfirpage()"
     },
     {
@@ -4840,6 +4910,66 @@
       "id": "readme_disclaimer",
       "community": 19,
       "norm_label": "disclaimer"
+    },
+    {
+      "label": "verification_report.md",
+      "file_type": "document",
+      "source_file": "verification_report.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "verification_report",
+      "community": 28,
+      "norm_label": "verification_report.md"
+    },
+    {
+      "label": "SAMRAKSHA \u2014 Verification Audit Report",
+      "file_type": "document",
+      "source_file": "verification_report.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "verification_report_samraksha_verification_audit_report",
+      "community": 28,
+      "norm_label": "samraksha \u2014 verification audit report"
+    },
+    {
+      "label": "1. Compliance Matrix Mapping",
+      "file_type": "document",
+      "source_file": "verification_report.md",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "verification_report_1_compliance_matrix_mapping",
+      "community": 28,
+      "norm_label": "1. compliance matrix mapping"
+    },
+    {
+      "label": "PS7 \u2014 KANADSHIELD26_P2_07 (Predictive Hotspot Mapping)",
+      "file_type": "document",
+      "source_file": "verification_report.md",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "verification_report_ps7_kanadshield26_p2_07_predictive_hotspot_mapping",
+      "community": 28,
+      "norm_label": "ps7 \u2014 kanadshield26_p2_07 (predictive hotspot mapping)"
+    },
+    {
+      "label": "PS6 \u2014 KANADSHIELD26_P2_06 (CrimeGPT Case Automation)",
+      "file_type": "document",
+      "source_file": "verification_report.md",
+      "source_location": "L24",
+      "_origin": "ast",
+      "id": "verification_report_ps6_kanadshield26_p2_06_crimegpt_case_automation",
+      "community": 28,
+      "norm_label": "ps6 \u2014 kanadshield26_p2_06 (crimegpt case automation)"
+    },
+    {
+      "label": "2. Identified Notebook Discrepancies & Stubs",
+      "file_type": "document",
+      "source_file": "verification_report.md",
+      "source_location": "L40",
+      "_origin": "ast",
+      "id": "verification_report_2_identified_notebook_discrepancies_stubs",
+      "community": 28,
+      "norm_label": "2. identified notebook discrepancies & stubs"
     }
   ],
   "links": [
@@ -7258,6 +7388,67 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "backend/app/api/cctns.py",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "backend_app_api_cctns",
+      "target": "backend_app_api_cctns_lookup_cctns_suspect",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/app/api/cctns.py",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "backend_app_api_cctns",
+      "target": "backend_app_api_cctns_lookup_cctns_vehicle",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/app/api/cctns.py",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "backend_app_api_cctns",
+      "target": "backend_app_api_cctns_verify_cctns_auth",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/app/api/cctns.py",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "backend_app_api_cctns",
+      "target": "fastapi",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/app/api/cctns.py",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "backend_app_api_cctns_rationale_21",
+      "target": "backend_app_api_cctns_lookup_cctns_suspect",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/app/api/cctns.py",
+      "source_location": "L56",
+      "weight": 1.0,
+      "source": "backend_app_api_cctns_rationale_56",
+      "target": "backend_app_api_cctns_lookup_cctns_vehicle",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "backend/app/api/cctv.py",
       "source_location": "L12",
       "weight": 1.0,
@@ -7269,7 +7460,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/app/api/cctv.py",
-      "source_location": "L85",
+      "source_location": "L108",
       "weight": 1.0,
       "source": "backend_app_api_cctv",
       "target": "backend_app_api_cctv_check_anpr_match",
@@ -7283,6 +7474,16 @@
       "weight": 1.0,
       "source": "backend_app_api_cctv",
       "target": "backend_app_api_cctv_ingest_alert",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/app/api/cctv.py",
+      "source_location": "L91",
+      "weight": 1.0,
+      "source": "backend_app_api_cctv",
+      "target": "backend_app_api_cctv_simulate_dcp_escalation",
       "confidence_score": 1.0
     },
     {
@@ -7329,6 +7530,17 @@
       "confidence_score": 0.5
     },
     {
+      "relation": "indirect_call",
+      "context": "argument",
+      "confidence": "INFERRED",
+      "source_file": "backend/app/api/cctv.py",
+      "source_location": "L65",
+      "weight": 1.0,
+      "source": "backend_app_api_cctv_ingest_alert",
+      "target": "backend_app_api_cctv_simulate_dcp_escalation",
+      "confidence_score": 0.5
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "INFERRED",
@@ -7356,7 +7568,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "backend/app/api/cctv.py",
-      "source_location": "L104",
+      "source_location": "L127",
       "weight": 1.0,
       "source": "backend_app_api_cctv_check_anpr_match",
       "target": "backend_app_db_connection_execute"
@@ -7367,7 +7579,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "backend/app/api/cctv.py",
-      "source_location": "L95",
+      "source_location": "L118",
       "weight": 1.0,
       "source": "backend_app_api_cctv_check_anpr_match",
       "target": "backend_app_db_connection_fetch_one"
@@ -7378,7 +7590,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "backend/app/api/cctv.py",
-      "source_location": "L91",
+      "source_location": "L114",
       "weight": 1.0,
       "source": "backend_app_api_cctv_check_anpr_match",
       "target": "backend_app_db_connection_get_db"
@@ -9090,7 +9302,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/main.py",
-      "source_location": "L84",
+      "source_location": "L86",
       "weight": 1.0,
       "source": "backend_main",
       "target": "backend_main_health",
@@ -11603,7 +11815,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/pages/Dashboard.tsx",
-      "source_location": "L51",
+      "source_location": "L52",
       "weight": 1.0,
       "source": "frontend_src_pages_dashboard_dashboard",
       "target": "frontend_src_hooks_usewebsocket_usewebsocket"
@@ -11692,7 +11904,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/pages/Dashboard.tsx",
-      "source_location": "L306",
+      "source_location": "L326",
       "weight": 1.0,
       "source": "frontend_src_pages_dashboard",
       "target": "frontend_src_pages_dashboard_alertcard",
@@ -11722,7 +11934,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/pages/Dashboard.tsx",
-      "source_location": "L283",
+      "source_location": "L303",
       "weight": 1.0,
       "source": "frontend_src_pages_dashboard",
       "target": "frontend_src_pages_dashboard_statcard",
@@ -12657,8 +12869,58 @@
       "source": "readme_unified_predictive_policing_ai_case_intelligence_platform",
       "target": "readme_quick_start",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "verification_report.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "verification_report",
+      "target": "verification_report_samraksha_verification_audit_report",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "verification_report.md",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "verification_report_samraksha_verification_audit_report",
+      "target": "verification_report_1_compliance_matrix_mapping",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "verification_report.md",
+      "source_location": "L40",
+      "weight": 1.0,
+      "source": "verification_report_samraksha_verification_audit_report",
+      "target": "verification_report_2_identified_notebook_discrepancies_stubs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "verification_report.md",
+      "source_location": "L24",
+      "weight": 1.0,
+      "source": "verification_report_1_compliance_matrix_mapping",
+      "target": "verification_report_ps6_kanadshield26_p2_06_crimegpt_case_automation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "verification_report.md",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "verification_report_1_compliance_matrix_mapping",
+      "target": "verification_report_ps7_kanadshield26_p2_07_predictive_hotspot_mapping",
+      "confidence_score": 1.0
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "dc086ac97c490adba5c102b4fd67b00a371fda28"
+  "built_at_commit": "aa4f06b2b4f33ab1406ce994fa46116ea8e6ae97"
 }

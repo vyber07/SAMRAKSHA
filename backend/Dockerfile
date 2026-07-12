@@ -16,8 +16,7 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install IndicTrans2 dependency from GitHub as requested in troubleshooting
-RUN pip install --no-cache-dir git+https://github.com/AI4Bharat/IndicTrans2.git || echo "IndicTrans2 optional install failed, continuing..."
+# Use transformers library for IndicTrans2 models instead of direct git clone
 
 # Copy app code
 COPY . .

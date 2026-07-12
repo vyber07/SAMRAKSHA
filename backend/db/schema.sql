@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS cases (
     crime_location  TEXT,
     crime_lat       FLOAT,
     crime_lon       FLOAT,
+    ward            VARCHAR(100),
     geoloc          GEOGRAPHY(POINT,4326),
     bns_sections    TEXT[],
     bnss_sections   TEXT[],
@@ -256,3 +257,138 @@ CREATE OR REPLACE TRIGGER trg_case_audit
 AFTER INSERT OR UPDATE ON cases
 FOR EACH ROW EXECUTE FUNCTION log_case_changes();
 
+-- FIR sequences: atomic row-level locked counter per station+year (fixes race condition)
+CREATE TABLE IF NOT EXISTS fir_sequences (
+    ps_id   UUID     NOT NULL,
+    year    SMALLINT NOT NULL,
+    last_no INTEGER  NOT NULL DEFAULT 0,
+    PRIMARY KEY (ps_id, year)
+);
+
+CREATE OR REPLACE FUNCTION next_fir_number(p_ps_id UUID, p_year INT)
+RETURNS INT AS $$
+DECLARE
+    new_no INT;
+BEGIN
+    INSERT INTO fir_sequences (ps_id, year, last_no)
+    VALUES (p_ps_id, p_year, 1)
+    ON CONFLICT (ps_id, year)
+    DO UPDATE SET last_no = fir_sequences.last_no + 1
+    RETURNING last_no INTO new_no;
+    RETURN new_no;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Scene log: every person entering/exiting a crime scene (Phase 2)
+CREATE TABLE IF NOT EXISTS scene_log (
+    id          BIGSERIAL PRIMARY KEY,
+    case_id     UUID REFERENCES cases(case_id) NOT NULL,
+    person_name VARCHAR(200) NOT NULL,
+    role        VARCHAR(100),
+    entry_time  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    exit_time   TIMESTAMPTZ,
+    purpose     TEXT,
+    logged_by   UUID REFERENCES officers(id)
+);
+
+-- Evidence chain of custody: every transfer step logged (Phase 3)
+CREATE TABLE IF NOT EXISTS evidence_custody (
+    id               BIGSERIAL PRIMARY KEY,
+    case_id          UUID REFERENCES cases(case_id) NOT NULL,
+    item_description TEXT NOT NULL,
+    item_no          VARCHAR(50),
+    status           VARCHAR(30) NOT NULL
+                     CHECK (status IN ('collected','packaged','transferred','lab','court','returned')),
+    transferred_from UUID REFERENCES officers(id),
+    transferred_to   UUID REFERENCES officers(id),
+    location         VARCHAR(300),
+    notes            TEXT,
+    ts               TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Forensic lab requests (Phase 4)
+CREATE TABLE IF NOT EXISTS forensic_requests (
+    id           BIGSERIAL PRIMARY KEY,
+    case_id      UUID REFERENCES cases(case_id) NOT NULL,
+    request_type VARCHAR(100) NOT NULL,
+    lab_name     VARCHAR(200),
+    status       VARCHAR(30) DEFAULT 'pending'
+                 CHECK (status IN ('pending','submitted','in_progress','received','inconclusive')),
+    result_summary TEXT,
+    submitted_at TIMESTAMPTZ,
+    received_at  TIMESTAMPTZ,
+    requested_by UUID REFERENCES officers(id),
+    ts           TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Witness/victim/accused statements with BNSS recording flag (Phase 6)
+CREATE TABLE IF NOT EXISTS statements (
+    id             BIGSERIAL PRIMARY KEY,
+    case_id        UUID REFERENCES cases(case_id) NOT NULL,
+    person_name    VARCHAR(200) NOT NULL,
+    person_role    VARCHAR(20) NOT NULL
+                   CHECK (person_role IN ('victim','witness','accused','expert')),
+    statement_text TEXT,
+    is_recorded    BOOLEAN DEFAULT FALSE,
+    recording_path VARCHAR(500),
+    recorded_by    UUID REFERENCES officers(id),
+    bnss_section   VARCHAR(50) DEFAULT 'BNSS 183',
+    ts             TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Warrants: search/arrest issued under BNSS (Phase 8)
+CREATE TABLE IF NOT EXISTS warrants (
+    id           BIGSERIAL PRIMARY KEY,
+    case_id      UUID REFERENCES cases(case_id) NOT NULL,
+    warrant_type VARCHAR(30) NOT NULL
+                 CHECK (warrant_type IN ('search','arrest','production')),
+    status       VARCHAR(30) DEFAULT 'requested'
+                 CHECK (status IN ('requested','issued','denied','executed','expired')),
+    issued_by    VARCHAR(200),
+    issued_at    TIMESTAMPTZ,
+    executed_at  TIMESTAMPTZ,
+    notes        TEXT,
+    requested_by UUID REFERENCES officers(id),
+    ts           TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Court proceedings tracker: chargesheet through appeal (Phases 10-15)
+CREATE TABLE IF NOT EXISTS court_proceedings (
+    id           BIGSERIAL PRIMARY KEY,
+    case_id      UUID REFERENCES cases(case_id) NOT NULL,
+    stage        VARCHAR(40) NOT NULL
+                 CHECK (stage IN (
+                     'chargesheet_filed','remand_hearing','bail_hearing',
+                     'framing_of_charge','trial','judgment','appeal'
+                 )),
+    hearing_date TIMESTAMPTZ,
+    outcome      VARCHAR(300),
+    next_date    TIMESTAMPTZ,
+    court_name   VARCHAR(200),
+    notes        TEXT,
+    updated_by   UUID REFERENCES officers(id),
+    ts           TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Closure columns on cases (Phase 16)
+ALTER TABLE cases
+    ADD COLUMN IF NOT EXISTS closure_type   VARCHAR(30)
+        CHECK (closure_type IN ('cleared_by_arrest','cleared_otherwise','inactive_cold')),
+    ADD COLUMN IF NOT EXISTS closure_reason TEXT,
+    ADD COLUMN IF NOT EXISTS closed_at      TIMESTAMPTZ;
+
+
+
+-- 15. Permissions Catalog
+CREATE TABLE IF NOT EXISTS permissions (
+    key VARCHAR(50) PRIMARY KEY,
+    description TEXT
+);
+
+-- 16. Officer Permission Overrides
+CREATE TABLE IF NOT EXISTS officer_permission_overrides (
+    officer_id VARCHAR(50) REFERENCES officers(badge_no),
+    permission_key VARCHAR(50) REFERENCES permissions(key),
+    is_granted BOOLEAN NOT NULL,
+    PRIMARY KEY (officer_id, permission_key)
+);

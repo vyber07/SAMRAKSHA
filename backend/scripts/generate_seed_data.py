@@ -3,10 +3,15 @@ import uuid
 import asyncio
 import asyncpg
 import os
+import sys
+import bcrypt
 from datetime import datetime, timedelta
-from passlib.context import CryptContext
 
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Ensure /app is on path so `app.*` imports work
+sys.path.insert(0, '/app')
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12)).decode()
 
 AHMEDABAD_WARDS = [
     ('Satellite',   23.0300, 72.5100),
@@ -69,10 +74,12 @@ async def seed():
     # Read environment variable
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
-        # Construct fallback
+        # Construct from individual env vars — all must be set
         db_user = os.getenv("DB_USER", "samraksha_user")
-        db_pass = os.getenv("DB_PASSWORD", "change_this_strong_password")
+        db_pass = os.getenv("DB_PASSWORD") or os.getenv("POSTGRES_PASSWORD")
         db_name = os.getenv("DB_NAME", "samraksha")
+        if not db_pass:
+            raise RuntimeError("DB_PASSWORD / POSTGRES_PASSWORD environment variable is not set.")
         db_url = f"postgresql://{db_user}:{db_pass}@postgres/{db_name}"
     
     # Replace asyncpg dialect with standard postgresql for driver compatibility if needed
@@ -112,7 +119,14 @@ async def seed():
 
     print("Inserting officers...")
     officer_ids = []
-    pwd_hash = pwd_ctx.hash("Demo@2026")
+    _demo_pwd = os.getenv("DEMO_SEED_PASSWORD")
+    _admin_pwd = os.getenv("ADMIN_SEED_PASSWORD")
+    if not _demo_pwd or not _admin_pwd:
+        raise RuntimeError(
+            "DEMO_SEED_PASSWORD and ADMIN_SEED_PASSWORD must be set in the environment before seeding."
+        )
+    pwd_hash      = hash_password(_demo_pwd)
+    admin_pwd_hash = hash_password(_admin_pwd)
     
     # 1. DCP (Zone-level manager)
     dcp_id = str(uuid.uuid4())
@@ -288,7 +302,7 @@ async def seed():
 
     await conn.close()
     print("Database seeding completed successfully!")
-    print("DEMO CREDENTIALS: DCP001 / SHO_ELL / IO_ELL_1  with Password: Demo@2026")
+    print("Demo officer badge numbers: DCP001, SHO_ELL, IO_ELL_1 — passwords set from env DEMO_SEED_PASSWORD")
 
 def json_dumps(obj):
     import json
