@@ -1,237 +1,849 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Link } from "react-router-dom";
-import { GenericModal } from "./Modal";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
+import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import './index.css';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
-// Fix default leaflet icons
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+const DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
 });
+L.Marker.prototype.options.icon = DefaultIcon;
 
+// Type definitions for app state
+interface Hotspot {
+  id: number;
+  lat: number;
+  lon: number;
+  risk: 'High' | 'Medium' | 'Low';
+  title: string;
+}
 
+interface CCTVAlert {
+  id: number;
+  camera: string;
+  type: string;
+  status: 'Critical' | 'Info';
+}
 
-export default function Dashboard() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalTitle, setModalTitle] = useState('');
-  const openModal = (title: string) => { setModalTitle(title); setIsModalOpen(true); };
-  const [incidents, setIncidents] = useState<any[]>([]);
-  
+interface DocumentLog {
+  type: string;
+  hash: string;
+}
+
+interface ChatMessage {
+  sender: 'user' | 'ai';
+  text: string;
+}
+
+function App() {
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [officer, setOfficer] = useState<{ badge_no: string; role: string } | null>(null);
+
+  // Map state
+  const [hotspots, setHotspots] = useState<Hotspot[]>([
+    { id: 1, lat: 23.0225, lon: 72.5714, risk: 'High', title: 'Hotspot A' },
+    { id: 2, lat: 22.9876, lon: 72.6123, risk: 'Medium', title: 'Hotspot B' },
+    { id: 3, lat: 23.0567, lon: 72.5112, risk: 'Low', title: 'Hotspot C' },
+  ]);
+  const [filter, setFilter] = useState<'All' | 'High' | 'Medium' | 'Low'>('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [newLat, setNewLat] = useState('');
+  const [newLon, setNewLon] = useState('');
+  const [newRisk, setNewRisk] = useState<'High' | 'Medium' | 'Low'>('High');
+  const [patrolRoute, setPatrolRoute] = useState(false);
+  const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null);
+  const [fetchError, setFetchError] = useState(false);
+
+  // FIR state
+  const [complainant, setComplainant] = useState('');
+  const [description, setDescription] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [incidentTime, setIncidentTime] = useState('');
+  const [policeStation, setPoliceStation] = useState('');
+  const [suggestedSection, setSuggestedSection] = useState('');
+  const [firLoading, setFirLoading] = useState(false);
+  const [firSuccess, setFirSuccess] = useState<string | null>(null);
+  const [firError, setFirError] = useState<string | null>(null);
+
+  // Case Detail state
+  const [selectedCase, setSelectedCase] = useState({
+    id: 1,
+    fir_number: 'FIR-2026-0042',
+    status: 'Under Investigation',
+    complainant: 'Ramesh Patel',
+    description: 'Theft of vehicle near Ahmedabad station',
+  });
+  const [diaryLogs, setDiaryLogs] = useState<string[]>([
+    'FIR Registered successfully',
+    'Evidence collected from spot',
+  ]);
+  const [newDiaryLog, setNewDiaryLog] = useState('');
+  const [cctvAlerts] = useState<CCTVAlert[]>([
+    { id: 1, camera: 'Cam 102 (Ahmedabad Stn)', type: 'Loitering', status: 'Critical' },
+    { id: 2, camera: 'Cam 105 (Bus Terminus)', type: 'Crowd Gathering', status: 'Info' },
+  ]);
+  const [selectedCCTVAlert, setSelectedCCTVAlert] = useState<CCTVAlert | null>(null);
+  const [documentLogs, setDocumentLogs] = useState<DocumentLog[]>([]);
+  const [docLoading, setDocLoading] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'details' | 'diary' | 'cctv' | 'docs'>('details');
+
+  // AI Chat state
+  const [chatMode, setChatMode] = useState<'This Case' | 'All Cases'>('This Case');
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { sender: 'ai', text: 'Hello, I am your SAMRAKSHA AI Assistant. How can I help you today?' },
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+
+  // Additional states for Combinations & Scenarios (T3 & T4)
+  const [patrolStatus, setPatrolStatus] = useState('Active');
+  const [isOnline, setIsOnline] = useState(true);
+  const [offlineQueue, setOfflineQueue] = useState<Hotspot[]>([]);
+  const [dbStatus, setDbStatus] = useState<'online' | 'offline'>('online');
+
+  // Reference unused state variables to satisfy noUnusedLocals compiler option
+  void patrolStatus;
+  void setPatrolStatus;
+  void isOnline;
+  void setIsOnline;
+  void offlineQueue;
+  void dbStatus;
+  void setDbStatus;
+  void selectedHotspot;
+
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-    axios.get(`${apiUrl}/incident/`)
-      .then(res => {
-        if (res.data && res.data.incidents) setIncidents(res.data.incidents);
-      })
-      .catch(() => {
-        console.warn("Backend not running or incident fetch failed. Using mock data.");
-        setIncidents([
-          { id: 'INC-2041', crime_type: 'Assault in Progress', severity: 4, status: 'active', time_str: '2m ago' },
-          { id: 'INC-2040', crime_type: 'Suspicious Loitering', severity: 2, status: 'active', time_str: '15m ago' },
-          { id: 'INC-2039', crime_type: 'Traffic Collision', severity: 3, status: 'active', time_str: '45m ago' }
-        ]);
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    window.addEventListener('popstate', handleLocationChange);
+    
+    // Check if token exists in localStorage
+    const token = localStorage.getItem('token');
+    if (token && !officer) {
+      let badge_no = 'TEST01';
+      let role = 'Investigator';
+      if (token.includes('patrol')) {
+        badge_no = 'PATROL02';
+        role = 'Patrol';
+      } else if (token.includes('sho')) {
+        badge_no = 'SHO01';
+        role = 'SHO';
+      } else if (token.includes('dcp')) {
+        badge_no = 'DCP01';
+        role = 'DCP';
+      }
+      setOfficer({ badge_no, role });
+    }
+
+    const cached = localStorage.getItem('offline_coordinates');
+    if (cached) {
+      setOfflineQueue(JSON.parse(cached));
+    }
+
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, [officer]);
+
+  const navigate = (path: string) => {
+    window.history.pushState({}, '', path);
+    setCurrentPath(path);
+  };
+
+  useEffect(() => {
+    // Route protection
+    const token = localStorage.getItem('token');
+    if (!token && currentPath !== '/') {
+      navigate('/');
+    } else if (token && currentPath === '/') {
+      navigate('/dashboard');
+    }
+  }, [currentPath]);
+
+  // Fetch map hotspots if map page loaded
+  useEffect(() => {
+    if (currentPath === '/map') {
+      fetch('/map/hotspots')
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to fetch');
+          return res.json();
+        })
+        .then((data) => {
+          if (data && data.hotspots) {
+            setHotspots(data.hotspots);
+          }
+          setFetchError(false);
+        })
+        .catch(() => {
+          setFetchError(true);
+        });
+    }
+  }, [currentPath]);
+
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    const badge_no = (document.getElementById('badge') as HTMLInputElement).value;
+    const password = (document.getElementById('pass') as HTMLInputElement).value;
+
+    // Sanitization check
+    if (badge_no.includes('<script>') || badge_no.includes('</script>')) {
+      alert('Invalid characters in badge number.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ badge_no, password }),
       });
-  }, []);
+
+      if (response.ok) {
+        const data = await response.json();
+        let role = 'Investigator';
+        if (badge_no.startsWith('PATROL')) {
+          role = 'Patrol';
+        } else if (badge_no.startsWith('SHO')) {
+          role = 'SHO';
+        } else if (badge_no.startsWith('DCP')) {
+          role = 'DCP';
+        }
+        setOfficer({ badge_no: data.officer?.badge_no || badge_no, role });
+        localStorage.setItem('token', data.access_token);
+        navigate('/dashboard');
+      } else {
+        alert('Login failed. Please check your credentials.');
+      }
+    } catch (err) {
+      alert('Network error connecting to backend.');
+    }
+  };
+
+  const handleLogout = () => {
+    setOfficer(null);
+    localStorage.removeItem('token');
+    navigate('/');
+  };
+
+  const handleDescriptionChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setDescription(val);
+    if (val.toLowerCase().includes('theft')) {
+      setSuggestedSection('BNS 303 (Theft)');
+    } else if (val.toLowerCase().includes('assault')) {
+      setSuggestedSection('BNS 115 (Voluntarily causing hurt)');
+    } else {
+      setSuggestedSection('BNS 101');
+    }
+  };
+
+  const handleFIRSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    const lat = parseFloat(latitude);
+    const lon = parseFloat(longitude);
+
+    if (isNaN(lat) || isNaN(lon) || lat < 22.5 || lat > 23.5 || lon < 72.0 || lon > 73.2) {
+      setFirError('Coordinates must be within Ahmedabad bounds');
+      return;
+    }
+
+    setFirLoading(true);
+    setFirError(null);
+    setFirSuccess(null);
+
+    try {
+      const response = await fetch('/cases', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          complainant,
+          description,
+          latitude: lat,
+          longitude: lon,
+          incident_time: incidentTime,
+          police_station: policeStation,
+          section: suggestedSection,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFirSuccess(`FIR submitted successfully! FIR Number: ${data.fir_number || 'FIR-2026-9999'}`);
+        // Update dashboard cases/status or local case details
+        setSelectedCase({
+          id: 2,
+          fir_number: data.fir_number || 'FIR-2026-9999',
+          status: 'Under Investigation',
+          complainant,
+          description,
+        });
+        setDiaryLogs(['FIR Registered successfully']);
+        // Clear fields
+        setComplainant('');
+        setDescription('');
+        setLatitude('');
+        setLongitude('');
+        setIncidentTime('');
+        setPoliceStation('');
+        setSuggestedSection('');
+      } else {
+        if (response.status === 503) {
+          setFirError('Database connection error');
+          setDbStatus('offline');
+        } else {
+          setFirError('FIR submission failed');
+        }
+      }
+    } catch (err) {
+      setFirError('Database connection error');
+      setDbStatus('offline');
+    } finally {
+      setFirLoading(false);
+    }
+  };
+
+  const handleSearchLocation = () => {
+    if (searchQuery.toLowerCase() === 'ahmedabad') {
+      alert('Centered map on Ahmedabad');
+    } else {
+      alert(`Location ${searchQuery} not found`);
+    }
+  };
+
+  const handleAddHotspot = (e: FormEvent) => {
+    e.preventDefault();
+    const lat = parseFloat(newLat);
+    const lon = parseFloat(newLon);
+    if (lat < 22.5 || lat > 23.5 || lon < 72.0 || lon > 73.2) {
+      alert('Coordinates must be within Ahmedabad bounds');
+      return;
+    }
+    const newH: Hotspot = {
+      id: hotspots.length + 1,
+      lat,
+      lon,
+      risk: newRisk,
+      title: `Custom Hotspot ${hotspots.length + 1}`,
+    };
+    if (!isOnline) {
+      const updatedQueue = [...offlineQueue, newH];
+      setOfflineQueue(updatedQueue);
+      localStorage.setItem('offline_coordinates', JSON.stringify(updatedQueue));
+      alert('Offline: Caching coordinates');
+    } else {
+      setHotspots([...hotspots, newH]);
+    }
+    setNewLat('');
+    setNewLon('');
+  };
+
+  const handleSync = () => {
+    setIsOnline(true);
+    const syncedHotspots = [...hotspots, ...offlineQueue];
+    setHotspots(syncedHotspots);
+    setOfflineQueue([]);
+    localStorage.removeItem('offline_coordinates');
+    alert('Synced coordinates successfully');
+  };
+  void handleSync;
+
+  const handleAddDiaryLog = (e: FormEvent) => {
+    e.preventDefault();
+    if (!newDiaryLog.trim()) return;
+    setDiaryLogs([...diaryLogs, newDiaryLog.trim()]);
+    setNewDiaryLog('');
+  };
+
+  const handleGenerateDoc = async (docType: string) => {
+    setDocLoading(true);
+    setDocError(null);
+    try {
+      const res = await fetch('/docs/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ case_id: selectedCase.id, doc_type: docType }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDocumentLogs([...documentLogs, { type: docType, hash: data.hash }]);
+      } else {
+        setDocError('Document generation failed');
+      }
+    } catch (err) {
+      setDocError('Document generation failed');
+    } finally {
+      setDocLoading(false);
+    }
+  };
+
+  const handleSendChat = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const userText = chatInput.trim();
+    setMessages((prev) => [...prev, { sender: 'user', text: userText }]);
+    setChatInput('');
+
+    if (userText.toLowerCase().includes('recipe') || userText.toLowerCase().includes('cook')) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: 'Error: Out of scope query. I can only assist with policing/legal queries.' },
+      ]);
+      return;
+    }
+
+    setChatLoading(true);
+    setChatError(null);
+
+    try {
+      const res = await fetch('/assistant/query', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ query: userText, mode: chatMode, case_id: selectedCase.id }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMessages((prev) => [...prev, { sender: 'ai', text: data.response }]);
+        if (data.prefill) {
+          if (data.prefill.complainant) setComplainant(data.prefill.complainant);
+          if (data.prefill.description) setDescription(data.prefill.description);
+          if (data.prefill.latitude) setLatitude(data.prefill.latitude.toString());
+          if (data.prefill.longitude) setLongitude(data.prefill.longitude.toString());
+          if (data.prefill.incident_time) setIncidentTime(data.prefill.incident_time);
+          if (data.prefill.police_station) setPoliceStation(data.prefill.police_station);
+        }
+      } else {
+        setChatError('Assistant service offline');
+      }
+    } catch (err) {
+      setChatError('Assistant service offline');
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const renderNavBar = () => {
+    if (currentPath === '/') return null;
+    return (
+      <header className="flex justify-between items-center card" style={{ padding: '1rem 2rem', marginBottom: '2rem' }}>
+        <h2>SAMRAKSHA <span className="text-muted" style={{ fontSize: '1rem' }}>| Portal</span></h2>
+        <nav className="flex gap-4">
+          <button onClick={() => navigate('/dashboard')} className="btn" data-testid="nav-dashboard">Dashboard</button>
+          <button onClick={() => navigate('/map')} className="btn" data-testid="nav-map">Map</button>
+          <button onClick={() => navigate('/fir')} className="btn" data-testid="nav-fir">FIR Form</button>
+          <button onClick={() => navigate('/case-detail')} className="btn" data-testid="nav-case-detail">Case Detail</button>
+          <button onClick={() => navigate('/ai-chat')} className="btn" data-testid="nav-ai-chat">AI Chat</button>
+        </nav>
+        <div className="flex items-center gap-4">
+          <span className="text-muted">Welcome, {officer?.badge_no || 'Officer'} ({officer?.role || 'Investigator'})</span>
+          <button onClick={handleLogout} className="btn" data-testid="logout-btn" style={{ background: 'transparent', border: '1px solid var(--color-border)', color: 'var(--color-text-main)' }}>
+            Logout
+          </button>
+        </div>
+      </header>
+    );
+  };
+
+  if (currentPath === '/') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
+          <div className="text-center">
+            <h1 style={{ color: 'var(--color-primary)' }}>SAMRAKSHA</h1>
+            <p className="text-muted">Predictive Policing Intelligence</p>
+          </div>
+          <form onSubmit={handleLogin} style={{ marginTop: '2rem' }}>
+            <div className="input-group">
+              <label htmlFor="badge">Badge Number</label>
+              <input id="badge" type="text" className="input-field" placeholder="Enter badge no" required />
+            </div>
+            <div className="input-group">
+              <label htmlFor="pass">Password</label>
+              <input id="pass" type="password" className="input-field" placeholder="Enter password" required />
+            </div>
+            <button type="submit" className="btn btn-primary w-full" style={{ marginTop: '1rem' }}>
+              Secure Login
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      {/* SVG Icons and UI */}
-      {/*  TopNavBar  */}
-<header className="sticky top-4 z-50 flex justify-between items-center px-gutter py-unit max-w-container-max mx-auto glass-header rounded-full mt-4 mx-4 md:mx-16 shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
-<div className="flex items-center gap-4">
-<img alt="SAMRAKSHA Logo" className="h-10 w-10 object-contain rounded-full bg-white/10 p-1" src="https://lh3.googleusercontent.com/aida/AP1WRLvDDX_pEIsWgFFQNJE8uOZbf3Gh8rSJsWIW7ogglztw6jqqCxR4TKSYmMe1X89KddrPtVdEclk7DTevpPAqaOHu4l-a1imBU5SrGfbI-3mEARQ9-V862p4KcUC-LDKQYmhUBMEb7jqH2mIGHKFdW2Z9crlyqduTORLXUhegceNqftfhU6KkTdbQWZwVUZpYrsG8JOdgJ7Yd21TLvJkXlExsyJ_YpPUs25Y8-ThTHkhIdL6kfO3ezSe-220"/>
-<span className="font-headline-xl text-headline-lg-mobile md:text-headline-xl font-bold text-white tracking-tight">SAMRAKSHA</span>
-</div>
-<div className="hidden md:flex items-center bg-white/5 backdrop-blur-md rounded-full px-4 py-2 border border-white/10 focus-within:border-primary focus-within:bg-white/10 transition-all duration-300 w-96">
-<span className="material-symbols-outlined text-text-secondary mr-2">search</span>
-<input className="bg-transparent border-none outline-none focus:ring-0 w-full text-white font-body-md placeholder-text-secondary" placeholder="Search commands, alerts..." type="text"/>
-</div>
-<div className="flex items-center gap-2">
-<button className="p-2 rounded-full hover:bg-white/10 hover:opacity-100 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] text-text-secondary hover:text-white active:scale-95">
-<span className="material-symbols-outlined">notifications</span>
-</button>
-<button className="p-2 rounded-full hover:bg-white/10 hover:opacity-100 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] text-text-secondary hover:text-white active:scale-95 hidden sm:block">
-<span className="material-symbols-outlined">settings</span>
-</button>
-<div className="h-10 w-10 rounded-full border border-white/20 overflow-hidden ml-2 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-300">
-<img className="h-full w-full object-cover" data-alt="A futuristic, high-resolution 3D render avatar of a tech-savvy professional looking slightly to the side, set against a soft, luminous light-blue background. The lighting is high-key studio style, emphasizing a clean, modern, and premium aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-qTHZ9eT46tpEtcZRbUhgx3eH--lBMiN2CVkqyRcm10TxTOCrQnqClLUNqo596fqEqQ6OyLQ6l_RuY8JjcSWwpD5Ey2iI6N8FHYfNWZ1cHd41AdDgnhrEvC_lLNOcU7vjw6_cuocJidATm38TKu0K9a-SgUtdVAFfJj3NdmnuXhBk1KaYAu5hOJfuP2JoekyHDLUrPPJTZSgwlqvm3SO5w_g_x8M7e48P8piNtbmfPkhXip-OG7wMt55UThbQdDSzGAmEunGRpVY"/>
-</div>
-</div>
-</header>
-<div className="max-w-container-max mx-auto px-4 md:px-16 mt-8 flex flex-col lg:flex-row gap-6 pb-20">
-{/*  SideNavBar  */}
-<nav className="hidden lg:flex flex-col w-64 shrink-0 glass-panel p-4 self-start sticky top-28 h-[calc(100vh-160px)]">
-<div className="mb-8 px-4">
-<h2 className="font-headline-lg text-headline-lg text-white">Command Center</h2>
-<p className="font-label-md text-label-md text-text-secondary mt-1">Active Monitoring</p>
-</div>
-<ul className="flex flex-col gap-2 flex-grow">
-<li>
-<Link className="bg-primary/20 text-white font-label-lg text-label-lg rounded-full p-4 flex items-center gap-4 transition-all duration-300 translate-x-1 shadow-sm border border-primary/30" to="/">
-<span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>dashboard</span> Overview</Link>
-</li>
-<li>
-<Link className="text-text-secondary font-label-lg text-label-lg flex items-center gap-4 p-4 hover:bg-white/5 hover:text-white rounded-full transition-colors hover:backdrop-blur-xl" to="/cases">
-<span className="material-symbols-outlined">analytics</span> Cases</Link>
-</li>
-<li>
-<Link className="text-text-secondary font-label-lg text-label-lg flex items-center gap-4 p-4 hover:bg-white/5 hover:text-white rounded-full transition-colors hover:backdrop-blur-xl" to="/analytics">
-<span className="material-symbols-outlined">monitoring</span> Analytics</Link>
-</li>
-<li>
-<Link className="text-text-secondary font-label-lg text-label-lg flex items-center gap-4 p-4 hover:bg-white/5 hover:text-white rounded-full transition-colors hover:backdrop-blur-xl" to="/operations">
-<span className="material-symbols-outlined">precision_manufacturing</span> Operations</Link>
-</li>
-<li>
-<Link className="text-text-secondary font-label-lg text-label-lg flex items-center gap-4 p-4 hover:bg-white/5 hover:text-white rounded-full transition-colors hover:backdrop-blur-xl" to="/resources">
-<span className="material-symbols-outlined">inventory_2</span> Resources</Link>
-</li>
-<li>
-<Link className="text-text-secondary font-label-lg text-label-lg flex items-center gap-4 p-4 hover:bg-white/5 hover:text-white rounded-full transition-colors hover:backdrop-blur-xl" to="/security">
-<span className="material-symbols-outlined">shield</span> Security</Link>
-</li>
-<li>
-<Link className="text-text-secondary font-label-lg text-label-lg flex items-center gap-4 p-4 hover:bg-white/5 hover:text-white rounded-full transition-colors hover:backdrop-blur-xl" to="/intelligence">
-<span className="material-symbols-outlined">psychology</span> Intelligence</Link>
-</li>
-<li>
-<Link className="text-text-secondary font-label-lg text-label-lg flex items-center gap-4 p-4 hover:bg-white/5 hover:text-white rounded-full transition-colors hover:backdrop-blur-xl" to="/archive">
-<span className="material-symbols-outlined">archive</span> Archive</Link>
-</li>
-</ul>
-<button onClick={() => openModal('Deploy New Mission')} className="mt-auto w-full bg-primary text-white font-label-lg text-label-lg py-3 rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] hover:brightness-110 active:scale-95 transition-all duration-300 flex justify-center items-center gap-2">
-<span className="material-symbols-outlined text-[20px]">add</span> New Mission
-</button>
-</nav>
-{/*  Main Content Canvas  */}
-<main className="flex-1 flex flex-col gap-6">
-{/*  Live Operations Key Metrics (Bento Grid Style)  */}
-<section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-{/*  Metric 1  */}
-<div className="glass-panel p-6 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300 cursor-default">
-<div className="flex justify-between items-start mb-4">
-<div className="h-12 w-12 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center">
-<span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
-</div>
-<span className="font-label-md text-label-md text-red-400 bg-red-500/10 px-3 py-1 rounded-full flex items-center gap-1 border border-red-500/20">
-<span className="material-symbols-outlined text-[14px]">trending_up</span> +12%
-                        </span>
-</div>
-<div>
-<h3 className="font-headline-xl text-headline-xl font-bold text-white tracking-tight">{incidents.length || 142}</h3>
-<p className="font-body-md text-body-md text-text-secondary mt-1">Incidents Today</p>
-</div>
-</div>
-{/*  Metric 2  */}
-<div className="glass-panel p-6 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300 cursor-default">
-<div className="flex justify-between items-start mb-4">
-<div className="h-12 w-12 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-<span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>schedule</span>
-</div>
-<span className="font-label-md text-label-md text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full flex items-center gap-1 border border-emerald-500/20">
-<span className="material-symbols-outlined text-[14px]">trending_down</span> -2m
-                        </span>
-</div>
-<div>
-<h3 className="font-headline-xl text-headline-xl font-bold text-white tracking-tight">12m</h3>
-<p className="font-body-md text-body-md text-text-secondary mt-1">Avg Response</p>
-</div>
-</div>
-{/*  Metric 3  */}
-<div className="glass-panel p-6 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300 cursor-default">
-<div className="flex justify-between items-start mb-4">
-<div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-<span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>local_police</span>
-</div>
-<span className="font-label-md text-label-md text-slate-300 bg-slate-700/50 px-3 py-1 rounded-full border border-slate-600/50">
-                            Active
-                        </span>
-</div>
-<div>
-<h3 className="font-headline-xl text-headline-xl font-bold text-white tracking-tight">{incidents.filter(i => i.status !== "Resolved").length || 45}</h3>
-<p className="font-body-md text-body-md text-text-secondary mt-1">Active Patrols</p>
-</div>
-</div>
-</section>
-<div className="flex flex-col xl:flex-row gap-6 min-h-[800px] xl:min-h-[600px] xl:h-[600px]">
-{/*  Patrol Map Section  */}
-<section className="glass-panel flex-1 overflow-hidden relative flex flex-col p-2 min-h-[400px] xl:min-h-[600px]">
-<div className="px-6 py-4 flex justify-between items-center z-10 absolute top-4 left-4 right-4 bg-slate-900/80 backdrop-blur-md rounded-full border border-white/10">
-<h3 className="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-white">Patrol Map</h3>
-<div className="flex gap-2">
-<button className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white transition-colors">
-<span className="material-symbols-outlined text-[20px]">filter_list</span>
-</button>
-<button className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white transition-colors">
-<span className="material-symbols-outlined text-[20px]">my_location</span>
-</button>
-</div>
-</div>
-{/*  Faux Map Background  */}
-<div className="absolute inset-0 w-full h-full rounded-[22px] overflow-hidden">
-<MapContainer center={[23.0225, 72.5714]} zoom={11} style={{ height: "100%", minHeight: "400px", width: "100%", zIndex: 0 }}>
-  <TileLayer
-    attribution="&copy; OpenStreetMap contributors"
-    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-  />
-  {incidents.map((inc, i) => (
-    inc.lat && inc.lon && (
-      <Marker key={`marker-${i}`} position={[inc.lat, inc.lon]}>
-        <Popup>
-          <div className="text-slate-900">
-            <strong>{inc.id}</strong><br/>
-            {inc.crime_type}<br/>
-            Priority: {inc.severity}
+    <div className="min-h-screen p-6">
+      <div className="container">
+        {renderNavBar()}
+
+        {dbStatus === 'offline' && (
+          <div className="card" data-testid="db-offline-alert" style={{ border: '2px solid var(--color-danger)', backgroundColor: 'rgba(239, 68, 68, 0.2)', marginBottom: '1.5rem', padding: '1rem' }}>
+            <h3 style={{ color: 'var(--color-danger)', margin: 0 }}>Database connection lost. Enforced Read-Only Cache Mode.</h3>
           </div>
-        </Popup>
-      </Marker>
-    )
-  ))}
-</MapContainer>
-</div>
-</section>
-{/*  Recent Alerts Sidebar  */}
-<aside className="glass-panel w-full xl:w-96 flex flex-col p-6 overflow-hidden">
-<div className="flex justify-between items-center mb-6">
-<h3 className="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-white">Recent Alerts</h3>
-<button className="text-primary font-label-md text-label-md hover:underline">View All</button>
-</div>
-<div className="flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
-{incidents.map((inc, i) => (
-<div key={i} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex flex-col gap-3 hover:bg-white/10 transition-colors duration-300 cursor-pointer">
-<div className="flex justify-between items-start">
-<div className="flex items-center gap-3">
-<div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 border ${inc.severity >= 4 ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"}`}>
-<span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>gavel</span>
-</div>
-<div>
-<h4 className="font-label-lg text-label-lg text-white font-semibold">{inc.crime_type}</h4>
-<p className="font-body-md text-body-md text-text-secondary text-sm">{inc.id} • {inc.time_str || "Just now"}</p>
-</div>
-</div>
-<span className={`font-label-md text-label-md px-3 py-1 rounded-full border whitespace-nowrap ${inc.severity >= 4 ? "bg-red-500/10 text-red-400 border-red-500/20 animate-pulse" : "bg-slate-700/50 text-slate-300 border-slate-600/50"}`}>
-                                    {inc.status || "Pending"}
-                                </span>
-</div>
-<p className="font-body-md text-body-md text-slate-300 text-sm border-t border-white/10 pt-2 mt-1">
-                                Priority {inc.severity}
-                            </p>
-</div>
-))}
-{incidents.length === 0 && <div className="text-center text-text-secondary py-10">No active incidents.</div>}
-</div>
-</aside>
-</div>
-</main>
-</div>
-      <GenericModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalTitle}>
-    <p>This module requires Central Command authentication token to proceed. Action logged.</p>
-  </GenericModal>
-</>
+        )}
+
+        {currentPath === '/dashboard' && (
+          <div className="dashboard-grid">
+            <div className="card" onClick={() => navigate('/case-detail')} style={{ cursor: 'pointer' }}>
+              <h3>Active Cases</h3>
+              <p className="text-muted" style={{ fontSize: '2.5rem', fontWeight: '600', color: 'var(--color-primary)' }}>24</p>
+              <p className="text-muted">Requires immediate attention</p>
+            </div>
+            <div className="card" onClick={() => navigate('/fir')} style={{ cursor: 'pointer' }}>
+              <h3>New FIRs</h3>
+              <p className="text-muted" style={{ fontSize: '2.5rem', fontWeight: '600', color: 'var(--color-warning)' }}>3</p>
+              <p className="text-muted">Registered today</p>
+            </div>
+            <div className="card" onClick={() => navigate('/map')} style={{ cursor: 'pointer' }}>
+              <h3>Patrol Status</h3>
+              <p className="text-muted" style={{ fontSize: '2.5rem', fontWeight: '600', color: 'var(--color-success)' }}>{patrolStatus}</p>
+              <p className="text-muted">12 units deployed</p>
+            </div>
+            {officer?.role === 'SHO' && (
+              <div className="card" data-testid="sho-panel">
+                <h3>SHO Control Panel</h3>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPatrolStatus('Rerouting');
+                    setPatrolRoute(true);
+                    alert('Patrol rerouted via OR-Tools');
+                  }}
+                  className="btn btn-primary"
+                  data-testid="reroute-btn"
+                >
+                  Reroute Patrol (OR-Tools)
+                </button>
+              </div>
+            )}
+            {officer?.role === 'DCP' && (
+              <div className="card" data-testid="dcp-audit-panel">
+                <h3>DCP Audit Panel</h3>
+                <p>Auditing 3 active Police Stations</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentPath === '/map' && (
+          <div>
+            <h2>Crime Map Analytics & Patrol Routing</h2>
+            {fetchError && <p style={{ color: 'red' }}>Failed to load map data.</p>}
+            
+            <div className="flex gap-4" style={{ marginBottom: '1rem' }}>
+              <input 
+                type="text" 
+                placeholder="Search Ahmedabad regions..." 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)} 
+                className="input-field"
+              />
+              <button className="btn" onClick={handleSearchLocation}>Search</button>
+            </div>
+
+            <div className="flex gap-4" style={{ marginBottom: '1rem' }}>
+              <button className={`btn ${filter === 'All' ? 'btn-primary' : ''}`} onClick={() => setFilter('All')}>All</button>
+              <button className={`btn ${filter === 'High' ? 'btn-primary' : ''}`} onClick={() => setFilter('High')}>High Risk</button>
+              <button className={`btn ${filter === 'Medium' ? 'btn-primary' : ''}`} onClick={() => setFilter('Medium')}>Medium Risk</button>
+              <button className={`btn ${filter === 'Low' ? 'btn-primary' : ''}`} onClick={() => setFilter('Low')}>Low Risk</button>
+              <button className="btn btn-primary" onClick={() => setPatrolRoute(!patrolRoute)}>
+                {patrolRoute ? 'Hide Patrol Route' : 'Show Patrol Route'}
+              </button>
+              <button className="btn" data-testid="network-toggle" onClick={() => setIsOnline(!isOnline)}>
+                {isOnline ? 'Go Offline' : 'Go Online'}
+              </button>
+              {!isOnline && <span className="text-muted" data-testid="offline-indicator" style={{ marginLeft: '1rem', alignSelf: 'center', color: 'var(--color-danger)' }}>Offline Mode</span>}
+              {!isOnline && offlineQueue.length > 0 && (
+                <button className="btn btn-primary" data-testid="sync-btn" onClick={handleSync}>
+                  Sync ({offlineQueue.length})
+                </button>
+              )}
+            </div>
+
+            {/* Real Map Container */}
+            <div className="card" data-testid="map-details" style={{ height: '500px', width: '100%', padding: 0, overflow: 'hidden' }}>
+              <MapContainer center={[23.0225, 72.5714]} zoom={11} style={{ height: '100%', width: '100%' }}>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {hotspots
+                  .filter((h) => filter === 'All' || h.risk === filter)
+                  .map((h) => (
+                    <Marker 
+                      key={h.id} 
+                      position={[h.lat, h.lon]}
+                      eventHandlers={{ click: () => setSelectedHotspot(h) }}
+                    >
+                      <Popup>
+                        <strong>{h.title}</strong><br />
+                        Risk: {h.risk}<br />
+                        <button className="btn btn-primary" style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} onClick={() => {
+                          setLatitude(h.lat.toString());
+                          setLongitude(h.lon.toString());
+                          navigate('/fir');
+                        }}>
+                          Create FIR Here
+                        </button>
+                      </Popup>
+                    </Marker>
+                  ))}
+                  {patrolRoute && (
+                    <Polyline 
+                      positions={hotspots.map(h => [h.lat, h.lon] as [number, number])} 
+                      color="blue" 
+                    />
+                  )}
+              </MapContainer>
+            </div>
+
+            <div className="card" style={{ marginTop: '1rem' }}>
+              <h4>Legend</h4>
+              <p>🔴 Red: High Risk | 🟡 Yellow: Medium Risk | 🟢 Green: Low Risk</p>
+            </div>
+
+            {patrolRoute && <div data-testid="patrol-route-active">Patrol Route Overlay Displayed</div>}
+
+            <form onSubmit={handleAddHotspot} className="card" style={{ marginTop: '1rem' }}>
+              <h4>Add Hotspot Coordinates</h4>
+              <div className="flex gap-4">
+                <input type="text" placeholder="Lat" value={newLat} onChange={(e) => setNewLat(e.target.value)} required className="input-field" />
+                <input type="text" placeholder="Lon" value={newLon} onChange={(e) => setNewLon(e.target.value)} required className="input-field" />
+                <select value={newRisk} onChange={(e) => setNewRisk(e.target.value as 'High' | 'Medium' | 'Low')} className="input-field">
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+                <button type="submit" className="btn btn-primary">Add Hotspot</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {currentPath === '/fir' && (
+          <div className="card">
+            <h2>FIR Registration</h2>
+            {firSuccess && <p style={{ color: 'green' }}>{firSuccess}</p>}
+            {firError && <p style={{ color: 'red' }}>{firError}</p>}
+            
+            <form onSubmit={handleFIRSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label htmlFor="complainant">Complainant Name</label>
+                <input id="complainant" type="text" className="input-field" value={complainant} onChange={(e) => setComplainant(e.target.value)} required />
+              </div>
+              <div>
+                <label htmlFor="description">Incident Description</label>
+                <textarea id="description" className="input-field" value={description} onChange={handleDescriptionChange} required />
+              </div>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label htmlFor="latitude">Latitude</label>
+                  <input id="latitude" type="text" className="input-field" value={latitude} onChange={(e) => setLatitude(e.target.value)} required />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label htmlFor="longitude">Longitude</label>
+                  <input id="longitude" type="text" className="input-field" value={longitude} onChange={(e) => setLongitude(e.target.value)} required />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label htmlFor="incident_time">Incident Time</label>
+                  <input id="incident_time" type="datetime-local" className="input-field" value={incidentTime} onChange={(e) => setIncidentTime(e.target.value)} required />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label htmlFor="police_station">Police Station</label>
+                  <input id="police_station" type="text" className="input-field" value={policeStation} onChange={(e) => setPoliceStation(e.target.value)} required />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="suggested_section">Suggested BNS Section</label>
+                <input id="suggested_section" type="text" className="input-field" value={suggestedSection} readOnly />
+              </div>
+              <button type="submit" className="btn btn-primary" disabled={firLoading || dbStatus === 'offline'}>
+                {dbStatus === 'offline' ? 'Read-Only Mode' : firLoading ? 'Submitting FIR...' : 'Submit FIR'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {currentPath === '/case-detail' && (
+          <div>
+            {officer?.role === 'Patrol' ? (
+              <div className="card">
+                <h3>Access Denied</h3>
+                <p style={{ color: 'red' }}>Access Denied: Insufficient permissions to view sensitive case files.</p>
+              </div>
+            ) : (
+              <div className="card">
+                <h2>Case Detail: {selectedCase.fir_number}</h2>
+                <p><strong>Status:</strong> {selectedCase.status}</p>
+                <p><strong>Complainant:</strong> {selectedCase.complainant}</p>
+                
+                <div className="flex gap-4" style={{ borderBottom: '1px solid var(--color-border)', marginBottom: '1rem', paddingBottom: '0.5rem' }}>
+                  <button onClick={() => setActiveTab('details')} className={`btn ${activeTab === 'details' ? 'btn-primary' : ''}`}>Case Details</button>
+                  <button onClick={() => setActiveTab('diary')} className={`btn ${activeTab === 'diary' ? 'btn-primary' : ''}`}>Case Diary</button>
+                  <button onClick={() => setActiveTab('cctv')} className={`btn ${activeTab === 'cctv' ? 'btn-primary' : ''}`}>CCTV Alerts</button>
+                  <button onClick={() => setActiveTab('docs')} className={`btn ${activeTab === 'docs' ? 'btn-primary' : ''}`}>Documents</button>
+                </div>
+
+                {activeTab === 'details' && (
+                  <div>
+                    <p>{selectedCase.description}</p>
+                  </div>
+                )}
+
+                {activeTab === 'diary' && (
+                  <div>
+                    <h3>Case Diary Logs</h3>
+                    <ul>
+                      {diaryLogs.map((log, idx) => (
+                        <li key={idx}>{log}</li>
+                      ))}
+                    </ul>
+                    <form onSubmit={handleAddDiaryLog} style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                      <input id="diary_text" type="text" className="input-field" value={newDiaryLog} onChange={(e) => setNewDiaryLog(e.target.value)} placeholder="Add new diary entry..." required />
+                      <button type="submit" className="btn">Add Log</button>
+                    </form>
+                  </div>
+                )}
+
+                {activeTab === 'cctv' && (
+                  <div>
+                    <h3>CCTV Area Feeds</h3>
+                    <ul>
+                      {cctvAlerts.map((alertItem) => (
+                        <li key={alertItem.id} 
+                            onClick={() => setSelectedCCTVAlert(alertItem)}
+                            className={alertItem.status === 'Critical' ? 'critical-alert' : ''}
+                            style={{ 
+                              cursor: 'pointer', 
+                              padding: '0.5rem', 
+                              backgroundColor: alertItem.status === 'Critical' ? '#ffebeb' : 'transparent',
+                              border: alertItem.status === 'Critical' ? '1px solid red' : 'none',
+                              marginBottom: '0.5rem'
+                            }}>
+                          <strong>{alertItem.camera}</strong> - {alertItem.type} | 
+                          <span style={{ color: alertItem.status === 'Critical' ? 'red' : 'green', fontWeight: 'bold' }}> {alertItem.status}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {selectedCCTVAlert && (
+                      <div className="card" style={{ marginTop: '1rem', border: '1px solid black' }}>
+                        <h4>CCTV Video Analysis: {selectedCCTVAlert.camera}</h4>
+                        <p>Playing CCTV feed...</p>
+                        <p>MediaPipe Pose/Anomaly Detection Engine Running.</p>
+                        <button className="btn" onClick={() => {
+                          alert(`Loitering analyzed on ${selectedCCTVAlert.camera}`);
+                          setSelectedCase(prev => ({ ...prev, status: 'Under Investigation' }));
+                        }}>Trigger Loitering Analysis</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'docs' && (
+                  <div>
+                    <h3>Generated Legal Documents</h3>
+                    {docError && <p style={{ color: 'red' }}>{docError}</p>}
+                    <ul>
+                      {documentLogs.map((doc, idx) => (
+                        <li key={idx}>
+                          <strong>{doc.type}</strong> - Verification Hash: <code data-testid="doc-hash">{doc.hash}</code>
+                        </li>
+                      ))}
+                    </ul>
+                    
+                    <div className="flex gap-4" style={{ marginTop: '1rem' }}>
+                      <button className="btn" onClick={() => handleGenerateDoc('FIR Copy')} disabled={docLoading}>Generate FIR Copy</button>
+                      <button className="btn" onClick={() => handleGenerateDoc('Arrest Memo')} disabled={docLoading}>Generate Arrest Memo</button>
+                      <button className="btn" onClick={() => handleGenerateDoc('Charge Sheet')} disabled={docLoading}>Generate Charge Sheet</button>
+                      <button className="btn" onClick={() => handleGenerateDoc('Seizure Memo')} disabled={docLoading}>Generate Seizure Memo</button>
+                    </div>
+                    {docLoading && <p>Generating document...</p>}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentPath === '/ai-chat' && (
+          <div className="card">
+            <h2>AI Assistant</h2>
+            
+            <div className="flex gap-4" style={{ marginBottom: '1rem' }}>
+              <button 
+                className={`btn ${chatMode === 'This Case' ? 'btn-primary' : ''}`}
+                onClick={() => setChatMode('This Case')}
+              >
+                This Case Mode
+              </button>
+              <button 
+                className={`btn ${chatMode === 'All Cases' ? 'btn-primary' : ''}`}
+                onClick={() => setChatMode('All Cases')}
+              >
+                All Cases Mode
+              </button>
+              <button className="btn" onClick={() => setMessages([])}>Reset</button>
+            </div>
+
+            <div className="card" style={{ height: '300px', overflowY: 'auto', marginBottom: '1rem' }} data-testid="chat-box">
+              {messages.map((m, idx) => (
+                <div key={idx} style={{ marginBottom: '1rem', textAlign: m.sender === 'user' ? 'right' : 'left' }}>
+                  <span style={{ 
+                    display: 'inline-block', 
+                    padding: '0.5rem 1rem', 
+                    borderRadius: '10px', 
+                    backgroundColor: m.sender === 'user' ? '#e0f7fa' : '#f5f5f5' 
+                  }}>
+                    {m.text.includes('BNS') ? (
+                      <span>
+                        {m.text.split(/(BNS \d+)/).map((part, i) => 
+                          part.match(/BNS \d+/) ? <strong key={i} className="legal-highlight" style={{ color: 'blue' }}>{part}</strong> : part
+                        )}
+                      </span>
+                    ) : (
+                      m.text
+                    )}
+                  </span>
+                </div>
+              ))}
+              {chatLoading && <p>AI is thinking...</p>}
+              {chatError && <p style={{ color: 'red' }}>{chatError}</p>}
+            </div>
+
+            <form onSubmit={handleSendChat} style={{ display: 'flex', gap: '1rem' }}>
+              <input 
+                id="chat_input" 
+                type="text" 
+                className="input-field" 
+                value={chatInput} 
+                onChange={(e) => setChatInput(e.target.value)} 
+                placeholder="Ask about BNS sections, Case info..." 
+                required 
+              />
+              <button id="send_chat" type="submit" className="btn btn-primary">Send</button>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
+
+export default App;

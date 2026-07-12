@@ -1,66 +1,68 @@
-import logging
+from pydantic import BaseModel
+import structlog
+import torch
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
-# ponytail: Lazy load heavy ML models only when needed. 
-# For demo/dev environments without 5GB RAM to spare, we fallback if transformers fail.
-_tokenizer = None
-_model = None
+# Global variables for model
+_indic_model = None
+_indic_tokenizer = None
 
-def _load_model():
-    global _tokenizer, _model
-    if _model is not None:
-        return
-    try:
-        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-        import torch
-        logger.info("Loading IndicTrans2 model...")
-        model_name = "ai4bharat/indictrans2-en-indic-dist-200M"
-        _tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        _model = AutoModelForSeq2SeqLM.from_pretrained(model_name, trust_remote_code=True)
-        if torch.cuda.is_available():
-            _model = _model.to("cuda")
-        _model.eval()
-        logger.info("IndicTrans2 model loaded successfully.")
-    except Exception as e:
-        logger.warning(f"Failed to load IndicTrans2 model: {e}")
-        _model = "failed"
+def load_indic_model():
+    global _indic_model, _indic_tokenizer
+    if _indic_model is None:
+        try:
+            logger.info("Loading IndicTrans2 model...")
+            from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+            model_name = "ai4bharat/indictrans2-en-indic-1B"
+            _indic_tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+            _indic_model = AutoModelForSeq2SeqLM.from_pretrained(model_name, trust_remote_code=True)
+            if torch.cuda.is_available():
+                _indic_model = _indic_model.cuda()
+            logger.info("IndicTrans2 model loaded successfully.")
+        except Exception as e:
+            logger.error(f"Failed to load IndicTrans2 model: {e}")
+            _indic_model = "failed" # Mark as failed to avoid retrying
+    return _indic_model, _indic_tokenizer
 
-def translate_text(text: str, target_lang: str) -> str:
-    if not text or target_lang == 'en':
-        return text
-
-    _load_model()
-    
-    # If model failed to load (e.g. out of memory, no internet), fallback
-    if _model == "failed" or _model is None:
-        return text
-
-    try:
-        import torch
-        # IndicTrans2 target lang tokens are usually 'hin_Deva', 'guj_Gujr', etc.
-        # Mapping generic 'hi' and 'gu' to IndicTrans2 tokens
-        lang_map = {
-            'hi': 'hin_Deva',
-            'gu': 'guj_Gujr'
+class Translator:
+    def __init__(self):
+        self.glossary = {
+            "FIR": "Prathamik Suchna Report (प्राथमिक सूचना रिपोर्ट)",
+            "Police Station": "Police Thana (पुलिस थाना)",
+            "Theft": "Chori (चोरी)",
+            "Assault": "Hassla (हमला)",
+            "Accident": "Durghatna (दुर्घटना)"
         }
-        tgt_lang_token = lang_map.get(target_lang)
-        if not tgt_lang_token:
+
+    def translate(self, text: str, target_lang: str) -> str:
+        if target_lang == 'en' or not text:
+            return text
+            
+        # Check glossary first
+        for key, val in self.glossary.items():
+            text = text.replace(key, val)
+            
+        model, tokenizer = load_indic_model()
+        if model is None or model == "failed":
+            logger.warning("IndicTrans2 not available, returning original text")
+            return text
+            
+        # Use IndicTrans2
+        try:
+            # Format depends on IndicTrans2 specific tokenization
+            # Simple approximation here for standard huggingface translation models
+            inputs = tokenizer(text, return_tensors="pt")
+            if torch.cuda.is_available():
+                inputs = {k: v.cuda() for k, v in inputs.items()}
+                
+            with torch.no_grad():
+                outputs = model.generate(**inputs, max_length=256)
+                
+            translated = tokenizer.decode(outputs[0], skip_special_tokens=True)
+            return translated
+        except Exception as e:
+            logger.error(f"Translation failed: {e}")
             return text
 
-        inputs = _tokenizer(text, return_tensors="pt", padding=True, truncation=True)
-        if torch.cuda.is_available():
-            inputs = {k: v.to("cuda") for k, v in inputs.items()}
-            
-        with torch.no_grad():
-            outputs = _model.generate(
-                **inputs, 
-                forced_bos_token_id=_tokenizer.convert_tokens_to_ids(tgt_lang_token),
-                max_length=256
-            )
-        
-        translated_text = _tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
-        return translated_text
-    except Exception as e:
-        logger.error(f"IndicTrans2 translation failed: {e}")
-        return text
+translator_service = Translator()

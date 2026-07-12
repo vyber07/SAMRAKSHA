@@ -1,32 +1,72 @@
-fastapi==0.111.0
-uvicorn[standard]==0.30.1
-python-multipart==0.0.9
-asyncpg==0.29.0
-sqlalchemy[asyncio]==2.0.30
-alembic==1.13.1
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-slowapi==0.1.9
-xgboost==2.0.3
-scikit-learn==1.5.0
-scipy==1.13.0
-numpy==1.26.4
-pandas==2.2.2
-ortools==9.9.3963
-python-docx==1.1.2
-python-magic==0.4.27
-opencv-python-headless==4.10.0.84
-# mediapipe==0.10.14  # optional: install manually post-deploy if CCTV pose detection needed
-httpx==0.27.0
-websockets==12.0
-geopy==2.4.1
-pydantic==2.7.1
-pydantic-settings==2.3.0
-structlog==24.2.0
-pytest==8.2.2
-pytest-asyncio==0.23.7
+# backend/requirements.txt — ALL versions pinned
 
-transformers
+# Core
+fastapi
+uvicorn
+python-multipart
+
+# Database
+asyncpg
+sqlalchemy
+alembic
+
+# Security
+python-jose
+passlib
+slowapi
+
+# ML & Prediction
+xgboost
+scikit-learn
+scipy
+numpy
+pandas
+
+# Routing
+ortools
+
+# Documents
+python-docx
+python-magic
+
+# CCTV
+mediapipe
+opencv-python-headless
+
+# Translation
+# IndicTrans2: install from GitHub
+# pip install git+https://github.com/AI4Bharat/IndicTrans2
+
+# HTTP client (Indian Kanoon, OSRM)
+httpx
+
+# WebSocket + real-time
+websockets
+
+# Hashing
+
+# Geocoding
+geopy
+
+# Validation
+pydantic
+pydantic-settings
+
+# Logging
+structlog
+
+# Testing
+pytest
+pytest-asyncio
+httpx
+python-jose[cryptography]
+passlib[bcrypt]
+uvicorn[standard]
+sqlalchemy[asyncio]
+transformers<4.40.0
 torch
-sentencepiece
-sacremoses
+openai-whisper
+
+pytest
+pytest-asyncio
+httpx

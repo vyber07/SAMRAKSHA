@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: samraksha
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # To auto-initialize the database schema
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d samraksha"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/samraksha
+      - SECRET_KEY=supersecretkey_change_in_production
+      - HF_TOKEN=${HF_TOKEN}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Optional: To persist huggingface/whisper cache
+      - hf_cache:/root/.cache/huggingface
+      - whisper_cache:/root/.cache/whisper
+
+volumes:
+  postgres_data:
+  hf_cache:
+  whisper_cache:

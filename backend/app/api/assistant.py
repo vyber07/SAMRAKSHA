@@ -1,16 +1,18 @@
+from app.db.connection import get_db, fetch_one, fetch_all, execute
+from app.api.auth import get_current_officer
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Literal
-import os
-import structlog
-
-from app.db.connection import get_db, fetch_one, fetch_all
-from app.api.auth import get_current_officer
-from app.services.assistant import get_llm_response
+import httpx, os, structlog
 
 router = APIRouter()
 logger = structlog.get_logger()
 
+LLM_URL    = os.getenv("LLM_URL", "http://ollama:11434")
+LLM_MODEL  = os.getenv("LLM_MODEL", "llama3.2:3b")  # small local model
+
+# Out-of-scope patterns — hardcoded rejection, never sent to LLM
 OUT_OF_SCOPE = [
     "other case", "different case", "all other",
     "another station", "another ps", "entire database",
@@ -21,7 +23,7 @@ OUT_OF_SCOPE = [
 class AssistantQuery(BaseModel):
     mode:     Literal['this_case', 'all_cases']
     question: str
-    case_id:  str | None = None
+    case_id:  str | None = None  # Required for this_case mode
 
 @router.post("/query")
 async def query_assistant(
@@ -100,7 +102,7 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
             "Be concise and factual."
         )
 
-    else:
+    else:  # all_cases mode
         if officer['role'] == 'io':
             cases = await fetch_all(db, """
                 SELECT fir_no, crime_type, crime_date, case_status,
@@ -115,13 +117,13 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
                 FROM cases WHERE ps_id = $1
                 ORDER BY crime_date DESC LIMIT 50
             """, [str(officer['ps_id'])])
-        else:
+        else:  # dcp, admin
             cases = await fetch_all(db, """
                 SELECT fir_no, crime_type, crime_date, case_status,
                        ward, victim_name, accused_name, bns_sections
                 FROM cases
                 ORDER BY crime_date DESC LIMIT 100
-            """)
+            """, [])
 
         if not cases:
             return {
@@ -145,10 +147,71 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
             "Be concise and structured in your response."
         )
 
-    answer = await get_llm_response(system_prompt, context, body.question)
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                f"{LLM_URL}/api/generate",
+                json={
+                    "model":  LLM_MODEL,
+                    "prompt": (
+                        f"{system_prompt}\n\n"
+                        f"{context}\n\n"
+                        f"Question: {body.question}"
+                    ),
+                    "stream": False,
+                    "options": {"temperature": 0.1, "max_tokens": 500}
+                }
+            )
+        answer = resp.json().get("response", "")
+    except Exception as e:
+        logger.warning("LLM unavailable, using fallback", error=str(e))
+        answer = simple_keyword_answer(body.question, context)
 
     return {
         "answer": answer,
         "mode":   body.mode,
-        "source": "ai"
+        "source": "llm" if 'resp' in dir() else "fallback"
     }
+
+def simple_keyword_answer(question: str, context: str) -> str:
+    """Simple fallback when LLM is not available"""
+    q = question.lower()
+    if 'seized' in q or 'evidence' in q:
+        lines = [l for l in context.split('\n') if 'evidence' in l.lower()]
+        return lines[0] if lines else "No evidence recorded in case file."
+    if 'section' in q or 'bns' in q:
+        lines = [l for l in context.split('\n') if 'bns' in l.lower()]
+        return lines[0] if lines else "No legal sections recorded."
+    if 'arrest' in q:
+        lines = [l for l in context.split('\n') if 'arrest' in l.lower()]
+        return lines[0] if lines else "No arrest recorded in case file."
+    return (
+        "Please ask a specific question about the case evidence, "
+        "legal sections, arrest details, or witness information."
+    )
+from fastapi import UploadFile, File
+from app.services.voice import voice_service
+
+@router.post("/voice-query")
+async def voice_query_assistant(
+    mode: Literal['this_case', 'all_cases'],
+    audio: UploadFile = File(...),
+    case_id: str | None = None,
+    db = Depends(get_db),
+    officer = Depends(get_current_officer)
+):
+    audio_bytes = await audio.read()
+    transcribed_text = voice_service.transcribe(audio_bytes)
+    
+    body = AssistantQuery(
+        mode=mode,
+        question=transcribed_text,
+        case_id=case_id
+    )
+    
+    # Reuse query_assistant logic
+    response = await query_assistant(body=body, db=db, officer=officer)
+    
+    # Add transcription to response
+    response["transcription"] = transcribed_text
+    return response

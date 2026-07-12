@@ -2,17 +2,17 @@ version: '3.9'
 
 services:
   postgres:
-    image: postgis/postgis:16-3.4
+    image: postgis/postgis:15-3.3
     environment:
       POSTGRES_DB: samraksha
-      POSTGRES_USER: samraksha_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U samraksha_user -d samraksha"]
-      interval: 5s
+      test: ["CMD-SHELL","pg_isready -U ${DB_USER}"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -21,45 +21,27 @@ services:
 
   api:
     build: ./backend
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://samraksha_user:${POSTGRES_PASSWORD}@postgres/samraksha
-      - SECRET_KEY=${SECRET_KEY}
-      - JWT_ALGORITHM=HS256
-      - ACCESS_TOKEN_EXPIRE_HOURS=8
-      - REDIS_URL=redis://redis:6379
-      - ENVIRONMENT=production
-      - CORS_ORIGINS=http://${SERVER_IP},http://localhost
-      - DEMO_MODE=true
-      - DEMO_SEED_PASSWORD=${DEMO_SEED_PASSWORD}
-      - ADMIN_SEED_PASSWORD=${ADMIN_SEED_PASSWORD}
-      - CCTNS_TOKENS=${CCTNS_TOKENS}
+    env_file: .env
     depends_on:
       postgres:
         condition: service_healthy
+    ports:
+      - "8000:8000"
     volumes:
       - ./backend/templates:/app/templates
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
       - uploads:/app/uploads
 
   frontend:
-    build:
-      context: ./frontend
-      args:
-        VITE_API_URL: http://${SERVER_IP}
-        VITE_WS_URL: ws://${SERVER_IP}
-        VITE_DEMO_MODE: "true"
-    depends_on:
-      - api
-
-  nginx:
-    image: nginx:alpine
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./OPEN_SOURCE_LICENSES.md:/usr/share/nginx/html/OPEN_SOURCE_LICENSES.md:ro
+    build: ./frontend
     ports:
-      - "80:80"
+      - "80:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - api
-      - frontend
 
 volumes:
   postgres_data:

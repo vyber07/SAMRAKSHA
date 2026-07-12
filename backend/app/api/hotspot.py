@@ -1,25 +1,11 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from app.db.connection import get_db, fetch_one, fetch_all, execute
+from app.api.auth import get_current_officer
+
+from fastapi import APIRouter, Depends, Query
 from datetime import datetime, timedelta
 import asyncio
-import pandas as pd
-import structlog
-
-from app.db.connection import get_db, fetch_all, fetch_one, execute
-from app.api.auth import get_current_officer
-from app.services.prediction import (
-    compute_kde_heatmap,
-    run_dbscan_clustering,
-    RiskPredictor
-)
 
 router = APIRouter()
-logger = structlog.get_logger()
-
-def risk_level(score: float) -> str:
-    if score >= 80: return 'HIGH'
-    if score >= 60: return 'ELEVATED'
-    if score >= 30: return 'MEDIUM'
-    return 'LOW'
 
 @router.get("/hotspots")
 async def get_heatmap(
@@ -30,31 +16,32 @@ async def get_heatmap(
 ):
     if crime_type:
         incidents = await fetch_all(db, """
-            SELECT id, lat, lon, severity, crime_type, timestamp, ward
+            SELECT lat, lon, severity, crime_type, timestamp
             FROM incidents
-            WHERE timestamp > NOW() - CAST($1 || ' days' AS INTERVAL)
+            WHERE timestamp > NOW() - INTERVAL '$1 days'
             AND crime_type = $2
             AND status = 'active'
-        """, [str(days), crime_type])
+        """, [days, crime_type])
     else:
         incidents = await fetch_all(db, """
-            SELECT id, lat, lon, severity, crime_type, timestamp, ward
+            SELECT lat, lon, severity, crime_type, timestamp
             FROM incidents
-            WHERE timestamp > NOW() - CAST($1 || ' days' AS INTERVAL)
+            WHERE timestamp > NOW() - INTERVAL '$1 days'
             AND status = 'active'
-        """, [str(days)])
+        """, [days])
 
     if not incidents:
         return {"heatmap": [], "clusters": [], "total": 0}
 
+    import pandas as pd
+    from app.services.prediction import (
+        compute_kde_heatmap,
+        run_dbscan_clustering
+    )
+
     df = pd.DataFrame(incidents)
-    try:
-        heatmap  = compute_kde_heatmap(df)
-        clusters = run_dbscan_clustering(df)
-    except Exception as e:
-        logger.error("Failed to compute heatmap or clusters", error=str(e))
-        heatmap = []
-        clusters = []
+    heatmap  = compute_kde_heatmap(df)
+    clusters = run_dbscan_clustering(df)
 
     return {
         "heatmap":  heatmap,
@@ -74,35 +61,30 @@ async def get_ward_risk(
     month = now.month
 
     scores = await fetch_all(db, """
-        SELECT ward, risk_score, festival_flag
+        SELECT ward, risk_score, crime_breakdown, festival_flag
         FROM zone_risk_scores
         WHERE hour_slot = $1 AND day_of_week = $2
         ORDER BY risk_score DESC
     """, [hour, dow])
 
     if not scores:
+        from app.services.prediction import RiskPredictor
         predictor = RiskPredictor()
-        
-        # Load all incidents for historical training
-        all_incidents = await fetch_all(db, """
-            SELECT id, lat, lon, severity, crime_type, timestamp, ward
-            FROM incidents
-        """)
-        if all_incidents:
-            df = pd.DataFrame(all_incidents)
-            predictor.train(df)
 
-        wards_data = await fetch_all(db,
-            "SELECT DISTINCT ward FROM incidents WHERE ward IS NOT NULL AND ward != ''",
+        wards = await fetch_all(db,
+            "SELECT DISTINCT ward FROM incidents WHERE ward IS NOT NULL",
             []
         )
 
         scores = []
-        for w in wards_data:
-            ward = w['ward']
-            score = predictor.predict_zone_risk(ward, hour, dow, month)
+        for w in wards:
+            if not w['ward']:
+                continue
+            score = predictor.predict_zone_risk(
+                w['ward'], hour, dow, month
+            )
             scores.append({
-                'ward':        ward,
+                'ward':        w['ward'],
                 'risk_score':  score,
                 'festival_flag': False,
             })
@@ -113,8 +95,14 @@ async def get_ward_risk(
             'level':        risk_level(row['risk_score']),
             'festival_flag': row.get('festival_flag', False),
         }
-        for row in scores if row.get('ward')
+        for row in scores
     }
+
+def risk_level(score: float) -> str:
+    if score >= 80: return 'HIGH'
+    if score >= 60: return 'ELEVATED'
+    if score >= 30: return 'MEDIUM'
+    return 'LOW'
 
 @router.get("/incidents")
 async def get_incidents(
@@ -133,16 +121,11 @@ async def get_incidents(
         FROM incidents
         WHERE lat BETWEEN $1 AND $2
           AND lon BETWEEN $3 AND $4
-          AND timestamp > NOW() - CAST($5 || ' hours' AS INTERVAL)
+          AND timestamp > NOW() - INTERVAL '$5 hours'
           AND status = 'active'
         ORDER BY timestamp DESC
         LIMIT 500
-    """, [lat_min, lat_max, lon_min, lon_max, str(hours)])
-
-    # Format timestamps
-    for inc in incidents:
-        if inc.get('timestamp'):
-            inc['timestamp'] = inc['timestamp'].isoformat()
+    """, [lat_min, lat_max, lon_min, lon_max, hours])
 
     return incidents
 
@@ -153,7 +136,7 @@ async def get_active_alerts(
     officer = Depends(get_current_officer)
 ):
     alerts = await fetch_all(db, """
-        SELECT ca.id, ca.camera_id, ca.camera_name, ca.source, ca.alert_type,
+        SELECT ca.id, ca.camera_id, ca.source, ca.alert_type,
                ca.confidence, ca.person_count, ca.lat, ca.lon,
                ca.plate_no, ca.ts,
                c.fir_no as matched_fir
@@ -163,10 +146,6 @@ async def get_active_alerts(
         ORDER BY ca.ts DESC
         LIMIT $1
     """, [limit])
-
-    for a in alerts:
-        if a.get('ts'):
-            a['ts'] = a['ts'].isoformat()
 
     return alerts
 
@@ -182,14 +161,10 @@ async def get_cybercrime_layer(
                MAX(timestamp) as latest
         FROM incidents
         WHERE source = 'cyber'
-          AND timestamp > NOW() - CAST($1 || ' days' AS INTERVAL)
+          AND timestamp > NOW() - INTERVAL '$1 days'
         GROUP BY lat, lon, ward, crime_type
         HAVING COUNT(*) >= 2
         ORDER BY count DESC
-    """, [str(days)])
-
-    for c in cyber:
-        if c.get('latest'):
-            c['latest'] = c['latest'].isoformat()
+    """, [days])
 
     return cyber

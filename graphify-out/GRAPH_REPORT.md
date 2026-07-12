@@ -1,172 +1,140 @@
-# Graph Report - sam  (2026-07-09)
+# Graph Report - /home/ubuntu/sa/backend  (2026-07-12)
 
 ## Corpus Check
-- 66 files · ~38,905 words
-- Verdict: corpus is large enough that graph structure adds value.
+- Corpus is ~8,973 words - fits in a single context window. You may not need a graph.
 
 ## Summary
-- 496 nodes · 761 edges · 29 communities (21 shown, 8 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 64 edges (avg confidence: 0.79)
+- 186 nodes · 263 edges · 21 communities (19 shown, 2 thin omitted)
+- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 28 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
-## Graph Freshness
-- Built from commit: `aa4f06b2`
-- Run `git rev-parse HEAD` and compare to check if the graph is stale.
-- Run `graphify update .` after code changes (no API cost).
-
 ## Community Hubs (Navigation)
-- _search_csv
-- _search_csv
-- design_system.py
-- DesignSystemGenerator
-- design_system.py
-- DesignSystemGenerator
-- format_output
-- format_output
-- ui-ux-pro-max
-- ui-ux-pro-max
-- dependencies
-- compilerOptions
-- RiskPredictor
-- seed
-- patrol.py
-- CCTVPipeline
-- DashboardManager
-- document_gen.py
-- FIRForm.tsx
-- Unified Predictive Policing & AI Case Intelligence Platform
-- AuthMiddleware
-- get_llm_response
-- OPEN_SOURCE_LICENSES.md
-- graphify.md
-- graphify.md
-- setup.sh
-- 1. Compliance Matrix Mapping
+- CCTV & Incidents
+- Legal & Case Core
+- Hotspot Predictions
+- Voice Assistant
+- Patrol Routing
+- Database Core
+- Admin API
+- Data Models
+- Auth Services
+- CCTNS Sync
+- Websockets
+- Assistant Service
+- Document Formatting
+- Vision Pipeline
+- Analytics
+- Case Schemas
+- Translation Service
 
 ## God Nodes (most connected - your core abstractions)
-1. `fetch_one()` - 21 edges
-2. `fetch_all()` - 17 edges
-3. `compilerOptions` - 17 edges
-4. `api` - 14 edges
-5. `useAuth` - 14 edges
-6. `execute()` - 12 edges
-7. `DesignSystemGenerator` - 11 edges
-8. `DesignSystemGenerator` - 11 edges
-9. `PRIMARY_BTN` - 11 edges
-10. `RiskPredictor` - 10 edges
+1. `fetch_one()` - 16 edges
+2. `fetch_all()` - 13 edges
+3. `execute()` - 11 edges
+4. `generate_document()` - 8 edges
+5. `query_assistant()` - 6 edges
+6. `login()` - 6 edges
+7. `FIRCreateRequest` - 6 edges
+8. `RiskPredictor` - 6 edges
+9. `CCTVPipeline` - 6 edges
+10. `ingest_alert()` - 5 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `_generate_intelligent_overrides()` --calls--> `search()`  [INFERRED]
-  .agent/skills/ui-ux-pro-max/scripts/design_system.py → .agent/skills/ui-ux-pro-max/scripts/core.py
-- `_generate_intelligent_overrides()` --calls--> `search()`  [INFERRED]
-  .agents/skills/uiux-pro-max/scripts/design_system.py → .agents/skills/uiux-pro-max/scripts/core.py
 - `get_dashboard_summary()` --calls--> `fetch_one()`  [INFERRED]
-  backend/app/api/analytics.py → backend/app/db/connection.py
+  app/api/analytics.py → app/db/connection.py
 - `get_trends()` --calls--> `fetch_all()`  [INFERRED]
-  backend/app/api/analytics.py → backend/app/db/connection.py
-- `query_assistant()` --calls--> `get_llm_response()`  [INFERRED]
-  backend/app/api/assistant.py → backend/app/services/assistant.py
+  app/api/analytics.py → app/db/connection.py
+- `get_current_officer()` --calls--> `fetch_one()`  [INFERRED]
+  app/api/auth.py → app/db/connection.py
+- `search_cases()` --calls--> `fetch_all()`  [INFERRED]
+  app/api/cases.py → app/db/connection.py
+- `simulate_event()` --calls--> `fetch_one()`  [INFERRED]
+  app/api/analytics.py → app/db/connection.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (29 total, 8 thin omitted)
+## Communities (21 total, 2 thin omitted)
 
-### Community 0 - "_search_csv"
-Cohesion: 0.15
-Nodes (15): BM25, detect_domain(), _load_csv(), Lowercase, split, remove punctuation, filter short words, Build BM25 index from documents, Score all documents against query, Load CSV and return list of dicts, Core search function using BM25 (+7 more)
+### Community 0 - "CCTV & Incidents"
+Cohesion: 0.16
+Nodes (17): get_case(), CCTVAlertRequest, check_anpr_match(), ingest_alert(), BaseModel, generate_document(), GenerateRequest, list_documents() (+9 more)
 
-### Community 1 - "_search_csv"
-Cohesion: 0.15
-Nodes (15): BM25, detect_domain(), _load_csv(), Lowercase, split, remove punctuation, filter short words, Build BM25 index from documents, Score all documents against query, Load CSV and return list of dicts, Core search function using BM25 (+7 more)
+### Community 1 - "Legal & Case Core"
+Cohesion: 0.16
+Nodes (11): create_fir(), FIRCreateRequest, BaseModel, search_cases(), BaseModel, search_case_law_endpoint(), suggest_sections(), SuggestRequest (+3 more)
 
-### Community 2 - "design_system.py"
-Cohesion: 0.09
-Nodes (25): DesignSystemGenerator, _detect_page_type(), format_ascii_box(), format_markdown(), format_master_md(), format_page_override_md(), generate_design_system(), _generate_intelligent_overrides() (+17 more)
-
-### Community 3 - "DesignSystemGenerator"
-Cohesion: 0.05
-Nodes (61): api, App(), PrivateRoute(), PublicRoute(), CaseAssistant(), Message, CaseDiary(), DiaryEntry (+53 more)
-
-### Community 4 - "design_system.py"
-Cohesion: 0.09
-Nodes (25): DesignSystemGenerator, _detect_page_type(), format_ascii_box(), format_markdown(), format_master_md(), format_page_override_md(), generate_design_system(), _generate_intelligent_overrides() (+17 more)
-
-### Community 5 - "DesignSystemGenerator"
-Cohesion: 0.05
-Nodes (56): AsyncSession, get_dashboard_summary(), get_trends(), BaseModel, simulate_event(), SimulateRequest, AssistantQuery, BaseModel (+48 more)
-
-### Community 8 - "ui-ux-pro-max"
-Cohesion: 0.07
-Nodes (29): Accessibility, Available Domains, Available Stacks, Common Rules for Professional UI, Example Workflow, How to Use This Skill, Icons & Visual Elements, Interaction (+21 more)
-
-### Community 9 - "ui-ux-pro-max"
-Cohesion: 0.07
-Nodes (29): Accessibility, Available Domains, Available Stacks, Common Rules for Professional UI, Example Workflow, How to Use This Skill, Icons & Visual Elements, Interaction (+21 more)
-
-### Community 10 - "dependencies"
-Cohesion: 0.07
-Nodes (27): dependencies, axios, leaflet, leaflet.heat, lucide-react, react, react-dom, react-leaflet (+19 more)
-
-### Community 11 - "compilerOptions"
-Cohesion: 0.11
-Nodes (18): compilerOptions, allowImportingTsExtensions, isolatedModules, jsx, lib, module, moduleResolution, noEmit (+10 more)
-
-### Community 12 - "RiskPredictor"
+### Community 2 - "Hotspot Predictions"
 Cohesion: 0.23
-Nodes (7): get_heatmap(), build_features(), compute_kde_heatmap(), get_festival_flag(), RiskPredictor, run_dbscan_clustering(), DataFrame
+Nodes (11): get_active_alerts(), get_cybercrime_layer(), get_heatmap(), get_incidents(), get_ward_risk(), risk_level(), fetch_all(), compute_kde_heatmap() (+3 more)
 
-### Community 13 - "seed"
+### Community 3 - "Voice Assistant"
 Cohesion: 0.22
-Nodes (12): get_legal_suggestions(), BaseModel, search_case_law_endpoint(), SuggestRequest, get_ipc_crossref(), search_case_law(), suggest_sections(), json_dumps() (+4 more)
+Nodes (9): AssistantQuery, BaseModel, query_assistant(), Simple fallback when LLM is not available, simple_keyword_answer(), voice_query_assistant(), load_whisper_model(), VoiceService (+1 more)
 
-### Community 14 - "patrol.py"
+### Community 4 - "Patrol Routing"
+Cohesion: 0.24
+Nodes (10): get_patrol_routes(), PCRWebhook, BaseModel, Receives incidents from Police Control Room (100 call center).     PCR operator, receive_pcr_incident(), UnitUpdate, update_patrol_unit(), haversine_distance() (+2 more)
+
+### Community 5 - "Database Core"
+Cohesion: 0.36
+Nodes (6): close_db(), init_db(), lifespan(), FastAPI, lifespan(), FastAPI
+
+### Community 6 - "Admin API"
+Cohesion: 0.27
+Nodes (5): create_officer(), OfficerCreate, OfficerUpdate, BaseModel, update_officer()
+
+### Community 7 - "Data Models"
+Cohesion: 0.28
+Nodes (6): Case, CaseDiary, Evidence, Base, Base, User
+
+### Community 8 - "Auth Services"
+Cohesion: 0.32
+Nodes (6): create_access_token(), get_current_officer(), login(), LoginRequest, BaseModel, Request
+
+### Community 9 - "CCTNS Sync"
 Cohesion: 0.29
-Nodes (8): get_patrol_routes(), BaseModel, register_patrol_unit(), UnitRegister, UnitUpdate, update_patrol_unit(), get_travel_time_matrix(), optimize_patrol_routes()
+Nodes (6): CCTNSSyncRequest, BaseModel, Mock endpoint to simulate syncing an FIR to the national CCTNS/BharatPol databas, Mock endpoint to simulate searching the national CCTNS/BharatPol database., search_cctns(), sync_to_cctns()
 
-### Community 16 - "DashboardManager"
-Cohesion: 0.33
-Nodes (4): DashboardManager, websocket_endpoint(), get_db(), WebSocket
+### Community 10 - "Websockets"
+Cohesion: 0.32
+Nodes (4): DashboardManager, # TODO: imports for get_recent_incidents, etc, websocket_endpoint(), WebSocket
 
-### Community 17 - "document_gen.py"
+### Community 11 - "Assistant Service"
+Cohesion: 0.32
+Nodes (4): Case, Officer, Base, CaseAssistant
+
+### Community 12 - "Document Formatting"
+Cohesion: 0.54
+Nodes (7): format_date(), format_evidence(), format_landmark_cases(), format_witnesses(), generate_document(), today_formatted(), translate()
+
+### Community 15 - "Analytics"
+Cohesion: 0.40
+Nodes (5): get_dashboard_summary(), get_trends(), BaseModel, simulate_event(), SimulateRequest
+
+### Community 16 - "Case Schemas"
 Cohesion: 0.47
-Nodes (8): create_default_template_file(), format_date(), format_evidence(), format_landmark_cases(), format_witnesses(), generate_document(), today_formatted(), translate()
-
-### Community 18 - "FIRForm.tsx"
-Cohesion: 0.33
-Nodes (4): lookup_cctns_suspect(), lookup_cctns_vehicle(), Mock CCTNS national crime registry lookup, Mock national vehicle database lookup
-
-### Community 19 - "Unified Predictive Policing & AI Case Intelligence Platform"
-Cohesion: 0.22
-Nodes (8): Core Concept, Disclaimer, Features, Legal Notice, Problem Statements Addressed, Quick Start, SAMRAKSHA, Unified Predictive Policing & AI Case Intelligence Platform
-
-### Community 20 - "AuthMiddleware"
-Cohesion: 0.33
-Nodes (4): AuthMiddleware, Request, BaseHTTPMiddleware, Response
-
-### Community 28 - "1. Compliance Matrix Mapping"
-Cohesion: 0.33
-Nodes (5): 1. Compliance Matrix Mapping, 2. Identified Notebook Discrepancies & Stubs, PS6 — KANADSHIELD26_P2_06 (CrimeGPT Case Automation), PS7 — KANADSHIELD26_P2_07 (Predictive Hotspot Mapping), SAMRAKSHA — Verification Audit Report
+Nodes (5): CaseCreate, CaseResponse, Config, EvidenceSchema, BaseModel
 
 ## Knowledge Gaps
-- **125 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+120 more)
+- **1 isolated node(s):** `Config`
   These have ≤1 connection - possible missing edges or undocumented components.
-- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `fetch_all()` connect `DesignSystemGenerator` to `DashboardManager`, `RiskPredictor`, `patrol.py`?**
-  _High betweenness centrality (0.019) - this node is a cross-community bridge._
-- **Why does `fetch_one()` connect `DesignSystemGenerator` to `patrol.py`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Why does `execute()` connect `DesignSystemGenerator` to `patrol.py`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
-- **Are the 18 inferred relationships involving `fetch_one()` (e.g. with `get_dashboard_summary()` and `simulate_event()`) actually correct?**
-  _`fetch_one()` has 18 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 14 inferred relationships involving `fetch_all()` (e.g. with `get_trends()` and `query_assistant()`) actually correct?**
-  _`fetch_all()` has 14 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `BM25 ranking algorithm for text search`, `Lowercase, split, remove punctuation, filter short words`, `Build BM25 index from documents` to the rest of the system?**
-  _179 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `_search_csv` be split into smaller, more focused modules?**
-  _Cohesion score 0.14736842105263157 - nodes in this community are weakly interconnected._
+- **Why does `fetch_all()` connect `Hotspot Predictions` to `CCTV & Incidents`, `Legal & Case Core`, `Voice Assistant`, `Patrol Routing`, `Database Core`, `Analytics`?**
+  _High betweenness centrality (0.130) - this node is a cross-community bridge._
+- **Why does `fetch_one()` connect `CCTV & Incidents` to `Voice Assistant`, `Patrol Routing`, `Database Core`, `Auth Services`, `Analytics`?**
+  _High betweenness centrality (0.124) - this node is a cross-community bridge._
+- **Why does `execute()` connect `CCTV & Incidents` to `Legal & Case Core`, `Hotspot Predictions`, `Patrol Routing`, `Database Core`, `Auth Services`?**
+  _High betweenness centrality (0.095) - this node is a cross-community bridge._
+- **Are the 11 inferred relationships involving `fetch_one()` (e.g. with `get_dashboard_summary()` and `simulate_event()`) actually correct?**
+  _`fetch_one()` has 11 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 10 inferred relationships involving `fetch_all()` (e.g. with `get_trends()` and `query_assistant()`) actually correct?**
+  _`fetch_all()` has 10 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 6 inferred relationships involving `execute()` (e.g. with `login()` and `create_fir()`) actually correct?**
+  _`execute()` has 6 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 2 inferred relationships involving `query_assistant()` (e.g. with `fetch_all()` and `fetch_one()`) actually correct?**
+  _`query_assistant()` has 2 INFERRED edges - model-reasoned connections that need verification._

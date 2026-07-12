@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
-from pydantic import BaseModel
-import os
-import structlog
-
 from app.db.connection import get_db, fetch_one, fetch_all, execute
 from app.api.auth import get_current_officer
-from app.services.document_gen import generate_document as run_gen
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
+from pydantic import BaseModel
+import structlog
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -45,7 +44,9 @@ async def generate_document(
         raise HTTPException(403, "Access denied to this case")
 
     if body.doc_type == 'medical_letter' and not case.get('victim_injury'):
-        raise HTTPException(400, "Medical letter requires victim_injury flag to be set")
+        raise HTTPException(400,
+            "Medical letter requires victim_injury flag to be set"
+        )
 
     io_officer = await fetch_one(db,
         "SELECT name, badge_no FROM officers WHERE id = $1",
@@ -58,7 +59,9 @@ async def generate_document(
     )
 
     try:
-        doc_bytes, sha256 = run_gen(
+        from app.services.document_gen import generate_document
+
+        doc_bytes, sha256 = generate_document(
             doc_type=body.doc_type,
             case={
                 **dict(case),
@@ -70,33 +73,26 @@ async def generate_document(
             },
             lang=body.language
         )
+
     except FileNotFoundError:
-        raise HTTPException(500, f"Template for {body.doc_type} not found.")
+        raise HTTPException(500,
+            f"Template for {body.doc_type} not found. "
+            f"Ensure template files are in /app/templates/documents/"
+        )
     except Exception as e:
-        logger.error("Document generation failed", doc_type=body.doc_type, case_id=body.case_id, error=str(e))
+        logger.error("Document generation failed",
+                     doc_type=body.doc_type,
+                     case_id=body.case_id,
+                     error=str(e))
         raise HTTPException(500, "Document generation failed")
 
-    # Save secure binary output to uploads folder
-    upload_dir = "/app/uploads"
-    if not os.path.exists(upload_dir):
-        upload_dir = "uploads"
-    os.makedirs(upload_dir, exist_ok=True)
-    
-    file_path = os.path.join(upload_dir, f"{sha256}.docx")
-    try:
-        with open(file_path, "wb") as f:
-            f.write(doc_bytes)
-    except Exception as io_err:
-        logger.error("Failed to write document binary to disk", error=str(io_err))
-        raise HTTPException(500, "Failed to save secure document hash binary")
-
-    # Insert log
-    result = await fetch_one(db, """
+    await execute(db, """
         INSERT INTO doc_log
-        (case_id, doc_type, sha256, generated_by, language, generated_at)
-        VALUES ($1, $2, $3, $4, $5, NOW())
+        (case_id, doc_type, sha256, generated_by, language)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING id
-    """, [body.case_id, body.doc_type, sha256, str(officer['id']), body.language])
+    """, [body.case_id, body.doc_type, sha256,
+          str(officer['id']), body.language])
 
     doc_labels = {
         'chargesheet':    'Purvani Chargesheet',
@@ -107,24 +103,27 @@ async def generate_document(
         'panchanama':     'Accused Panchanama',
         'face_id':        'Face Identification Form',
     }
-
-    # Add diary entry
     await execute(db, """
         INSERT INTO case_diary
-        (case_id, entry_type, description, officer_id, auto_generated, ts)
-        VALUES ($1, 'document', $2, $3, TRUE, NOW())
+        (case_id, entry_type, description, officer_id, auto_generated)
+        VALUES ($1, 'document', $2, $3, TRUE)
     """, [
         body.case_id,
-        f"{doc_labels[body.doc_type]} generated (SHA-256: {sha256[:8]}...)",
+        f"{doc_labels[body.doc_type]} generated "
+        f"(SHA-256: {sha256[:8]}...)",
         str(officer['id'])
     ])
 
     await db.commit()
 
-    filename = f"{body.doc_type}_{case['fir_no'].replace('/', '_')}_{body.language}.docx"
+    filename = (
+        f"{body.doc_type}_{case['fir_no'].replace('/','_')}"
+        f"_{body.language}.docx"
+    )
     return Response(
         content=doc_bytes,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        media_type="application/vnd.openxmlformats-"
+                   "officedocument.wordprocessingml.document",
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
             "X-Document-SHA256":   sha256,
@@ -162,46 +161,3 @@ async def list_documents(
     """, [case_id])
 
     return docs
-
-@router.get("/{doc_id}/download")
-async def download_document(
-    doc_id: int,
-    db = Depends(get_db)
-):
-    # Retrieve metadata
-    doc = await fetch_one(db, """
-        SELECT dl.*, c.fir_no FROM doc_log dl
-        JOIN cases c ON dl.case_id = c.case_id
-        WHERE dl.id = $1
-    """, [doc_id])
-
-    if not doc:
-        raise HTTPException(404, "Document log record not found")
-
-    sha256 = doc['sha256']
-    
-    upload_dir = "/app/uploads"
-    if not os.path.exists(upload_dir):
-        upload_dir = "uploads"
-        
-    file_path = os.path.join(upload_dir, f"{sha256}.docx")
-    if not os.path.exists(file_path):
-        raise HTTPException(404, "Binary document file not found on disk")
-
-    filename = f"{doc['doc_type']}_{doc['fir_no'].replace('/', '_')}_{doc['language']}.docx"
-    
-    try:
-        with open(file_path, "rb") as f:
-            content = f.read()
-    except Exception as e:
-        logger.error("Failed to read document file", file_path=file_path, error=str(e))
-        raise HTTPException(500, "Error reading document from storage")
-
-    return Response(
-        content=content,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "X-Document-SHA256":   sha256,
-        }
-    )
