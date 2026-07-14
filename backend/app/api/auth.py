@@ -40,11 +40,15 @@ async def get_current_officer(
 ):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        officer_id = payload.get("sub")
-        if not officer_id:
+        officer_id_str = payload.get("sub")
+        if not officer_id_str:
             raise HTTPException(401, "Invalid token")
+        # Convert to UUID to match column type
+        officer_id = uuid.UUID(officer_id_str)
     except JWTError:
         raise HTTPException(401, "Invalid or expired token")
+    except ValueError:
+        raise HTTPException(401, "Invalid token")
 
     officer = await fetch_one(db,
         "SELECT id, badge_no, name, role, ps_id, is_active "
@@ -132,11 +136,15 @@ async def login(
         raise HTTPException(401, "Account deactivated")
 
     # Update last login
-    await execute(db,
-        "UPDATE officers SET last_login = NOW() WHERE id = $1",
-        [officer['id']]
-    )
-    await db.commit()
+    officer_id = officer['id'] if isinstance(officer['id'], uuid.UUID) else uuid.UUID(str(officer['id']))
+    try:
+        await execute(db,
+            "UPDATE officers SET last_login = NOW() WHERE id = $1",
+            [officer_id]
+        )
+    except Exception as e:
+        import structlog
+        structlog.get_logger().warning("Failed to update last login", error=str(e))
 
     token = create_access_token(
         str(officer['id']), officer['role'], str(officer['ps_id'])

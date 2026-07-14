@@ -3,6 +3,7 @@ from app.api.auth import get_current_officer
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from datetime import datetime
 import structlog
 
 router = APIRouter()

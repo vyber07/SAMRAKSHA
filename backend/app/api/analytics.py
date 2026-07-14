@@ -15,8 +15,8 @@ async def get_dashboard_summary(
 ):
     firs_today = await fetch_one(db, """
         SELECT COUNT(*) as count FROM cases
-        WHERE created_at >= $1
-    """, ["today"])
+        WHERE created_at >= CURRENT_DATE
+    """, [])
 
     firs_yesterday = await fetch_one(db, """
         SELECT COUNT(*) as count FROM cases
@@ -66,7 +66,7 @@ async def get_trends(
         return {}
 
     hourly = await fetch_all(db, """
-        SELECT EXTRACT(HOUR FROM crime_date)::INTEGER as hour,
+        SELECT EXTRACT(HOUR FROM timestamp)::INTEGER as hour,
                COUNT(*) as count
         FROM incidents
         WHERE timestamp > NOW() - INTERVAL '90 days'
@@ -75,7 +75,7 @@ async def get_trends(
 
     weekly = await fetch_all(db, """
         SELECT
-            CASE EXTRACT(DOW FROM crime_date)
+            CASE EXTRACT(DOW FROM timestamp)
                 WHEN 0 THEN 'Sun' WHEN 1 THEN 'Mon'
                 WHEN 2 THEN 'Tue' WHEN 3 THEN 'Wed'
                 WHEN 4 THEN 'Thu' WHEN 5 THEN 'Fri'
@@ -84,8 +84,8 @@ async def get_trends(
             COUNT(*) as count
         FROM incidents
         WHERE timestamp > NOW() - INTERVAL '90 days'
-        GROUP BY EXTRACT(DOW FROM crime_date), day
-        ORDER BY EXTRACT(DOW FROM crime_date)
+        GROUP BY EXTRACT(DOW FROM timestamp), day
+        ORDER BY EXTRACT(DOW FROM timestamp)
     """, [])
 
     by_type = await fetch_all(db, """

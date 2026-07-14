@@ -12,7 +12,7 @@ import structlog
 from app.api import (
     auth, cases,  documents,
     patrol, hotspot, cctv, assistant,
-    legal, websocket, analytics, incidents, cctns
+    legal, websocket, analytics, incidents, cctns, translate
 )
 from app.db.connection import init_db, close_db
 
@@ -71,7 +71,7 @@ app.include_router(legal.router,      prefix="/legal",     tags=["Legal"])
 app.include_router(websocket.router,  prefix="/ws",        tags=["WebSocket"])
 app.include_router(cctns.router,      prefix="/cctns",     tags=["CCTNS"])
 app.include_router(analytics.router,  prefix="/analytics", tags=["Analytics"])
-# app.include_router(cases.fir_router,  prefix="/fir",       tags=["FIR"])
+app.include_router(translate.router,  prefix="/translate", tags=["Translation"])
 
 @app.get("/health")
 async def health():

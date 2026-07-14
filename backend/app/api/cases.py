@@ -171,6 +171,41 @@ async def create_fir(
         "suggested_sections": sections,
     }
 
+@router.get("")
+async def list_cases(
+    page: int = 1,
+    limit: int = 20,
+    db = Depends(get_db),
+    officer = Depends(get_current_officer)
+):
+    if officer['role'] == 'constable':
+        raise HTTPException(403, "Access denied")
+
+    offset = max(0, (page - 1) * limit)
+    limit = min(limit, 100)
+
+    if officer['role'] in ('io', 'sho'):
+        results = await fetch_all(db, """
+            SELECT case_id, fir_no, victim_name, accused_name,
+                   crime_type, crime_date, case_status,
+                   created_at, updated_at
+            FROM cases
+            WHERE ps_id = $1
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
+        """, [str(officer['ps_id']), limit, offset])
+    else:
+        results = await fetch_all(db, """
+            SELECT case_id, fir_no, victim_name, accused_name,
+                   crime_type, crime_date, case_status,
+                   created_at, updated_at
+            FROM cases
+            ORDER BY created_at DESC
+            LIMIT $1 OFFSET $2
+        """, [limit, offset])
+
+    return {"items": results, "page": page, "limit": limit}
+
 @router.get("/search")
 async def search_cases(
     q: str,
@@ -189,7 +224,7 @@ async def search_cases(
 
     results = await fetch_all(db, f"""
         SELECT case_id, fir_no, victim_name, accused_name,
-               crime_type, crime_date, case_status, ward,
+               crime_type, crime_date, case_status,
                ts_rank(search_vector, plainto_tsquery($1)) AS rank
         FROM cases
         WHERE search_vector @@ plainto_tsquery($1)
@@ -227,5 +262,19 @@ async def get_case(
         VALUES ($1,$2,'view')
     """, [case_id, str(officer['id'])])
     await db.commit()
+
+    io = await fetch_one(db,
+        "SELECT name, badge_no FROM officers WHERE id = $1",
+        [str(case['io_id'])]
+    )
+    diary = await fetch_all(db, """
+        SELECT entry_type, description, ts, auto_generated
+        FROM case_diary WHERE case_id = $1
+        ORDER BY ts DESC LIMIT 20
+    """, [case_id])
+
+    case['io_name'] = io['name'] if io else 'Unknown'
+    case['io_badge'] = io['badge_no'] if io else ''
+    case['diary_entries'] = diary
 
     return case

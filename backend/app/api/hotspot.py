@@ -18,7 +18,7 @@ async def get_heatmap(
         incidents = await fetch_all(db, """
             SELECT lat, lon, severity, crime_type, timestamp
             FROM incidents
-            WHERE timestamp > NOW() - INTERVAL '$1 days'
+            WHERE timestamp > NOW() - (INTERVAL '1 day' * $1)
             AND crime_type = $2
             AND status = 'active'
         """, [days, crime_type])
@@ -26,7 +26,7 @@ async def get_heatmap(
         incidents = await fetch_all(db, """
             SELECT lat, lon, severity, crime_type, timestamp
             FROM incidents
-            WHERE timestamp > NOW() - INTERVAL '$1 days'
+            WHERE timestamp > NOW() - (INTERVAL '1 day' * $1)
             AND status = 'active'
         """, [days])
 
@@ -61,7 +61,7 @@ async def get_ward_risk(
     month = now.month
 
     scores = await fetch_all(db, """
-        SELECT ward, risk_score, crime_breakdown, festival_flag
+        SELECT ward, risk_score, festival_flag
         FROM zone_risk_scores
         WHERE hour_slot = $1 AND day_of_week = $2
         ORDER BY risk_score DESC
@@ -121,7 +121,7 @@ async def get_incidents(
         FROM incidents
         WHERE lat BETWEEN $1 AND $2
           AND lon BETWEEN $3 AND $4
-          AND timestamp > NOW() - INTERVAL '$5 hours'
+          AND timestamp > NOW() - (INTERVAL '1 hour' * $5)
           AND status = 'active'
         ORDER BY timestamp DESC
         LIMIT 500
@@ -161,7 +161,7 @@ async def get_cybercrime_layer(
                MAX(timestamp) as latest
         FROM incidents
         WHERE source = 'cyber'
-          AND timestamp > NOW() - INTERVAL '$1 days'
+          AND timestamp > NOW() - (INTERVAL '1 day' * $1)
         GROUP BY lat, lon, ward, crime_type
         HAVING COUNT(*) >= 2
         ORDER BY count DESC

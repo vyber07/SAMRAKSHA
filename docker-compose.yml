@@ -51,6 +51,10 @@ services:
       DEMO_MODE:       "true"
       SECRET_KEY:      samraksha-super-secret-jwt-key-change-in-prod
       ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      DEMO_SEED_PASSWORD: password123
+      ADMIN_SEED_PASSWORD: password123
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
