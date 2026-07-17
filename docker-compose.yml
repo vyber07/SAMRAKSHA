@@ -82,13 +82,16 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "0.0.0.0:80:80"
+    environment:
+      VITE_API_URL: http://api:8000
     depends_on:
       api:
         condition: service_healthy
     networks:
       - samraksha-net
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 5

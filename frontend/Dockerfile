@@ -1,6 +1,4 @@
-# Multi-stage build for SAMRAKSHA Frontend
-# Stage 1: Build
-FROM node:18-alpine as builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -13,29 +11,24 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the app
 RUN npm run build
 
-# Stage 2: Serve with Nginx
+# Production stage
 FROM nginx:alpine
 
-WORKDIR /usr/share/nginx/html
+# Copy nginx config
+COPY nginx.conf /etc/nginx/nginx.conf
 
-# Remove default nginx config
-RUN rm /etc/nginx/conf.d/default.conf
-
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy built assets from builder stage
-COPY --from=builder /app/dist .
+# Copy built app from builder
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Expose port
 EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost/index.html || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
