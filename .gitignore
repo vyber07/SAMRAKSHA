@@ -1,36 +1,74 @@
-# Agent and AI Data
-.agents/
-.claude/
-.gemini/
-.antigravity/
-skills/
-graphify-out/
-*.md
-!README.md
-!PROJECT.md
-QUICK_STATUS_SUMMARY.txt
-
-# Reports & Tests
-*report*
-*test*
-tests/
-test/
-
-# Environment
+# Environment & Secrets
 .env
 .env.*
+!.env.example
 
-# Node
+# Node & Frontend
 node_modules/
 dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json
+.pnp
+.pnp.js
 
-# Python
+# Python & Backend
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
 .venv/
 venv/
+env/
 .pytest_cache/
+.coverage
+htmlcov/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log
+yarn-error.log
+
+# Build & Temp
+dist/
+build/
+.cache/
+.next/
+out/
+temp/
+tmp/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.backup
+postgres-data/
+redis-data/
+
+# Docker
+docker-compose.override.yml
+
+# IDE Cache
+.eslintcache
+.oxlintcache

@@ -1,8 +1,10 @@
 version: '3.9'
+# SAMRAKSHA - Police Crime Monitoring & Case Management Platform
+# Full-stack application with frontend, API, database, and cache
 
 services:
 
-  # ─── Database ──────────────────────────────────────────────────────────
+  # PostgreSQL Database with PostGIS for geospatial queries
   postgres:
     image: postgis/postgis:16-3.4
     container_name: samraksha-postgres
@@ -23,7 +25,7 @@ services:
       retries: 10
       start_period: 30s
 
-  # ─── Cache / Pub-Sub ───────────────────────────────────────────────────
+  # Redis Cache for session management and data caching
   redis:
     image: redis:7-alpine
     container_name: samraksha-redis
@@ -37,7 +39,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── Backend API (FastAPI + ML/AI models) ──────────────────────────────
+  # FastAPI Backend - Crime monitoring and case management API
   api:
     build:
       context: ./backend
@@ -73,7 +75,7 @@ services:
       retries: 5
       start_period: 60s
 
-  # ─── Frontend (Nginx + Vite production build) ──────────────────────────
+  # React Frontend - Material 3 design dashboard with Nginx
   frontend:
     build:
       context: ./frontend
@@ -82,7 +84,6 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-      - "0.0.0.0:80:80"
     environment:
       VITE_API_URL: http://api:8000
     depends_on:
