@@ -1,5 +1,5 @@
 # SAMRAKSHA - Police Crime Monitoring & Case Management Platform
-# Full-stack application with frontend, API, database, and cache
+# Backend services: API, database, and cache
 
 services:
 
@@ -73,28 +73,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
-
-  # React Frontend - Material 3 design dashboard with Nginx
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: samraksha-frontend
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    environment:
-      VITE_API_URL: http://api:8000
-    depends_on:
-      api:
-        condition: service_healthy
-    networks:
-      - samraksha-net
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
 
 networks:
   samraksha-net:

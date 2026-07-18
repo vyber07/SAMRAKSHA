@@ -1,5 +1,5 @@
 # SAMRAKSHA
-## Police Crime Monitoring & Case Management Platform
+## Police Crime Monitoring & Case Management API
 
 **Kanad S.H.I.E.L.D. Cybersecurity Hackathon 2026**  
 Ahmedabad City Police | Cyber Crime Branch | i-Hub Gujarat
@@ -8,72 +8,37 @@ Ahmedabad City Police | Cyber Crime Branch | i-Hub Gujarat
 
 ## 🎯 Overview
 
-SAMRAKSHA is a comprehensive police crime monitoring and case management platform designed to streamline incident tracking, case management, and patrol coordination. Built with modern technologies and Material 3 design principles, it provides law enforcement with real-time situational awareness and role-based access control.
+SAMRAKSHA is a backend platform for police crime monitoring and case management. It provides a REST API for incident tracking, case management, patrol coordination, and geospatial crime analysis, backed by PostgreSQL with PostGIS and Redis.
+
+> **Note:** This repository currently contains the **backend services only** (API, database, cache). The frontend has been removed.
 
 ---
 
 ## ✨ Key Features
 
-### 📊 Dashboard & Monitoring
-- **Real-time Incident Tracking** - Live incident monitoring with severity color-coding
-- **Crime Analytics** - Analytics dashboard with stocks-like sparklines and KPI cards
-- **OpenStreetMap Integration** - Interactive crime hotspot mapping with Leaflet
-- **Role-based Views** - Different dashboards for high-rank (analytics) vs low-rank (field) officers
-
-### 🔍 Advanced Search & Filtering
-- **Global Search Bar** - Bing-style quick search for cases, incidents, officers, locations
-- **Auto-suggestions** - Real-time search suggestions with API integration
-- **Search History** - Persistent recent searches via localStorage
-- **Multi-filter Support** - Filter by type, status, severity, date range
-
-### 🗺️ Mapping & Geospatial
-- **OpenStreetMap Visualization** - Interactive map with custom markers
-- **Incident Markers** - Color-coded by severity (Critical, High, Medium, Low)
-- **Patrol Tracking** - Real-time patrol unit locations and status
-- **Hotspot Heatmap** - Crime density visualization and analysis
-
-### 👥 Role-Based Access Control
-- **Officer Roles** - Admin, SHO, DCP, IO, Constable
-- **Granular Permissions** - Different features per role
-- **High-Rank Analytics** - Executive-level incident graphs and reports
-- **Field Officer Tools** - Map-based incident response for patrol units
-
-### 📋 Case & Incident Management
-- **Case Tracking** - Complete case lifecycle management
-- **Incident Documentation** - Structured incident data collection
-- **Status Monitoring** - Real-time case and incident status updates
-- **CCTV Integration** - CCTV camera monitoring and status
-
-### 🚔 Operational Tools
-- **Patrol Unit Management** - Track active patrol units and assignments
-- **Admin Controls** - User management, roles, system settings, audit logs
-- **Performance Metrics** - System monitoring and health checks
+- **Case Management** — Full case lifecycle: create, read, update, delete
+- **Incident Tracking** — Real-time incident tracking and updates
+- **Geospatial Analysis** — Crime hotspot mapping with PostGIS
+- **Patrol Coordination** — Track patrol units and assignments
+- **CCTV Management** — Camera monitoring and status
+- **Analytics** — Statistics and reporting endpoints
+- **Role-based Access Control** — Admin, SHO, DCP, IO, Constable roles
+- **JWT Authentication** — Secure token-based auth with bcrypt password hashing
 
 ---
 
 ## 🏗️ Technology Stack
 
-### Frontend
-- **React 19** - Modern UI framework with Hooks
-- **Vite** - Fast build tool and dev server
-- **React Router v7** - Client-side routing
-- **Zustand** - Lightweight state management
-- **Axios** - HTTP client with JWT interceptors
-- **Leaflet + React-Leaflet** - Interactive mapping
-- **Three.js** - 3D graphics (login screen)
-- **Material 3** - Design system and components
-
 ### Backend
-- **FastAPI** - Modern Python web framework
-- **PostgreSQL + PostGIS** - Spatial database
-- **Redis** - Caching layer
-- **SQLAlchemy** - ORM
-- **Pydantic** - Data validation
+- **FastAPI** — Modern async Python web framework
+- **PostgreSQL 16 + PostGIS** — Spatial database
+- **Redis 7** — Caching layer
+- **SQLAlchemy** — ORM
+- **Pydantic** — Data validation
 
 ### Deployment
-- **Docker** - Containerization
-- **Nginx** - Reverse proxy and SPA routing
-- **Docker Compose** - Multi-container orchestration
+- **Docker** — Containerization
+- **Docker Compose** — Multi-container orchestration
 
 ---
 
@@ -86,15 +51,15 @@ SAMRAKSHA is a comprehensive police crime monitoring and case management platfor
 ### Installation & Running
 
 ```bash
-# Clone and navigate to project
+# Clone the repository
 git clone https://github.com/vyber07/SAMRAKSHA.git
 cd SAMRAKSHA
 
-# Start all services
-docker-compose up -d
+# Start all backend services
+docker compose up -d
 
-# Access the application
-# Open http://localhost in your browser
+# API available at http://localhost:8000
+# Interactive docs at http://localhost:8000/docs
 ```
 
 ### Demo Credentials
@@ -112,136 +77,77 @@ docker-compose up -d
 
 ```
 SAMRAKSHA/
-├── frontend/                           # React + Vite Application
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── LoginScreen.jsx        # 3D authentication interface
-│   │   │   ├── Dashboard.jsx          # Main dashboard (role-based)
-│   │   │   ├── SearchBar.jsx          # Global search component
-│   │   │   ├── IncidentGraph.jsx      # Analytics charts
-│   │   │   ├── MapComponent.jsx       # OpenStreetMap wrapper
-│   │   │   ├── Sidebar.jsx            # Navigation menu
-│   │   │   ├── TopBar.jsx             # Header bar
-│   │   │   └── widgets/               # UI components
-│   │   │       ├── StatsCard.jsx
-│   │   │       ├── IncidentTile.jsx
-│   │   │       ├── CaseCard.jsx
-│   │   │       ├── NotificationTile.jsx
-│   │   │       └── MapWidget.jsx
-│   │   ├── pages/
-│   │   │   ├── CasesPage.jsx          # Case management
-│   │   │   ├── IncidentsPage.jsx      # Incident tracking
-│   │   │   ├── MapPage.jsx            # Full-screen map
-│   │   │   ├── AnalyticsPage.jsx      # Analytics dashboard
-│   │   │   ├── PatrolPage.jsx         # Patrol tracking
-│   │   │   ├── CCTVPage.jsx           # CCTV monitoring
-│   │   │   └── AdminPage.jsx          # Admin controls
-│   │   ├── lib/
-│   │   │   ├── api.js                 # HTTP client & endpoints
-│   │   │   ├── store.js               # Zustand state
-│   │   │   └── permissions.js         # RBAC utilities
-│   │   ├── App.jsx                    # Router setup
-│   │   ├── main.jsx                   # Entry point
-│   │   └── index.css                  # Global styles & design tokens
-│   ├── public/                        # Static assets
-│   ├── Dockerfile                     # Multi-stage build
-│   ├── nginx.conf                     # Reverse proxy config
-│   ├── vite.config.js                # Build configuration
-│   ├── package.json                  # Dependencies
-│   └── README.md                      # Frontend documentation
-│
-├── backend/                           # FastAPI Application
+├── backend/                    # FastAPI Application
 │   ├── app/
-│   │   ├── api/                       # API endpoints
-│   │   ├── models/                    # Database models
-│   │   ├── schemas/                   # Pydantic schemas
-│   │   ├── database.py                # DB connection
-│   │   ├── security.py                # Auth & JWT
-│   │   └── main.py                    # FastAPI app
-│   └── requirements.txt               # Python dependencies
+│   │   ├── api/                # API endpoints
+│   │   ├── models/             # Database models
+│   │   ├── schemas/            # Pydantic schemas
+│   │   ├── database.py         # DB connection
+│   │   ├── security.py         # Auth & JWT
+│   │   └── main.py             # FastAPI app
+│   ├── db/
+│   │   └── schema.sql          # Database initialization
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── README.md               # Backend documentation
 │
-├── docker-compose.yml                # Service orchestration
-├── .env                               # Environment variables
-└── README.md                          # This file
+├── docker-compose.yml          # Service orchestration
+├── .env.example                # Environment template
+└── README.md                   # This file
 ```
 
 ---
 
-## 🎨 Design System
+## 🔌 API Endpoints
 
-### Color Palette
-- **Primary**: #0b66d2 (Blue) - Main actions and highlights
-- **Secondary**: #1e293b (Slate) - Secondary elements
-- **Tertiary**: #b24900 (Orange/Brown) - Accent color
-- **Neutral**: #0f172a (Navy) - Background and text
-- **Success**: #10b981 (Green) - Success states
-- **Warning**: #f59e0b (Amber) - Warning states
-- **Error**: #ef4444 (Red) - Error states
+```
+Authentication:
+  POST /auth/login
 
-### Typography
-- **Headlines**: Hanken Grotesk (24px-56px)
-- **Body Text**: Inter (14px-16px)
-- **Labels**: JetBrains Mono (12px-14px)
+Cases:
+  GET /cases, POST /cases
+  GET /cases/{id}, PATCH /cases/{id}, DELETE /cases/{id}
 
-### Effects
-- **Glassmorphism**: Backdrop filter blur (12px) with semi-transparent backgrounds
-- **Corner Radius**: Semi-curved corners (8px, 12px, 16px)
-- **Animations**: Smooth transitions with Material 3 easing curves
-- **Shadows**: Layered elevation system
+Incidents:
+  GET /incident, POST /incident
+  GET /incident/{id}, PATCH /incident/{id}
 
----
+Mapping:
+  GET /map/hotspots, GET /map/analytics
 
-## 🔐 Security Features
+Analytics:
+  GET /analytics/dashboard
+  GET /analytics/incidents
+  GET /analytics/cases
 
-- **JWT Authentication** - Secure token-based login
-- **Protected Routes** - Role-based access control
-- **Request Interceptors** - Automatic Authorization header injection
-- **CORS Configuration** - Secure cross-origin requests
-- **Environment Variables** - Sensitive data protection
-- **Password Hashing** - Bcrypt-based password storage
+Patrol:
+  GET /patrol, GET /patrol/location, POST /patrol/location
 
----
+CCTV:
+  GET /cctv, GET /cctv/{id}, GET /cctv/{id}/feed
 
-## 📊 Dashboard Features
+Admin:
+  GET /admin/users, POST /admin/users
+  GET /admin/settings, POST /admin/logs
 
-### For High-Rank Officers (Admin, SHO, DCP)
-- **Incident Analytics** - Line charts, bar charts, pie charts
-- **Statistics Cards** - Total, Active, Resolved incident counts
-- **KPI Tracking** - Key performance indicators and trends
-- **System Overview** - Quick stats and recent activity
+Health:
+  GET /health
+```
 
-### For Low-Rank Officers (IO, Constable)
-- **Interactive Map** - Real-time incident locations
-- **Hotspot Visualization** - Crime density heatmap
-- **Quick Access** - Fast navigation to patrol tools
-- **My Incidents** - Personalized incident list
+Full API documentation is available at `http://localhost:8000/docs` (Swagger UI) when running.
 
 ---
 
-## 🗺️ OpenStreetMap Integration
+## 🔐 Role-Based Access Control
 
-- **Incident Markers** - Color-coded by severity
-- **Patrol Units** - Real-time unit locations with status
-- **Hotspot Layer** - Crime density visualization
-- **Info Popups** - Detailed information on marker click
-- **Layer Controls** - Toggle different data layers
-- **Responsive** - Works on desktop and mobile
-
----
-
-## 📱 Pages Overview
-
-| Page | Purpose | Access |
-|------|---------|--------|
-| **Login** | Authentication | Public |
-| **Dashboard** | Main overview (role-based) | Authenticated |
-| **Cases** | Case management | Authenticated |
-| **Incidents** | Incident tracking | Authenticated |
-| **Map** | OpenStreetMap visualization | Authenticated |
-| **Analytics** | Charts and statistics | High-rank |
-| **Patrol** | Patrol unit tracking | Authenticated |
-| **CCTV** | Camera monitoring | Authenticated |
-| **Admin** | System administration | Admin only |
+| Endpoint | Admin | SHO | DCP | IO | Constable |
+|----------|:-----:|:---:|:---:|:--:|:---------:|
+| Cases | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Incidents | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Analytics | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Patrol | ✅ | ✅ | ✅ | ✅ | ✅ |
+| CCTV | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Admin | ✅ | ❌ | ❌ | ❌ | ❌ |
 
 ---
 
@@ -249,33 +155,25 @@ SAMRAKSHA/
 
 ### Environment Variables (.env)
 ```bash
-# Backend
-DATABASE_URL=postgresql://user:pass@db:5432/samraksha
-REDIS_URL=redis://cache:6379
+DATABASE_URL=postgresql+asyncpg://samraksha:samraksha_secret@postgres:5432/samraksha
+REDIS_URL=redis://redis:6379/0
 SECRET_KEY=your-secret-key-here
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-# Frontend
-VITE_API_URL=http://localhost:8000
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+DEMO_MODE=true
 ```
 
-### Docker Services
+See `.env.example` for the full template.
 
-**Frontend** (Nginx)
-- Port: 80
-- SPA routing enabled
-- Gzip compression
-- Cache configured (1-year TTL for static assets)
+### Docker Services
 
 **API** (FastAPI)
 - Port: 8000
 - Health check: `/health`
-- All endpoints documented
 
-**Database** (PostgreSQL)
+**Database** (PostgreSQL + PostGIS)
 - Port: 5432 (internal)
-- PostGIS extension for geospatial queries
+- Geospatial query support
 
 **Cache** (Redis)
 - Port: 6379 (internal)
@@ -285,135 +183,47 @@ VITE_API_URL=http://localhost:8000
 
 ## 🧪 Testing
 
-### Manual Testing
 ```bash
-# Test frontend
-cd frontend
-npm run build
+# Start services
+docker compose up -d
 
-# Test Docker
-docker-compose up -d
-curl http://localhost/health
+# Verify all services
+docker compose ps
 
-# Test API
+# Check API health
 curl http://localhost:8000/health
+
+# View logs
+docker compose logs -f api
 ```
-
-### Verify All Services
-```bash
-docker-compose ps
-docker-compose logs -f
-```
-
----
-
-## 📈 Performance
-
-- **Build Size**: 386 KB gzipped
-- **Bundle Modules**: 650+
-- **Build Time**: ~1.3 seconds
-- **Load Time**: <2 seconds
-- **First Paint**: <1 second
-
----
-
-## 🤝 Contributing
-
-### Development Workflow
-
-```bash
-# Frontend development
-cd frontend
-npm install
-npm run dev
-# Server runs on http://localhost:5173
-
-# Backend development
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python -m uvicorn app.main:app --reload
-```
-
-### Code Standards
-- Follow ESLint rules (frontend)
-- Follow PEP 8 (backend)
-- Write meaningful commit messages
-- Test before pushing
-
----
-
-## 📋 Legal & Compliance
-
-### Data Privacy
-- GDPR compliant (where applicable)
-- Data encryption at rest and in transit
-- Audit trail for all operations
-
-### Law Enforcement
-- Compliant with BNS/BNSS/BSA 2024
-- Supports multiple languages (Hindi, Gujarati, English)
-- Tamper-proof audit logs
-
-### Demo Data
-All demo data is synthetic and anonymized for testing purposes only.
-
----
-
-## 📚 Documentation
-
-- [Frontend README](./frontend/README.md) - Frontend-specific documentation
-- [Frontend Setup Guide](./FRONTEND_SETUP.md) - Detailed setup instructions
-- [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md) - Verification steps
-- [Implementation Guide](./IMPLEMENTATION_SUMMARY.md) - Architecture overview
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Frontend Won't Load
-```bash
-# Check logs
-docker-compose logs -f frontend
-
-# Verify Nginx is running
-curl http://localhost
-
-# Check port 80 is available
-lsof -i :80
-```
-
 ### API Connection Issues
 ```bash
-# Check API health
 curl http://localhost:8000/health
-
-# Check database
-docker-compose logs -f db
-
-# Check Redis
-docker-compose logs -f cache
+docker compose logs -f api
 ```
 
-### Build Errors
+### Database Connection Error
 ```bash
-# Clean rebuild
-cd frontend
-rm -rf node_modules dist
-npm install
-npm run build
+docker compose logs -f postgres
+docker compose exec postgres psql -U samraksha -c "\l"
+```
+
+### Cache Issues
+```bash
+docker compose logs -f redis
+docker compose exec redis redis-cli ping
 ```
 
 ---
 
-## 📞 Support
+## 📚 Documentation
 
-For issues, questions, or contributions:
-1. Check existing documentation
-2. Review error logs: `docker-compose logs -f`
-3. Verify all services: `docker-compose ps`
-4. Test connectivity: `curl http://localhost:8000/health`
+- [Backend README](./backend/README.md) — Detailed API documentation
 
 ---
 
@@ -423,24 +233,5 @@ This project is developed for the Kanad S.H.I.E.L.D. Cybersecurity Hackathon 202
 
 ---
 
-## 🎉 Status
-
-```
-✅ Frontend:         Complete & Running (Material 3 + Apple Glass Design)
-✅ Backend:          Complete & Running (FastAPI + PostgreSQL)
-✅ Docker:           Fully Configured
-✅ Integration:      All Services Connected
-✅ Design System:    Material 3 Implemented
-✅ Performance:      Optimized
-✅ Security:         Implemented
-✅ Documentation:    Comprehensive
-✅ Testing:          Ready for QA
-✅ Deployment:       Production-Ready
-```
-
----
-
-**SAMRAKSHA v2.0** | Police Crime Monitoring & Case Management Platform  
-**Build Date**: July 2026 | **Status**: ✅ LIVE & OPERATIONAL
-
-*Modern design with Material 3, glassmorphism effects, and role-based access control*
+**SAMRAKSHA** | Police Crime Monitoring & Case Management API  
+Built with FastAPI, PostgreSQL + PostGIS, and Redis
