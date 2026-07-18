@@ -2,11 +2,11 @@ import React from 'react';
 
 export default function IncidentTile({ incident }) {
   const severityColor = {
-    critical: '#ef4444',
-    high: '#f59e0b',
-    medium: '#ec4899',
-    low: '#10b981',
-  }[incident.severity || 'medium'] || '#6366f1';
+    critical: '#dc2626',
+    high: '#f97316',
+    medium: '#64748b',
+    low: '#16a34a',
+  }[incident.severity || 'medium'] || '#2563eb';
 
   return (
     <div style={{

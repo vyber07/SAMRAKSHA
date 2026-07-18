@@ -19,8 +19,8 @@ const MapComponent = ({
   const severityColors = {
     critical: '#dc2626',
     high: '#ea580c',
-    medium: '#f59e0b',
-    low: '#84cc16',
+    medium: '#f97316',
+    low: '#16a34a',
   };
 
   const getSeverityColor = (severity) => {
@@ -88,7 +88,7 @@ const MapComponent = ({
         const marker = L.marker([incident.latitude, incident.longitude], { icon })
           .bindPopup(`
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-width: 200px;">
-              <h4 style="margin: 0 0 8px 0; color: #0b66d2;">${incident.title || 'Incident'}</h4>
+              <h4 style="margin: 0 0 8px 0; color: #2563eb;">${incident.title || 'Incident'}</h4>
               <p style="margin: 4px 0; font-size: 12px; color: #666;">
                 <strong>Type:</strong> ${incident.type || 'Unknown'}
               </p>
@@ -137,10 +137,10 @@ const MapComponent = ({
             <div style="
               width: 28px;
               height: 28px;
-              background: #0b66d2;
+              background: #2563eb;
               border: 2px solid #ffffff;
               border-radius: 50%;
-              box-shadow: 0 0 6px #0b66d280;
+              box-shadow: 0 0 6px #2563eb80;
               display: flex;
               align-items: center;
               justify-content: center;
@@ -156,7 +156,7 @@ const MapComponent = ({
         const marker = L.marker([patrol.latitude, patrol.longitude], { icon })
           .bindPopup(`
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-width: 180px;">
-              <h4 style="margin: 0 0 8px 0; color: #0b66d2;">${patrol.name || 'Patrol Unit'}</h4>
+              <h4 style="margin: 0 0 8px 0; color: #2563eb;">${patrol.name || 'Patrol Unit'}</h4>
               <p style="margin: 4px 0; font-size: 12px; color: #666;">
                 <strong>ID:</strong> ${patrol.id || 'N/A'}
               </p>
@@ -165,8 +165,8 @@ const MapComponent = ({
                 <span style="
                   padding: 2px 8px;
                   border-radius: 4px;
-                  background: ${patrol.status === 'active' ? '#84cc1680' : '#ef444480'};
-                  color: ${patrol.status === 'active' ? '#65a30d' : '#dc2626'};
+                  background: ${patrol.status === 'active' ? '#16a34a80' : '#dc262680'};
+                  color: ${patrol.status === 'active' ? '#16a34a' : '#dc2626'};
                   font-weight: 600;
                 ">
                   ${patrol.status || 'Idle'}
@@ -213,8 +213,8 @@ const MapComponent = ({
             maxZoom: 17,
             minOpacity: 0.3,
             gradient: {
-              0.0: '#84cc16',
-              0.25: '#f59e0b',
+              0.0: '#16a34a',
+              0.25: '#f97316',
               0.5: '#ea580c',
               1.0: '#dc2626',
             },
@@ -232,8 +232,8 @@ const MapComponent = ({
             <div style="
               width: 24px;
               height: 24px;
-              background: rgba(239, 68, 68, 0.2);
-              border: 2px solid #ef4444;
+              background: rgba(220, 38, 38, 0.2);
+              border: 2px solid #dc2626;
               border-radius: 50%;
               display: flex;
               align-items: center;
@@ -242,7 +242,7 @@ const MapComponent = ({
               <div style="
                 width: 8px;
                 height: 8px;
-                background: #ef4444;
+                background: #dc2626;
                 border-radius: 50%;
               "></div>
             </div>
@@ -255,7 +255,7 @@ const MapComponent = ({
         L.marker([spot.latitude, spot.longitude], { icon })
           .bindPopup(`
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-width: 160px;">
-              <h4 style="margin: 0 0 8px 0; color: #b24900;">${spot.area || 'Hotspot'}</h4>
+              <h4 style="margin: 0 0 8px 0; color: #f97316;">${spot.area || 'Hotspot'}</h4>
               <p style="margin: 4px 0; font-size: 12px; color: #666;">
                 <strong>Incidents:</strong> ${spot.incidents || 0}
               </p>

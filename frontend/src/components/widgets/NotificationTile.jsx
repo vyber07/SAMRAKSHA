@@ -2,9 +2,9 @@ import React from 'react';
 
 export default function NotificationTile({ title, desc, severity = 'medium' }) {
   const colors = {
-    high: { bg: '#ef4444', icon: '🔴' },
-    medium: { bg: '#f59e0b', icon: '🟠' },
-    low: { bg: '#10b981', icon: '🟢' },
+    high: { bg: '#dc2626', icon: '🔴' },
+    medium: { bg: '#f97316', icon: '🟠' },
+    low: { bg: '#16a34a', icon: '🟢' },
   };
 
   const color = colors[severity] || colors.medium;

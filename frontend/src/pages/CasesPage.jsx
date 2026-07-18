@@ -25,7 +25,7 @@ export default function CasesPage() {
   };
 
   const getStatusColor = (status) => {
-    const colors = { open: '#ec4899', investigating: '#f59e0b', closed: '#10b981', pending: '#6366f1' };
+    const colors = { open: '#64748b', investigating: '#f97316', closed: '#16a34a', pending: '#2563eb' };
     return colors[status?.toLowerCase()] || '#cbd5e1';
   };
 

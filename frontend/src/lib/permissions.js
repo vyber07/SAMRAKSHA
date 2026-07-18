@@ -130,11 +130,11 @@ export const canPerformAction = (userRole, targetUserRole, action) => {
 
 export const getRoleColor = (role) => {
   const colors = {
-    admin: '#6366f1',
-    sho: '#8b5cf6',
+    admin: '#2563eb',
+    sho: '#f97316',
     dcp: '#06b6d4',
-    io: '#10b981',
-    constable: '#f59e0b',
+    io: '#16a34a',
+    constable: '#f97316',
   };
   return colors[role] || '#94a3b8';
 };

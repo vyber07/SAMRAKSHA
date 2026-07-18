@@ -2,11 +2,11 @@ import React from 'react';
 
 export default function CaseCard({ case: caseData }) {
   const statusColor = {
-    open: '#10b981',
-    active: '#6366f1',
+    open: '#16a34a',
+    active: '#2563eb',
     closed: '#94a3b8',
     archived: '#64748b',
-  }[caseData.status || 'open'] || '#6366f1';
+  }[caseData.status || 'open'] || '#2563eb';
 
   return (
     <div style={{

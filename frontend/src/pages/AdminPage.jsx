@@ -64,12 +64,12 @@ export default function AdminPage() {
                   padding: '10px 16px',
                   borderRadius: 'var(--radius-8)',
                   border: 'none',
-                  background: activeTab === tab.id ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                  color: activeTab === tab.id ? '#6366f1' : 'var(--light-text-secondary)',
+                  background: activeTab === tab.id ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
+                  color: activeTab === tab.id ? '#2563eb' : 'var(--light-text-secondary)',
                   fontSize: '14px',
                   fontWeight: activeTab === tab.id ? '600' : '500',
                   cursor: 'pointer',
-                  borderBottom: activeTab === tab.id ? '2px solid #6366f1' : '2px solid transparent',
+                  borderBottom: activeTab === tab.id ? '2px solid #2563eb' : '2px solid transparent',
                   whiteSpace: 'nowrap',
                 }}
                 onMouseEnter={(e) => {
@@ -106,9 +106,9 @@ export default function AdminPage() {
             <div style={{
               padding: '48px 24px',
               textAlign: 'center',
-              background: 'rgba(99, 102, 241, 0.08)',
+              background: 'rgba(37, 99, 235, 0.08)',
               borderRadius: 'var(--radius-16)',
-              border: '1px solid rgba(99, 102, 241, 0.2)',
+              border: '1px solid rgba(37, 99, 235, 0.2)',
               color: 'var(--light-text-secondary)',
             }}>
               <div style={{ fontSize: '36px', marginBottom: '12px' }}>🚀</div>
@@ -132,9 +132,9 @@ export default function AdminPage() {
                 marginTop: '24px',
               }}>
                 {[
-                  { label: 'Total Users', value: '24', color: '#6366f1' },
-                  { label: 'Active Now', value: '8', color: '#10b981' },
-                  { label: 'Pending', value: '3', color: '#f59e0b' },
+                  { label: 'Total Users', value: '24', color: '#2563eb' },
+                  { label: 'Active Now', value: '8', color: '#16a34a' },
+                  { label: 'Pending', value: '3', color: '#f97316' },
                 ].map((stat, i) => (
                   <div
                     key={i}
@@ -189,7 +189,7 @@ export default function AdminPage() {
                     style={{
                       padding: '16px',
                       marginBottom: '12px',
-                      borderLeft: '4px solid #6366f1',
+                      borderLeft: '4px solid #2563eb',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',

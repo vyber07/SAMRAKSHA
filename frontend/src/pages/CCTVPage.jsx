@@ -24,7 +24,7 @@ export default function CCTVPage() {
   };
 
   const getStatusColor = (status) => {
-    return status?.toLowerCase() === 'online' ? '#10b981' : '#ef4444';
+    return status?.toLowerCase() === 'online' ? '#16a34a' : '#dc2626';
   };
 
   return (
@@ -42,19 +42,19 @@ export default function CCTVPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
             <div className="glass fade-in" style={{ padding: '16px', textAlign: 'center' }}>
               <div className="label-sm" style={{ color: 'var(--neutral-variant)', marginBottom: '8px' }}>Online</div>
-              <div style={{ fontSize: '28px', fontWeight: '700', color: '#10b981' }}>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#16a34a' }}>
                 {cameras.filter(c => c.status?.toLowerCase() === 'online').length}
               </div>
             </div>
             <div className="glass fade-in" style={{ padding: '16px', textAlign: 'center' }}>
               <div className="label-sm" style={{ color: 'var(--neutral-variant)', marginBottom: '8px' }}>Offline</div>
-              <div style={{ fontSize: '28px', fontWeight: '700', color: '#ef4444' }}>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#dc2626' }}>
                 {cameras.filter(c => c.status?.toLowerCase() !== 'online').length}
               </div>
             </div>
             <div className="glass fade-in" style={{ padding: '16px', textAlign: 'center' }}>
               <div className="label-sm" style={{ color: 'var(--neutral-variant)', marginBottom: '8px' }}>Total</div>
-              <div style={{ fontSize: '28px', fontWeight: '700', color: '#6366f1' }}>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#2563eb' }}>
                 {cameras.length}
               </div>
             </div>
@@ -107,13 +107,13 @@ export default function CCTVPage() {
                       width: '100%',
                       aspectRatio: '16 / 9',
                       background: isOnline
-                        ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05))'
-                        : 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05))',
+                        ? 'linear-gradient(135deg, rgba(22, 163, 74, 0.15), rgba(22, 163, 74, 0.05))'
+                        : 'linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(220, 38, 38, 0.05))',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: '24px',
-                      color: isOnline ? '#10b981' : '#ef4444',
+                      color: isOnline ? '#16a34a' : '#dc2626',
                       borderBottom: `1px solid rgba(148, 163, 184, 0.1)`,
                       position: 'relative',
                     }}>
@@ -126,9 +126,9 @@ export default function CCTVPage() {
                           width: '12px',
                           height: '12px',
                           borderRadius: '50%',
-                          background: '#10b981',
+                          background: '#16a34a',
                           animation: 'pulse 2s infinite',
-                          boxShadow: '0 0 8px rgba(16, 185, 129, 0.5)',
+                          boxShadow: '0 0 8px rgba(22, 163, 74, 0.5)',
                         }} />
                       )}
                     </div>

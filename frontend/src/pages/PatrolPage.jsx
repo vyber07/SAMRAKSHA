@@ -24,8 +24,8 @@ export default function PatrolPage() {
   };
 
   const getStatusColor = (status) => {
-    const colors = { active: '#10b981', idle: '#f59e0b', responding: '#ec4899', offline: '#ef4444' };
-    return colors[status?.toLowerCase()] || '#6366f1';
+    const colors = { active: '#16a34a', idle: '#f97316', responding: '#64748b', offline: '#dc2626' };
+    return colors[status?.toLowerCase()] || '#2563eb';
   };
 
   return (

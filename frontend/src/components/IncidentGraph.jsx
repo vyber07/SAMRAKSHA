@@ -66,18 +66,18 @@ const SimpleLineChart = ({ data, title, height = 250 }) => {
         <path
           d={pathD}
           fill="none"
-          stroke="#6366f1"
+          stroke="#2563eb"
           strokeWidth="2"
           style={{
-            filter: 'drop-shadow(0 0 8px rgba(99, 102, 241, 0.3))',
+            filter: 'drop-shadow(0 0 8px rgba(37, 99, 235, 0.3))',
           }}
         />
 
         {/* Data points */}
         {points.map((p, i) => (
           <g key={`point-${i}`}>
-            <circle cx={p.x} cy={p.y} r="3" fill="#6366f1" />
-            <circle cx={p.x} cy={p.y} r="5" fill="rgba(99, 102, 241, 0.1)" />
+            <circle cx={p.x} cy={p.y} r="3" fill="#2563eb" />
+            <circle cx={p.x} cy={p.y} r="5" fill="rgba(37, 99, 235, 0.1)" />
           </g>
         ))}
       </svg>
@@ -110,7 +110,7 @@ const SimpleBarChart = ({ data, title, height = 250 }) => {
   const barWidth = (width - 80) / data.length;
   const padding = 40;
 
-  const colors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#0ea5e9'];
+  const colors = ['#2563eb', '#64748b', '#f97316', '#16a34a', '#0284c7'];
 
   return (
     <div style={{
@@ -194,7 +194,7 @@ const SimplePieChart = ({ data, title, size = 200 }) => {
   }
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
-  const colors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#0ea5e9'];
+  const colors = ['#2563eb', '#64748b', '#f97316', '#16a34a', '#0284c7'];
   const radius = size / 2 - 20;
   const centerX = size / 2;
   const centerY = size / 2;
@@ -397,8 +397,8 @@ export default function IncidentGraph() {
         gap: '16px',
       }}>
         <div style={{
-          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05))',
-          border: '1px solid rgba(99, 102, 241, 0.2)',
+          background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05))',
+          border: '1px solid rgba(37, 99, 235, 0.2)',
           borderRadius: '12px',
           padding: '20px',
           backdropFilter: 'blur(10px)',
@@ -409,8 +409,8 @@ export default function IncidentGraph() {
           </div>
         </div>
         <div style={{
-          background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(236, 72, 153, 0.05))',
-          border: '1px solid rgba(236, 72, 153, 0.2)',
+          background: 'linear-gradient(135deg, rgba(100, 116, 139, 0.1), rgba(100, 116, 139, 0.05))',
+          border: '1px solid rgba(100, 116, 139, 0.2)',
           borderRadius: '12px',
           padding: '20px',
           backdropFilter: 'blur(10px)',
@@ -421,8 +421,8 @@ export default function IncidentGraph() {
           </div>
         </div>
         <div style={{
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))',
-          border: '1px solid rgba(16, 185, 129, 0.2)',
+          background: 'linear-gradient(135deg, rgba(22, 163, 74, 0.1), rgba(22, 163, 74, 0.05))',
+          border: '1px solid rgba(22, 163, 74, 0.2)',
           borderRadius: '12px',
           padding: '20px',
           backdropFilter: 'blur(10px)',

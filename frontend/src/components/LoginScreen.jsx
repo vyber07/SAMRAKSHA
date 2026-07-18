@@ -29,14 +29,14 @@ function RotatingCube() {
       <mesh ref={meshRef}>
         <icosahedronGeometry args={[1, 4]} />
         <meshPhongMaterial
-          color="#6366f1"
-          emissive="#4f46e5"
+          color="#2563eb"
+          emissive="#1e40af"
           shininess={100}
           wireframe={false}
         />
       </mesh>
-      <pointLight position={[10, 10, 10]} intensity={1} color="#ec4899" />
-      <pointLight position={[-10, -10, 10]} intensity={0.5} color="#8b5cf6" />
+      <pointLight position={[10, 10, 10]} intensity={1} color="#64748b" />
+      <pointLight position={[-10, -10, 10]} intensity={0.5} color="#f97316" />
     </group>
   );
 }
@@ -131,7 +131,7 @@ export default function LoginScreen() {
               fontSize: '32px',
               fontWeight: '700',
               color: '#f1f5f9',
-              background: 'linear-gradient(135deg, #6366f1, #ec4899)',
+              background: 'linear-gradient(135deg, #2563eb, #64748b)',
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -174,8 +174,8 @@ export default function LoginScreen() {
                 outline: 'none',
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#6366f1';
-                e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+                e.target.style.borderColor = '#2563eb';
+                e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
               }}
               onBlur={(e) => {
                 e.target.style.borderColor = 'rgba(148, 163, 184, 0.3)';
@@ -210,8 +210,8 @@ export default function LoginScreen() {
                 outline: 'none',
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#6366f1';
-                e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+                e.target.style.borderColor = '#2563eb';
+                e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
               }}
               onBlur={(e) => {
                 e.target.style.borderColor = 'rgba(148, 163, 184, 0.3)';
@@ -240,7 +240,7 @@ export default function LoginScreen() {
               padding: '12px 24px',
               borderRadius: '12px',
               border: 'none',
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              background: 'linear-gradient(135deg, #2563eb, #1e40af)',
               color: '#fff',
               fontSize: '16px',
               fontWeight: '600',

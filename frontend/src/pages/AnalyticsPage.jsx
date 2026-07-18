@@ -64,10 +64,10 @@ export default function AnalyticsPage() {
     : 0;
 
   const statsCards = [
-    { label: 'Total Cases', value: stats?.total_cases, color: '#6366f1', trend: '+5%', data: casesData },
-    { label: 'Active Incidents', value: stats?.active_incidents, color: '#ec4899', trend: '-2%', data: incidentsData },
-    { label: 'Solved Cases', value: stats?.solved_cases, color: '#10b981', trend: '+12%', data: solvedData },
-    { label: 'Closure Rate', value: `${closureRate}%`, color: '#f59e0b', trend: '+3%', data: null },
+    { label: 'Total Cases', value: stats?.total_cases, color: '#2563eb', trend: '+5%', data: casesData },
+    { label: 'Active Incidents', value: stats?.active_incidents, color: '#64748b', trend: '-2%', data: incidentsData },
+    { label: 'Solved Cases', value: stats?.solved_cases, color: '#16a34a', trend: '+12%', data: solvedData },
+    { label: 'Closure Rate', value: `${closureRate}%`, color: '#f97316', trend: '+3%', data: null },
   ];
 
   return (
@@ -129,8 +129,8 @@ export default function AnalyticsPage() {
                   <div style={{
                     padding: '6px 12px',
                     borderRadius: 'var(--radius-8)',
-                    background: card.trend.startsWith('+') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    color: card.trend.startsWith('+') ? '#10b981' : '#ef4444',
+                    background: card.trend.startsWith('+') ? 'rgba(22, 163, 74, 0.1)' : 'rgba(220, 38, 38, 0.1)',
+                    color: card.trend.startsWith('+') ? '#16a34a' : '#dc2626',
                     fontSize: '12px',
                     fontWeight: '600',
                   }}>
@@ -147,14 +147,14 @@ export default function AnalyticsPage() {
             {/* Closure Rate Card */}
             <div className="glass fade-in" style={{
               padding: '24px',
-              borderLeft: '4px solid #6366f1',
+              borderLeft: '4px solid #2563eb',
             }}>
               <h3 className="heading-sm" style={{ marginBottom: '16px' }}>Closure Rate</h3>
               <div style={{ marginBottom: '16px' }}>
                 <div style={{
                   fontSize: '40px',
                   fontWeight: '700',
-                  color: '#6366f1',
+                  color: '#2563eb',
                   marginBottom: '8px',
                 }}>
                   {closureRate}%
@@ -163,10 +163,10 @@ export default function AnalyticsPage() {
                   {stats?.solved_cases} of {stats?.total_cases} cases resolved
                 </p>
               </div>
-              <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(99, 102, 241, 0.2)', overflow: 'hidden' }}>
+              <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(37, 99, 235, 0.2)', overflow: 'hidden' }}>
                 <div style={{
                   height: '100%',
-                  background: 'linear-gradient(90deg, #6366f1, #a5b4fc)',
+                  background: 'linear-gradient(90deg, #2563eb, #a5b4fc)',
                   width: `${closureRate}%`,
                   borderRadius: '2px',
                 }} />
@@ -176,26 +176,26 @@ export default function AnalyticsPage() {
             {/* Response Time Card */}
             <div className="glass fade-in" style={{
               padding: '24px',
-              borderLeft: '4px solid #ec4899',
+              borderLeft: '4px solid #64748b',
             }}>
               <h3 className="heading-sm" style={{ marginBottom: '16px' }}>Avg Response Time</h3>
               <div style={{ marginBottom: '16px' }}>
                 <div style={{
                   fontSize: '40px',
                   fontWeight: '700',
-                  color: '#ec4899',
+                  color: '#64748b',
                   marginBottom: '8px',
                 }}>
                   ~15 min
                 </div>
                 <p className="body-md" style={{ color: 'var(--light-text-secondary)', margin: 0 }}>
-                  <span style={{ color: '#10b981' }}>↓ 2 min</span> from last week
+                  <span style={{ color: '#16a34a' }}>↓ 2 min</span> from last week
                 </p>
               </div>
-              <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(236, 72, 153, 0.2)', overflow: 'hidden' }}>
+              <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(100, 116, 139, 0.2)', overflow: 'hidden' }}>
                 <div style={{
                   height: '100%',
-                  background: 'linear-gradient(90deg, #ec4899, #f472b6)',
+                  background: 'linear-gradient(90deg, #64748b, #f472b6)',
                   width: '65%',
                   borderRadius: '2px',
                 }} />
@@ -205,14 +205,14 @@ export default function AnalyticsPage() {
             {/* Active Stations Card */}
             <div className="glass fade-in" style={{
               padding: '24px',
-              borderLeft: '4px solid #10b981',
+              borderLeft: '4px solid #16a34a',
             }}>
               <h3 className="heading-sm" style={{ marginBottom: '16px' }}>Active Stations</h3>
               <div style={{ marginBottom: '16px' }}>
                 <div style={{
                   fontSize: '40px',
                   fontWeight: '700',
-                  color: '#10b981',
+                  color: '#16a34a',
                   marginBottom: '8px',
                 }}>
                   12
@@ -221,10 +221,10 @@ export default function AnalyticsPage() {
                   All stations operational
                 </p>
               </div>
-              <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(16, 185, 129, 0.2)', overflow: 'hidden' }}>
+              <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(22, 163, 74, 0.2)', overflow: 'hidden' }}>
                 <div style={{
                   height: '100%',
-                  background: 'linear-gradient(90deg, #10b981, #6ee7b7)',
+                  background: 'linear-gradient(90deg, #16a34a, #6ee7b7)',
                   width: '100%',
                   borderRadius: '2px',
                 }} />
@@ -241,10 +241,10 @@ export default function AnalyticsPage() {
               gap: '16px',
             }}>
               {[
-                { type: 'Theft', count: 145, color: '#6366f1' },
-                { type: 'Assault', count: 78, color: '#ec4899' },
-                { type: 'Robbery', count: 42, color: '#ef4444' },
-                { type: 'Vandalism', count: 89, color: '#f59e0b' },
+                { type: 'Theft', count: 145, color: '#2563eb' },
+                { type: 'Assault', count: 78, color: '#64748b' },
+                { type: 'Robbery', count: 42, color: '#dc2626' },
+                { type: 'Vandalism', count: 89, color: '#f97316' },
               ].map((incident, i) => (
                 <div key={i} style={{
                   padding: '16px',

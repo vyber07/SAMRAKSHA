@@ -25,8 +25,8 @@ export default function IncidentsPage() {
   };
 
   const getSeverityColor = (severity) => {
-    const colors = { critical: '#ef4444', high: '#f59e0b', medium: '#ec4899', low: '#10b981' };
-    return colors[severity?.toLowerCase()] || '#6366f1';
+    const colors = { critical: '#dc2626', high: '#f97316', medium: '#64748b', low: '#16a34a' };
+    return colors[severity?.toLowerCase()] || '#2563eb';
   };
 
   return (

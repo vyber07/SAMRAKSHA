@@ -46,7 +46,7 @@ export default function Sidebar() {
         <div style={{
           fontSize: '24px',
           fontWeight: '700',
-          background: 'linear-gradient(135deg, #6366f1, #ec4899)',
+          background: 'linear-gradient(135deg, #2563eb, #64748b)',
           backgroundClip: 'text',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
@@ -66,9 +66,9 @@ export default function Sidebar() {
               borderRadius: '12px',
               border: 'none',
               background: location.pathname === item.path
-                ? 'rgba(99, 102, 241, 0.2)'
+                ? 'rgba(37, 99, 235, 0.2)'
                 : 'transparent',
-              color: location.pathname === item.path ? '#6366f1' : '#cbd5e1',
+              color: location.pathname === item.path ? '#2563eb' : '#cbd5e1',
               fontSize: '14px',
               fontWeight: '500',
               cursor: 'pointer',
@@ -77,15 +77,15 @@ export default function Sidebar() {
               alignItems: 'center',
               gap: '12px',
               borderLeft: location.pathname === item.path
-                ? '3px solid #6366f1'
+                ? '3px solid #2563eb'
                 : '3px solid transparent',
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = 'rgba(99, 102, 241, 0.1)';
+              e.target.style.background = 'rgba(37, 99, 235, 0.1)';
             }}
             onMouseLeave={(e) => {
               e.target.style.background = location.pathname === item.path
-                ? 'rgba(99, 102, 241, 0.2)'
+                ? 'rgba(37, 99, 235, 0.2)'
                 : 'transparent';
             }}
           >
@@ -109,7 +109,7 @@ export default function Sidebar() {
             padding: '12px 16px',
             borderRadius: '12px',
             border: 'none',
-            background: 'rgba(99, 102, 241, 0.1)',
+            background: 'rgba(37, 99, 235, 0.1)',
             color: '#cbd5e1',
             fontSize: '14px',
             cursor: 'pointer',
@@ -124,15 +124,15 @@ export default function Sidebar() {
             padding: '12px 16px',
             borderRadius: '12px',
             border: 'none',
-            background: 'rgba(239, 68, 68, 0.1)',
-            color: '#fca5a5',
+            background: 'rgba(220, 38, 38, 0.1)',
+            color: '#fecaca',
             fontSize: '14px',
             fontWeight: '500',
             cursor: 'pointer',
             transition: 'all 0.2s',
           }}
           onMouseEnter={(e) => {
-            e.target.style.background = 'rgba(239, 68, 68, 0.2)';
+            e.target.style.background = 'rgba(220, 38, 38, 0.2)';
           }}
           onMouseLeave={(e) => {
             e.target.style.background = 'rgba(239, 68, 68, 0.1)';

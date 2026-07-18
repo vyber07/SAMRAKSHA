@@ -114,7 +114,7 @@ export default function MapPage() {
                       borderRadius: 'var(--radius-12)',
                       border: '1px solid rgba(148, 163, 184, 0.2)',
                       background: filters[layer.key] ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                      color: filters[layer.key] ? '#6366f1' : 'var(--light-text-secondary)',
+                      color: filters[layer.key] ? '#2563eb' : 'var(--light-text-secondary)',
                       cursor: 'pointer',
                       fontSize: '14px',
                       fontWeight: filters[layer.key] ? '600' : '500',

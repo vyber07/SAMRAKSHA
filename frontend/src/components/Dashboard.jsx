@@ -8,10 +8,111 @@ import SearchBar from './SearchBar';
 import IncidentTile from './widgets/IncidentTile';
 import CaseCard from './widgets/CaseCard';
 import NotificationTile from './widgets/NotificationTile';
-import MapWidget from './widgets/MapWidget';
 import StatsCard from './widgets/StatsCard';
 import IncidentGraph from './IncidentGraph';
 import MapComponent from './MapComponent';
+import CaseChartsPanel from './charts/CaseChartsPanel';
+
+// Material 3 Color Palette
+const COLORS = {
+  primary: '#2563eb',
+  secondary: '#64748b',
+  tertiary: '#f97316',
+  success: '#16a34a',
+  warning: '#ea580c',
+  error: '#dc2626',
+  info: '#0284c7',
+  // Glass morphism
+  glass: 'rgba(255, 255, 255, 0.05)',
+  glassBorder: 'rgba(148, 163, 184, 0.12)',
+};
+
+// Shared Glass Card Style
+const glassCardStyle = {
+  background: COLORS.glass,
+  border: `1px solid ${COLORS.glassBorder}`,
+  borderRadius: '16px',
+  backdropFilter: 'blur(12px)',
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+};
+
+// Stats Card Component (Material 3 Style)
+const StatCard = ({ icon: Icon, label, value, color, subtext }) => (
+  <div style={{
+    ...glassCardStyle,
+    padding: '20px',
+    position: 'relative',
+    overflow: 'hidden',
+    cursor: 'pointer',
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.transform = 'translateY(-4px)';
+    e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.15)';
+    e.currentTarget.style.background = `rgba(255, 255, 255, 0.08)`;
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = 'translateY(0)';
+    e.currentTarget.style.boxShadow = 'none';
+    e.currentTarget.style.background = COLORS.glass;
+  }}>
+    {/* Accent line */}
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '4px',
+      background: `linear-gradient(90deg, ${color}, transparent)`,
+    }} />
+
+    {/* Icon */}
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '48px',
+      height: '48px',
+      borderRadius: '12px',
+      background: `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, 0.1)`,
+      marginBottom: '12px',
+    }}>
+      <span style={{ fontSize: '24px', color }}>{Icon}</span>
+    </div>
+
+    {/* Label */}
+    <div style={{
+      fontSize: '12px',
+      color: '#94a3b8',
+      marginBottom: '8px',
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px',
+      fontWeight: '500',
+    }}>
+      {label}
+    </div>
+
+    {/* Value */}
+    <div style={{
+      fontSize: '32px',
+      fontWeight: '700',
+      color: '#f1f5f9',
+      marginBottom: '4px',
+    }}>
+      {value}
+    </div>
+
+    {/* Subtext */}
+    {subtext && (
+      <div style={{
+        fontSize: '11px',
+        color: '#64748b',
+        fontWeight: '500',
+      }}>
+        {subtext}
+      </div>
+    )}
+  </div>
+);
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -90,134 +191,390 @@ export default function Dashboard() {
           {/* Role Badge */}
           <div style={{
             display: 'inline-block',
-            padding: '6px 12px',
-            background: isHighRank
-              ? 'rgba(99, 102, 241, 0.1)'
-              : 'rgba(16, 185, 129, 0.1)',
-            border: isHighRank
-              ? '1px solid rgba(99, 102, 241, 0.3)'
-              : '1px solid rgba(16, 185, 129, 0.3)',
+            padding: '8px 14px',
+            background: `rgba(${parseInt(COLORS.primary.slice(1, 3), 16)}, ${parseInt(COLORS.primary.slice(3, 5), 16)}, ${parseInt(COLORS.primary.slice(5, 7), 16)}, 0.1)`,
+            border: `1px solid rgba(${parseInt(COLORS.primary.slice(1, 3), 16)}, ${parseInt(COLORS.primary.slice(3, 5), 16)}, ${parseInt(COLORS.primary.slice(5, 7), 16)}, 0.25)`,
             borderRadius: '8px',
-            fontSize: '12px',
+            fontSize: '11px',
             fontWeight: '600',
-            color: isHighRank ? '#c7d2fe' : '#a7f3d0',
-            marginBottom: '16px',
+            color: '#a5b4fc',
+            marginBottom: '24px',
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
           }}>
             {userRole || 'Guest'} Dashboard
-            {isHighRank ? ' (Analytics View)' : ' (Field View)'}
           </div>
 
-          {/* HIGH-RANK DASHBOARD: Analytics & Incident Graph */}
+          {/* HIGH-RANK DASHBOARD: New Material 3 Design */}
           {isHighRank && (
             <>
-              <SearchBar />
-
-              {/* Quick Stats */}
+              {/* TOP ROW: 6 Quick Access Stats Cards */}
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                 gap: '16px',
-                marginBottom: '24px',
+                marginBottom: '28px',
               }}>
-                {stats && [
-                  { label: 'Total Cases', value: stats.total_cases, color: '#6366f1' },
-                  { label: 'Active Incidents', value: stats.active_incidents, color: '#ec4899' },
-                  { label: 'Solved Cases', value: stats.solved_cases, color: '#10b981' },
-                  { label: 'Crime Hotspots', value: stats.hotspots, color: '#f59e0b' },
-                ].map((stat, i) => (
-                  <StatsCard key={i} {...stat} />
-                ))}
+                {stats ? (
+                  <>
+                    <StatCard
+                      icon="📋"
+                      label="New Cases"
+                      value={stats.total_cases || 0}
+                      color={COLORS.primary}
+                      subtext="This month"
+                    />
+                    <StatCard
+                      icon="✓"
+                      label="Solved Cases"
+                      value={stats.solved_cases || 0}
+                      color={COLORS.success}
+                      subtext="Completed"
+                    />
+                    <StatCard
+                      icon="📂"
+                      label="Open Cases"
+                      value={Math.max(0, (stats.total_cases || 0) - (stats.solved_cases || 0))}
+                      color={COLORS.info}
+                      subtext="Active"
+                    />
+                    <StatCard
+                      icon="⚙️"
+                      label="In Progress"
+                      value={stats.active_incidents || 0}
+                      color={COLORS.secondary}
+                      subtext="Being processed"
+                    />
+                    <StatCard
+                      icon="⏳"
+                      label="Pending Review"
+                      value={Math.max(0, (stats.total_cases || 0) - (stats.solved_cases || 0) - (stats.active_incidents || 0))}
+                      color={COLORS.warning}
+                      subtext="Awaiting approval"
+                    />
+                    <StatCard
+                      icon="🔒"
+                      label="Closed Cases"
+                      value={stats.hotspots || 0}
+                      color={COLORS.tertiary}
+                      subtext="Archived"
+                    />
+                  </>
+                ) : (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+                    Loading statistics...
+                  </div>
+                )}
               </div>
 
-              {/* Incident Graphs & Analytics */}
+              {/* CHARTS SECTION: Case Analytics */}
               <div style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid rgba(148, 163, 184, 0.1)',
-                borderRadius: '16px',
-                padding: '24px',
-                marginBottom: '24px',
-                backdropFilter: 'blur(10px)',
+                marginBottom: '28px',
               }}>
-                <h2 style={{
-                  margin: '0 0 20px 0',
-                  fontSize: '20px',
-                  fontWeight: '700',
-                  color: '#f1f5f9',
-                }}>
-                  Incident Analytics
-                </h2>
-                <IncidentGraph />
+                <CaseChartsPanel cases={caseList} />
               </div>
 
-              {/* Main content grid */}
+              {/* MIDDLE SECTION: 50/50 Layout - Graph & Search */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '20px',
+                marginBottom: '28px',
+              }}>
+                {/* Left side: Incident Analytics Graph */}
+                <div style={{
+                  ...glassCardStyle,
+                  padding: '24px',
+                }}>
+                  <h2 style={{
+                    margin: '0 0 20px 0',
+                    fontSize: '18px',
+                    fontWeight: '700',
+                    color: '#f1f5f9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}>
+                    <span style={{ fontSize: '20px' }}>📊</span>
+                    Incident Analytics
+                  </h2>
+                  <div style={{ minHeight: '300px' }}>
+                    <IncidentGraph />
+                  </div>
+                </div>
+
+                {/* Right side: Search & Quick Actions */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                }}>
+                  {/* Bing-style Search Bar (self-contained prominent surface) */}
+                  <SearchBar />
+
+                  {/* Quick Action Cards */}
+                  <div style={{
+                    ...glassCardStyle,
+                    padding: '20px',
+                    flex: 1,
+                  }}>
+                    <h3 style={{
+                      margin: '0 0 16px 0',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#f1f5f9',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}>
+                      Quick Actions
+                    </h3>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}>
+                      <button style={{
+                        padding: '12px 16px',
+                        background: `linear-gradient(135deg, ${COLORS.primary}, #1e40af)`,
+                        border: 'none',
+                        borderRadius: '12px',
+                        color: 'white',
+                        fontWeight: '600',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.02)';
+                        e.currentTarget.style.boxShadow = `0 8px 16px rgba(37, 99, 235, 0.3)`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}>
+                        + New Case
+                      </button>
+                      <button style={{
+                        padding: '12px 16px',
+                        background: `rgba(100, 116, 139, 0.1)`,
+                        border: `1.5px solid ${COLORS.secondary}`,
+                        borderRadius: '12px',
+                        color: '#cbd5e1',
+                        fontWeight: '600',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = `rgba(100, 116, 139, 0.15)`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = `rgba(100, 116, 139, 0.1)`;
+                      }}>
+                        Report Issue
+                      </button>
+                      <button style={{
+                        padding: '12px 16px',
+                        background: `rgba(249, 115, 22, 0.1)`,
+                        border: `1.5px solid ${COLORS.tertiary}`,
+                        borderRadius: '12px',
+                        color: '#fed7aa',
+                        fontWeight: '600',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = `rgba(249, 115, 22, 0.15)`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = `rgba(249, 115, 22, 0.1)`;
+                      }}>
+                        View Analytics
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BOTTOM SECTION: Incidents & Notifications Side by Side */}
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
                 gap: '20px',
                 marginBottom: '24px',
               }}>
-                {/* Left column */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {/* Map Widget */}
-                  <MapWidget />
-
-                  {/* Quick Notifications */}
-                  <div>
-                    <h2 style={{ marginBottom: '12px', fontSize: '18px', fontWeight: '600' }}>
-                      Quick Notifications
-                    </h2>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {[
-                        { title: 'New Incident', desc: 'Case #2024-001 updated', severity: 'high' },
-                        { title: 'Alert', desc: 'Suspicious activity detected', severity: 'medium' },
-                        { title: 'Info', desc: 'Patrol unit 5 check-in OK', severity: 'low' },
-                      ].map((notif, i) => (
-                        <NotificationTile key={i} {...notif} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right column */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {/* Recent Incidents */}
-                  <div>
-                    <h2 style={{ marginBottom: '12px', fontSize: '18px', fontWeight: '600' }}>
-                      Recent Incidents
-                    </h2>
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      maxHeight: '400px',
-                      overflow: 'auto',
-                    }}>
-                      {incidentList.slice(0, 4).map((incident) => (
+                {/* Left: Recent Incidents */}
+                <div style={{
+                  ...glassCardStyle,
+                  padding: '24px',
+                }}>
+                  <h2 style={{
+                    margin: '0 0 16px 0',
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    color: '#f1f5f9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}>
+                    <span style={{ fontSize: '18px' }}>🚨</span>
+                    Recent Incidents
+                  </h2>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                    maxHeight: '320px',
+                    overflow: 'auto',
+                  }}>
+                    {incidentList.length > 0 ? (
+                      incidentList.slice(0, 5).map((incident) => (
                         <IncidentTile key={incident.id} incident={incident} />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Quick Access Cases */}
-                  <div>
-                    <h2 style={{ marginBottom: '12px', fontSize: '18px', fontWeight: '600' }}>
-                      Priority Cases
-                    </h2>
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      maxHeight: '300px',
-                      overflow: 'auto',
-                    }}>
-                      {caseList.slice(0, 3).map((c) => (
-                        <CaseCard key={c.id} case={c} />
-                      ))}
-                    </div>
+                      ))
+                    ) : (
+                      <div style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
+                        No incidents
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* Right: Notifications & Alerts */}
+                <div style={{
+                  ...glassCardStyle,
+                  padding: '24px',
+                }}>
+                  <h2 style={{
+                    margin: '0 0 16px 0',
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    color: '#f1f5f9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}>
+                    <span style={{ fontSize: '18px' }}>🔔</span>
+                    Alerts & Notifications
+                  </h2>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                    maxHeight: '320px',
+                    overflow: 'auto',
+                  }}>
+                    {[
+                      { title: 'New Incident', desc: 'Case #2024-001 updated', severity: 'high' },
+                      { title: 'Alert', desc: 'Suspicious activity detected at Sector 5', severity: 'medium' },
+                      { title: 'Info', desc: 'Patrol unit 5 check-in OK', severity: 'low' },
+                      { title: 'Priority', desc: 'Follow-up required on Case #2024-002', severity: 'high' },
+                      { title: 'Update', desc: 'Database sync completed', severity: 'low' },
+                    ].map((notif, i) => (
+                      <NotificationTile key={i} {...notif} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons Row */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '12px',
+              }}>
+                <button style={{
+                  padding: '14px 16px',
+                  background: COLORS.glass,
+                  border: `1px solid ${COLORS.glassBorder}`,
+                  borderRadius: '12px',
+                  color: '#94a3b8',
+                  fontWeight: '600',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `rgba(255, 255, 255, 0.08)`;
+                  e.currentTarget.style.color = '#f1f5f9';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = COLORS.glass;
+                  e.currentTarget.style.color = '#94a3b8';
+                }}>
+                  📥 Import Data
+                </button>
+                <button style={{
+                  padding: '14px 16px',
+                  background: COLORS.glass,
+                  border: `1px solid ${COLORS.glassBorder}`,
+                  borderRadius: '12px',
+                  color: '#94a3b8',
+                  fontWeight: '600',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `rgba(255, 255, 255, 0.08)`;
+                  e.currentTarget.style.color = '#f1f5f9';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = COLORS.glass;
+                  e.currentTarget.style.color = '#94a3b8';
+                }}>
+                  📊 Export Report
+                </button>
+                <button style={{
+                  padding: '14px 16px',
+                  background: COLORS.glass,
+                  border: `1px solid ${COLORS.glassBorder}`,
+                  borderRadius: '12px',
+                  color: '#94a3b8',
+                  fontWeight: '600',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `rgba(255, 255, 255, 0.08)`;
+                  e.currentTarget.style.color = '#f1f5f9';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = COLORS.glass;
+                  e.currentTarget.style.color = '#94a3b8';
+                }}>
+                  🔄 Sync Data
+                </button>
+                <button style={{
+                  padding: '14px 16px',
+                  background: COLORS.glass,
+                  border: `1px solid ${COLORS.glassBorder}`,
+                  borderRadius: '12px',
+                  color: '#94a3b8',
+                  fontWeight: '600',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `rgba(255, 255, 255, 0.08)`;
+                  e.currentTarget.style.color = '#f1f5f9';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = COLORS.glass;
+                  e.currentTarget.style.color = '#94a3b8';
+                }}>
+                  ⚙️ Settings
+                </button>
               </div>
             </>
           )}
@@ -227,17 +584,14 @@ export default function Dashboard() {
             <>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 350px',
+                gridTemplateColumns: '1fr 380px',
                 gap: '20px',
                 height: 'calc(100vh - 200px)',
               }}>
                 {/* Full-screen map */}
                 <div style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  border: '1px solid rgba(148, 163, 184, 0.1)',
-                  borderRadius: '16px',
+                  ...glassCardStyle,
                   overflow: 'hidden',
-                  backdropFilter: 'blur(10px)',
                 }}>
                   <MapComponent
                     incidents={mapData.incidents}
@@ -256,47 +610,43 @@ export default function Dashboard() {
                   gap: '16px',
                   overflow: 'auto',
                 }}>
+                  {/* Bing-style Search Bar */}
+                  <SearchBar />
+
                   {/* Quick Stats */}
                   {stats && (
                     <>
-                      <div style={{
-                        background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(236, 72, 153, 0.05))',
-                        border: '1px solid rgba(236, 72, 153, 0.2)',
-                        borderRadius: '12px',
-                        padding: '16px',
-                        backdropFilter: 'blur(10px)',
-                      }}>
-                        <div style={{ color: '#94a3b8', fontSize: '11px', marginBottom: '6px' }}>Active Now</div>
-                        <div style={{ color: '#f1f5f9', fontSize: '28px', fontWeight: '700' }}>
-                          {stats.active_incidents || 0}
-                        </div>
-                      </div>
-
-                      <div style={{
-                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))',
-                        border: '1px solid rgba(16, 185, 129, 0.2)',
-                        borderRadius: '12px',
-                        padding: '16px',
-                        backdropFilter: 'blur(10px)',
-                      }}>
-                        <div style={{ color: '#94a3b8', fontSize: '11px', marginBottom: '6px' }}>Resolved</div>
-                        <div style={{ color: '#f1f5f9', fontSize: '28px', fontWeight: '700' }}>
-                          {stats.solved_cases || 0}
-                        </div>
-                      </div>
+                      <StatCard
+                        icon="🔴"
+                        label="Active Incidents"
+                        value={stats.active_incidents || 0}
+                        color={COLORS.error}
+                        subtext="Right now"
+                      />
+                      <StatCard
+                        icon="✅"
+                        label="Resolved Today"
+                        value={stats.solved_cases || 0}
+                        color={COLORS.success}
+                        subtext="Completed"
+                      />
                     </>
                   )}
 
                   {/* Recent Incidents */}
-                  <div>
-                    <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600', color: '#f1f5f9' }}>
+                  <div style={{
+                    ...glassCardStyle,
+                    padding: '16px',
+                    flex: 1,
+                  }}>
+                    <h3 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: '600', color: '#f1f5f9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       My Incidents
                     </h3>
                     <div style={{
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '8px',
-                      maxHeight: '300px',
+                      maxHeight: '280px',
                       overflow: 'auto',
                     }}>
                       {incidentList.slice(0, 5).map((incident) => (
@@ -309,33 +659,37 @@ export default function Dashboard() {
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px',
+                    gap: '10px',
                   }}>
                     <button style={{
-                      padding: '10px 16px',
-                      background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                      padding: '12px 16px',
+                      background: `linear-gradient(135deg, ${COLORS.primary}, #1e40af)`,
                       border: 'none',
-                      borderRadius: '8px',
+                      borderRadius: '12px',
                       color: 'white',
                       fontWeight: '600',
                       fontSize: '12px',
                       cursor: 'pointer',
-                      transition: 'all 0.2s',
+                      transition: 'all 0.3s',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
                     }}>
-                      Report Incident
+                      🚨 Report Incident
                     </button>
                     <button style={{
-                      padding: '10px 16px',
-                      background: 'rgba(99, 102, 241, 0.1)',
-                      border: '1px solid rgba(99, 102, 241, 0.3)',
-                      borderRadius: '8px',
-                      color: '#a5b4fc',
+                      padding: '12px 16px',
+                      background: `rgba(${parseInt(COLORS.secondary.slice(1, 3), 16)}, ${parseInt(COLORS.secondary.slice(3, 5), 16)}, ${parseInt(COLORS.secondary.slice(5, 7), 16)}, 0.1)`,
+                      border: `1.5px solid ${COLORS.secondary}`,
+                      borderRadius: '12px',
+                      color: '#cbd5e1',
                       fontWeight: '600',
                       fontSize: '12px',
                       cursor: 'pointer',
-                      transition: 'all 0.2s',
+                      transition: 'all 0.3s',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
                     }}>
-                      Refresh Map
+                      🔄 Refresh Map
                     </button>
                   </div>
                 </div>

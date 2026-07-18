@@ -29,7 +29,7 @@ export default function TopBar({ onRefresh }) {
           fontSize: '28px',
           fontWeight: '700',
           margin: '0',
-          background: 'linear-gradient(135deg, #6366f1, #ec4899)',
+          background: 'linear-gradient(135deg, #2563eb, #64748b)',
           backgroundClip: 'text',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
@@ -57,7 +57,7 @@ export default function TopBar({ onRefresh }) {
             padding: '8px 16px',
             borderRadius: '8px',
             border: '1px solid rgba(148, 163, 184, 0.2)',
-            background: 'rgba(99, 102, 241, 0.1)',
+            background: 'rgba(37, 99, 235, 0.1)',
             color: '#cbd5e1',
             fontSize: '14px',
             cursor: isRefreshing ? 'not-allowed' : 'pointer',
@@ -68,7 +68,7 @@ export default function TopBar({ onRefresh }) {
             gap: '6px',
           }}
           onMouseEnter={(e) => {
-            if (!isRefreshing) e.target.style.background = 'rgba(99, 102, 241, 0.2)';
+            if (!isRefreshing) e.target.style.background = 'rgba(37, 99, 235, 0.2)';
           }}
           onMouseLeave={(e) => {
             if (!isRefreshing) e.target.style.background = 'rgba(99, 102, 241, 0.1)';
@@ -93,7 +93,7 @@ export default function TopBar({ onRefresh }) {
           padding: '8px 12px',
           borderRadius: '8px',
           background: 'rgba(99, 102, 241, 0.1)',
-          border: '1px solid rgba(99, 102, 241, 0.2)',
+          border: '1px solid rgba(37, 99, 235, 0.2)',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
@@ -102,7 +102,7 @@ export default function TopBar({ onRefresh }) {
             width: '8px',
             height: '8px',
             borderRadius: '50%',
-            background: '#10b981',
+            background: '#16a34a',
             animation: 'pulse 2s infinite',
           }} />
           <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
