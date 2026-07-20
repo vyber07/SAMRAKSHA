@@ -2,7 +2,7 @@ from app.db.connection import get_db, fetch_one, fetch_all, execute
 from app.api import auth
 from app.api.auth import get_current_officer
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, validator
 from typing import Optional
 from datetime import datetime
@@ -55,6 +55,7 @@ class FIRCreateRequest(BaseModel):
 
 @router.post("/create")
 async def create_fir(
+    request: Request,
     body: FIRCreateRequest,
     db = Depends(get_db),
     officer = Depends(auth.require_permission('case_create'))
@@ -147,6 +148,12 @@ async def create_fir(
             ) VALUES ($1,$2,'create','case','FIR registered')
         """, [case_id, str(officer['id'])])
 
+        from app.services.audit import log_activity
+        try:
+            await log_activity(db, str(officer['id']), "create_case", f"Officer {officer['badge_no']} registered FIR: {fir_no}", request.client.host)
+        except Exception as e:
+            logger.error("Audit log failed on create_fir", error=str(e))
+
         await db.commit()
 
     except Exception as e:
@@ -237,6 +244,7 @@ async def search_cases(
 
 @router.get("/{case_id}")
 async def get_case(
+    request: Request,
     case_id: str,
     db = Depends(get_db),
     officer = Depends(get_current_officer)
@@ -261,6 +269,13 @@ async def get_case(
         (case_id, officer_id, action)
         VALUES ($1,$2,'view')
     """, [case_id, str(officer['id'])])
+
+    from app.services.audit import log_activity
+    try:
+        await log_activity(db, str(officer['id']), "view_case", f"Officer {officer['badge_no']} accessed case details for case: {case_id}", request.client.host)
+    except Exception as e:
+        logger.error("Audit log failed on view_case", error=str(e))
+
     await db.commit()
 
     io = await fetch_one(db,

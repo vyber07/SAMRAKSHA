@@ -254,3 +254,15 @@ INSERT INTO permissions (permission_key, module, action, description, default_fo
     ('analytics_view',    'admin', 'view',   'View analytics dashboard', 'dcp'),
     ('admin_permissions', 'admin', 'edit',   'Manage officer permissions', 'admin'),
     ('cctv_view',         'cctv', 'view',   'View CCTV alerts', 'sho') ON CONFLICT DO NOTHING;
+
+-- System activity log (tamper-proof)
+CREATE TABLE system_logs (
+    id          BIGSERIAL PRIMARY KEY,
+    officer_id  UUID REFERENCES officers(id),
+    action      VARCHAR(50) NOT NULL,
+    details     TEXT,
+    ip_address  INET,
+    created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE RULE no_update_system_logs AS ON UPDATE TO system_logs DO INSTEAD NOTHING;
+CREATE RULE no_delete_system_logs AS ON DELETE TO system_logs DO INSTEAD NOTHING;

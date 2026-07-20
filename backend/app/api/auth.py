@@ -164,6 +164,12 @@ async def login(
         str(officer['id']), officer['role'], str(officer['ps_id'])
     )
 
+    from app.services.audit import log_activity
+    try:
+        await log_activity(db, officer_id, "login", f"Officer {officer['badge_no']} logged in successfully.", request.client.host)
+    except Exception as e:
+        structlog.get_logger().error("Audit logging failed", error=str(e))
+
     return {
         "access_token": token,
         "token_type":   "bearer",
@@ -178,8 +184,10 @@ async def login(
 
 @router.post("/logout")
 async def logout(
+    request: Request,
     token: str = Depends(oauth2),
-    officer = Depends(get_current_officer)
+    officer = Depends(get_current_officer),
+    db = Depends(get_db)
 ):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -193,4 +201,12 @@ async def logout(
     except Exception as e:
         import structlog
         structlog.get_logger().error("Logout blacklist failed", error=str(e))
+
+    from app.services.audit import log_activity
+    try:
+        await log_activity(db, officer['id'], "logout", f"Officer {officer['badge_no']} logged out.", request.client.host)
+    except Exception as e:
+        import structlog
+        structlog.get_logger().error("Logout audit logging failed", error=str(e))
+
     return {"message": "Logged out"}

@@ -1,7 +1,7 @@
 from app.db.connection import get_db, fetch_one, fetch_all, execute
 from app.api.auth import get_current_officer
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 import structlog
@@ -22,6 +22,7 @@ class GenerateRequest(BaseModel):
 
 @router.post("/generate")
 async def generate_document(
+    request: Request,
     body: GenerateRequest,
     db = Depends(get_db),
     officer = Depends(get_current_officer)
@@ -115,6 +116,12 @@ async def generate_document(
         f"(SHA-256: {sha256[:8]}...)",
         str(officer['id'])
     ])
+
+    from app.services.audit import log_activity
+    try:
+        await log_activity(db, str(officer['id']), "generate_document", f"Officer {officer['badge_no']} generated document: {body.doc_type} for case: {body.case_id}", request.client.host)
+    except Exception as e:
+        logger.error("Audit log failed on generate_document", error=str(e))
 
     await db.commit()
 
