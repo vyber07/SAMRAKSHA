@@ -27,6 +27,7 @@ async def generate_document(
     body: GenerateRequest,
     db = Depends(get_db),
     officer = Depends(auth.require_permission('doc_generate'))
+):
     if body.doc_type not in DOC_TYPES:
         raise HTTPException(400, f"Invalid doc_type. Must be one of: {DOC_TYPES}")
 
