@@ -6,16 +6,16 @@ from pydantic import BaseModel
 from datetime import datetime
 import structlog
 
+from app.api import auth
+
 router = APIRouter()
 logger = structlog.get_logger()
 
 @router.get("/routes")
 async def get_patrol_routes(
     db = Depends(get_db),
-    officer = Depends(get_current_officer)
+    officer = Depends(auth.require_permission('patrol_view'))
 ):
-    if officer['role'] == 'constable':
-        raise HTTPException(403, "Access denied")
 
     units = await fetch_all(db, """
         SELECT id, unit_name, current_lat, current_lon, status
@@ -110,7 +110,7 @@ async def update_patrol_unit(
     unit_id: str,
     body: UnitUpdate,
     db = Depends(get_db),
-    officer = Depends(get_current_officer)
+    officer = Depends(auth.require_permission('patrol_dispatch'))
 ):
     await execute(db, """
         UPDATE patrol_units

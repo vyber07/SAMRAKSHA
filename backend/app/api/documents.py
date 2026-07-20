@@ -1,4 +1,5 @@
 from app.db.connection import get_db, fetch_one, fetch_all, execute
+from app.api import auth
 from app.api.auth import get_current_officer
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -25,11 +26,7 @@ async def generate_document(
     request: Request,
     body: GenerateRequest,
     db = Depends(get_db),
-    officer = Depends(get_current_officer)
-):
-    if officer['role'] == 'constable':
-        raise HTTPException(403, "Constables cannot generate documents")
-
+    officer = Depends(auth.require_permission('doc_generate'))
     if body.doc_type not in DOC_TYPES:
         raise HTTPException(400, f"Invalid doc_type. Must be one of: {DOC_TYPES}")
 

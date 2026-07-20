@@ -120,9 +120,12 @@ async def check_anpr_match(
             'camera':  camera_id,
         })
 
+from app.api import auth
+
 @router.get("/anomalies")
 async def get_cctv_anomalies(
-    db = Depends(get_db)
+    db = Depends(get_db),
+    officer = Depends(auth.require_permission('cctv_view'))
 ):
     from app.db.connection import fetch_all
     anomalies = await fetch_all(db, """

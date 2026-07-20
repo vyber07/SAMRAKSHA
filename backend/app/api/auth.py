@@ -99,8 +99,8 @@ def require_permission(permission_key: str):
         role_permissions = {
             'constable': [],  # Can do nothing
             'io': ['case_create', 'case_view_own_ps', 'case_edit', 'patrol_view'],
-            'sho': ['case_view_all', 'case_edit', 'doc_generate', 'patrol_dispatch', 'cctv_view'],
-            'dcp': ['case_view_all', 'analytics_view'],
+            'sho': ['case_view_all', 'case_edit', 'doc_generate', 'patrol_dispatch', 'patrol_view', 'cctv_view', 'analytics_view'],
+            'dcp': ['case_view_all', 'analytics_view', 'patrol_view'],
             'admin': ['admin_permissions', 'analytics_view'],
         }
         

@@ -5,13 +5,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 import structlog
 
+from app.api import auth
+
 router = APIRouter()
 logger = structlog.get_logger()
 
 @router.get("/summary")
 async def get_dashboard_summary(
     db = Depends(get_db),
-    officer = Depends(get_current_officer)
+    officer = Depends(auth.require_permission('analytics_view'))
 ):
     firs_today = await fetch_one(db, """
         SELECT COUNT(*) as count FROM cases
@@ -60,10 +62,8 @@ async def get_dashboard_summary(
 @router.get("/trends")
 async def get_trends(
     db = Depends(get_db),
-    officer = Depends(get_current_officer)
+    officer = Depends(auth.require_permission('analytics_view'))
 ):
-    if officer['role'] == 'constable':
-        return {}
 
     hourly = await fetch_all(db, """
         SELECT EXTRACT(HOUR FROM timestamp)::INTEGER as hour,
@@ -121,10 +121,8 @@ class SimulateRequest(BaseModel):
 async def simulate_event(
     body: SimulateRequest,
     db = Depends(get_db),
-    officer = Depends(get_current_officer)
+    officer = Depends(auth.require_permission('analytics_view'))
 ):
-    if officer['role'] not in ('sho', 'dcp', 'admin'):
-        raise HTTPException(403, "Access denied")
 
     from app.services.prediction import FESTIVAL_CALENDAR
 
@@ -179,7 +177,7 @@ async def simulate_event(
 @router.get("/resource_status")
 async def get_resource_status(
     db = Depends(get_db),
-    officer = Depends(get_current_officer)
+    officer = Depends(auth.require_permission('analytics_view'))
 ):
     units = await fetch_all(db, """
         SELECT status, COUNT(*) as count 
@@ -203,7 +201,7 @@ async def get_resource_status(
 @router.get("/hotspot_surge")
 async def get_hotspot_surge(
     db = Depends(get_db),
-    officer = Depends(get_current_officer)
+    officer = Depends(auth.require_permission('analytics_view'))
 ):
     surges = await fetch_all(db, """
         SELECT ward, hour_slot, risk_score
@@ -219,7 +217,7 @@ async def get_hotspot_surge(
 @router.get("/pattern_matches")
 async def get_pattern_matches(
     db = Depends(get_db),
-    officer = Depends(get_current_officer)
+    officer = Depends(auth.require_permission('analytics_view'))
 ):
     alerts = await fetch_all(db, """
         SELECT id, alert_type as type, 
