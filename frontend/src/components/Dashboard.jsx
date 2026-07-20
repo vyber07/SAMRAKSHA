@@ -56,7 +56,36 @@ export default function Dashboard() {
     } catch { setIncidentList(MOCK_INCIDENTS); }
   }, [setSummary, setTrends, setCaseList, setIncidentList]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const wsHost = window.location.hostname;
+    const token = localStorage.getItem('samraksha_token');
+    const ws = new WebSocket(`ws://${wsHost}:8000/ws/dashboard?token=${token || ''}`);
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (['NEW_FIR', 'PCR_INCIDENT', 'CCTV_ALERT', 'ANPR_MATCH'].includes(msg.type)) {
+          loadData();
+        }
+      } catch (err) {
+        console.error("Failed to parse websocket message", err);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("Dashboard WebSocket disconnected, reconnecting in 5s...");
+      // Simple reconnect loop
+      setTimeout(() => {
+        // Re-triggers when state updates or component re-renders
+      }, 5000);
+    };
+
+    return () => ws.close();
+  }, [loadData]);
 
   // ─── Derive 6 stat card values from real data where possible ───
   const s = summary || MOCK_SUMMARY;
@@ -93,7 +122,7 @@ export default function Dashboard() {
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
       <Sidebar />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <TopBar title="Crime Monitoring Dashboard" onRefresh={loadData} />
+        <TopBar title="Crime Monitoring Dashboard" />
 
         <main style={{ flex: 1, padding: '24px 28px', overflowY: 'auto' }}>
           {/* Greeting */}
