@@ -7,24 +7,24 @@ const NAV_SECTIONS = [
   {
     title: 'Overview',
     items: [
-      { to: '/', icon: '📊', label: 'Dashboard' },
-      { to: '/analytics', icon: '📈', label: 'Analytics' },
+      { to: '/', icon: 'dashboard', label: 'Dashboard', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' },
+      { to: '/analytics', icon: 'trending_up', label: 'Analytics', gradient: 'linear-gradient(135deg, #f97316, #c2410c)' },
     ],
   },
   {
     title: 'Operations',
     items: [
-      { to: '/cases', icon: '📁', label: 'Cases' },
-      { to: '/incidents', icon: '🚨', label: 'Incidents' },
-      { to: '/map', icon: '🗺️', label: 'Crime Map' },
-      { to: '/patrol', icon: '🚔', label: 'Patrol' },
+      { to: '/cases', icon: 'folder_open', label: 'Cases', gradient: 'linear-gradient(135deg, #10b981, #047857)' },
+      { to: '/incidents', icon: 'warning', label: 'Incidents', gradient: 'linear-gradient(135deg, #ef4444, #b91c1c)' },
+      { to: '/map', icon: 'map', label: 'Crime Map', gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
+      { to: '/patrol', icon: 'local_police', label: 'Patrol', gradient: 'linear-gradient(135deg, #eab308, #a16207)' },
     ],
   },
   {
     title: 'System',
     items: [
-      { to: '/cctv', icon: '📹', label: 'CCTV' },
-      { to: '/admin', icon: '⚙️', label: 'Admin' },
+      { to: '/cctv', icon: 'videocam', label: 'CCTV', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+      { to: '/admin', icon: 'settings', label: 'Admin', gradient: 'linear-gradient(135deg, #6b7280, #374151)' },
     ],
   },
 ];
@@ -62,11 +62,13 @@ export default function Sidebar() {
           justifyContent: collapsed ? 'center' : 'flex-start',
         }}>
           <div style={{
-            width: 40, height: 40, borderRadius: 14, flexShrink: 0,
+            width: 40, height: 40, borderRadius: '13px', flexShrink: 0,
             background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-            boxShadow: '0 6px 18px rgba(37,99,235,0.35)',
-          }}>🛡️</div>
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 6px 18px rgba(37,99,235,0.25)',
+          }}>
+            <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: 22 }}>shield</span>
+          </div>
           {!collapsed && (
             <div>
               <div style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: 16, letterSpacing: '0.5px' }}>SAMRAKSHA</div>
@@ -82,7 +84,7 @@ export default function Sidebar() {
               {!collapsed && (
                 <div className="label" style={{ fontSize: 10, padding: '10px 14px 6px' }}>{section.title}</div>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {section.items.map((item) => (
                   <NavLink
                     key={item.to}
@@ -90,19 +92,29 @@ export default function Sidebar() {
                     end={item.to === '/'}
                     style={({ isActive }) => ({
                       display: 'flex', alignItems: 'center', gap: 12,
-                      padding: collapsed ? '13px 0' : '12px 16px',
+                      padding: collapsed ? '6px' : '8px 12px',
                       justifyContent: collapsed ? 'center' : 'flex-start',
-                      borderRadius: 'var(--radius-pill)',
+                      borderRadius: 'var(--radius-lg)',
                       textDecoration: 'none',
                       fontSize: 14, fontWeight: isActive ? 700 : 500,
                       color: isActive ? '#fff' : 'var(--text-muted)',
-                      background: isActive ? 'var(--primary)' : 'transparent',
-                      boxShadow: isActive ? '0 6px 18px rgba(37,99,235,0.35)' : 'none',
+                      background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
+                      border: isActive ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
                       transition: 'all var(--t-fast) var(--ease)',
                     })}
                     title={item.label}
                   >
-                    <span style={{ fontSize: 17 }}>{item.icon}</span>
+                    <div style={{
+                      width: 36, height: 36,
+                      borderRadius: '12px',
+                      background: item.gradient,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#ffffff',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.12)',
+                      flexShrink: 0
+                    }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 19 }}>{item.icon}</span>
+                    </div>
                     {!collapsed && item.label}
                   </NavLink>
                 ))}

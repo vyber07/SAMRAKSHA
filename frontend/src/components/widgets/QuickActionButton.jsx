@@ -84,7 +84,11 @@ export default function QuickActionButton({
       onMouseUp={() => setPressed(false)}
       style={{ ...base, ...variantStyle }}
     >
-      {icon != null && <span style={{ fontSize: '16px', lineHeight: 1 }}>{icon}</span>}
+      {icon != null && (
+        <span className="material-symbols-outlined" style={{ fontSize: '18px', lineHeight: 1 }}>
+          {icon}
+        </span>
+      )}
       {label && <span>{label}</span>}
     </button>
   );

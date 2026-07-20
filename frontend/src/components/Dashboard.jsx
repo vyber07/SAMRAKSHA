@@ -63,12 +63,12 @@ export default function Dashboard() {
   const byStatus = (status) => caseList.filter((c) => String(c.case_status || '').toLowerCase().includes(status)).length;
   const total = caseList.length;
   const stats = [
-    { icon: '🆕', label: 'New Cases', value: s.firs_today ?? 0, delta: s.firs_today_change, color: 'var(--primary)' },
-    { icon: '✅', label: 'Solved Cases', value: byStatus('solved') || byStatus('closed') || 18, delta: 5, color: 'var(--success)' },
-    { icon: '📂', label: 'Open Cases', value: byStatus('open') || byStatus('registered') || Math.max(total - 4, 9), delta: -3, color: 'var(--tertiary)' },
-    { icon: '🔄', label: 'In Progress', value: byStatus('investigat') || byStatus('progress') || 7, delta: 2, color: 'var(--info)' },
-    { icon: '⏳', label: 'Pending Review', value: byStatus('pending') || 4, delta: 0, color: 'var(--warning)' },
-    { icon: '🗄️', label: 'Closed Cases', value: byStatus('closed') || 22, delta: 4, color: 'var(--secondary)' },
+    { icon: 'new_releases', label: 'New Cases', value: s.firs_today ?? 0, delta: s.firs_today_change, color: 'var(--primary)' },
+    { icon: 'check_circle', label: 'Solved Cases', value: byStatus('solved') || byStatus('closed') || 18, delta: 5, color: 'var(--success)' },
+    { icon: 'folder_open', label: 'Open Cases', value: byStatus('open') || byStatus('registered') || Math.max(total - 4, 9), delta: -3, color: 'var(--tertiary)' },
+    { icon: 'autorenew', label: 'In Progress', value: byStatus('investigat') || byStatus('progress') || 7, delta: 2, color: 'var(--info)' },
+    { icon: 'pending_actions', label: 'Pending Review', value: byStatus('pending') || 4, delta: 0, color: 'var(--warning)' },
+    { icon: 'archive', label: 'Closed Cases', value: byStatus('closed') || 22, delta: 4, color: 'var(--secondary)' },
   ];
 
   const notifications = caseList.length
@@ -81,12 +81,12 @@ export default function Dashboard() {
     : MOCK_NOTIFICATIONS;
 
   const quickActions = [
-    { icon: '📝', label: 'FIR / Create Case', variant: 'filled', color: 'primary', onClick: () => navigate('/cases') },
-    { icon: '🤖', label: 'AI Assistant', variant: 'tonal', color: 'tertiary', onClick: () => navigate('/analytics') },
-    { icon: '📄', label: 'Generate Docs', variant: 'outlined', color: 'secondary', onClick: () => navigate('/cases') },
-    { icon: '🚔', label: 'Dispatch Patrol', variant: 'tonal', color: 'primary', onClick: () => navigate('/patrol') },
-    { icon: '📊', label: 'Reports', variant: 'outlined', color: 'tertiary', onClick: () => navigate('/analytics') },
-    { icon: '⚙️', label: 'Settings', variant: 'outlined', color: 'secondary', onClick: () => navigate('/admin') },
+    { icon: 'edit_note', label: 'FIR / Create Case', variant: 'filled', color: 'primary', onClick: () => navigate('/cases') },
+    { icon: 'smart_toy', label: 'AI Assistant', variant: 'tonal', color: 'tertiary', onClick: () => navigate('/analytics') },
+    { icon: 'description', label: 'Generate Docs', variant: 'outlined', color: 'secondary', onClick: () => navigate('/cases') },
+    { icon: 'local_police', label: 'Dispatch Patrol', variant: 'tonal', color: 'primary', onClick: () => navigate('/patrol') },
+    { icon: 'analytics', label: 'Reports', variant: 'outlined', color: 'tertiary', onClick: () => navigate('/analytics') },
+    { icon: 'settings', label: 'Settings', variant: 'outlined', color: 'secondary', onClick: () => navigate('/admin') },
   ];
 
   return (

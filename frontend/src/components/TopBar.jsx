@@ -30,7 +30,9 @@ export default function TopBar({ title = 'Dashboard', onRefresh }) {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {onRefresh && (
-          <button className="oui-pill" onClick={onRefresh}>⟳ Refresh</button>
+          <button className="oui-pill" onClick={onRefresh} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>refresh</span> Refresh
+          </button>
         )}
         {officer && (
           <div style={{

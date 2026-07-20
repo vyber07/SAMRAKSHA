@@ -81,16 +81,19 @@ export default function StatCard({ icon, label, value, delta, color = 'primary' 
         </span>
         {icon != null && (
           <span
+            className="material-symbols-outlined"
             style={{
-              fontSize: '22px',
+              fontSize: '20px',
               lineHeight: 1,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               width: '38px',
               height: '38px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'color-mix(in srgb, ' + accent + ' 16%, transparent)',
+              borderRadius: '11px',
+              background: 'linear-gradient(135deg, ' + accent + ', color-mix(in srgb, ' + accent + ' 80%, #000))',
+              color: '#ffffff',
+              boxShadow: '0 4px 10px color-mix(in srgb, ' + accent + ' 25%, transparent)',
               flexShrink: 0,
             }}
           >
