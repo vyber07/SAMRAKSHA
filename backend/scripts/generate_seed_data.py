@@ -133,6 +133,12 @@ async def seed():
         VALUES ('ADMIN001', 'System Admin', 'Admin', 'admin', $1, $2, TRUE)
         ON CONFLICT (badge_no) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_active = TRUE
     """, ps_ids['Ellisbridge'], admin_pwd_hash)
+
+    await conn.execute("""
+        INSERT INTO officers (badge_no, name, rank, role, ps_id, password_hash, is_active)
+        VALUES ('admin', 'System Admin', 'Admin', 'admin', $1, $2, TRUE)
+        ON CONFLICT (badge_no) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_active = TRUE
+    """, ps_ids['Ellisbridge'], admin_pwd_hash)
     
     # 1. DCP (Zone-level manager)
     dcp_id = str(uuid.uuid4())
