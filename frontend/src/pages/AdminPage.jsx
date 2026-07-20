@@ -26,7 +26,7 @@ const ROLE_MATRIX = [
 
 const MOCK_LOGS = [
   { time: '10:42', actor: 'admin', action: 'Granted analytics_view override to io001' },
-  { time: '09:57', actor: 'sho001', action: 'Generated chargesheet for FIR 2026/0322' },
+  { time: '09:57', actor: 'sho001', action: 'Created chargesheet for FIR 2026/0322' },
   { time: '09:12', actor: 'io001', action: 'Created FIR 2026/0341 (Theft)' },
   { time: '08:30', actor: 'system', action: 'Nightly risk-score recompute completed' },
 ];

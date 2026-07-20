@@ -43,15 +43,15 @@ async def ingest_alert(
 
     result = await fetch_one(db, """
         INSERT INTO cctv_alerts
-        (camera_id, camera_name, source, alert_type,
+        (camera_id, source, alert_type,
          confidence, person_count, lat, lon,
          geoloc, plate_no, matched_case)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,
-                ST_MakePoint($8,$7)::GEOGRAPHY,
-                $9,$10)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,
+                ST_MakePoint($7,$6)::GEOGRAPHY,
+                $8,$9)
         RETURNING id
     """, [
-        body.camera_id, body.camera_name, body.source,
+        body.camera_id, body.source,
         body.alert_type, body.confidence, body.person_count,
         body.lat, body.lon,
         body.plate_no, matched_case_id
@@ -119,3 +119,16 @@ async def check_anpr_match(
             'plate':   plate_no,
             'camera':  camera_id,
         })
+
+@router.get("/anomalies")
+async def get_cctv_anomalies(
+    db = Depends(get_db)
+):
+    from app.db.connection import fetch_all
+    anomalies = await fetch_all(db, """
+        SELECT id, camera_id, source, alert_type, confidence, person_count, lat, lon, ts
+        FROM cctv_alerts
+        ORDER BY ts DESC
+        LIMIT 4
+    """, [])
+    return {"anomalies": anomalies}

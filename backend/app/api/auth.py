@@ -9,9 +9,18 @@ from datetime import datetime, timedelta
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import os, uuid
+import redis.asyncio as aioredis
 
 router   = APIRouter()
 limiter  = Limiter(key_func=get_remote_address)
+pwd_ctx  = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2   = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key-1234567890")
+ALGORITHM  = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_EXP = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", 8))
+REDIS_URL  = os.getenv("REDIS_URL", "redis://redis:6379/0")
+redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
 pwd_ctx  = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2   = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -41,6 +50,11 @@ async def get_current_officer(
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         officer_id_str = payload.get("sub")
+        jti = payload.get("jti")
+        if jti:
+            is_blacklisted = await redis_client.get(f"blacklist:{jti}")
+            if is_blacklisted:
+                raise HTTPException(401, "Token has been revoked")
         if not officer_id_str:
             raise HTTPException(401, "Invalid token")
         # Convert to UUID to match column type
@@ -164,8 +178,19 @@ async def login(
 
 @router.post("/logout")
 async def logout(
+    token: str = Depends(oauth2),
     officer = Depends(get_current_officer)
 ):
-    # Token-based auth: client discards token
-    # For production: add token to Redis blacklist
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        jti = payload.get("jti")
+        if jti:
+            exp = payload.get("exp")
+            now = datetime.utcnow().timestamp()
+            ttl = int(exp - now) if exp else int(ACCESS_EXP * 3600)
+            if ttl > 0:
+                await redis_client.setex(f"blacklist:{jti}", ttl, "true")
+    except Exception as e:
+        import structlog
+        structlog.get_logger().error("Logout blacklist failed", error=str(e))
     return {"message": "Logged out"}

@@ -176,3 +176,58 @@ async def simulate_event(
         "doc_templates_needed": len([h for h in hotspots if h['sim_risk'] > 50]),
         "hotspots":             hotspots,
     }
+@router.get("/resource_status")
+async def get_resource_status(
+    db = Depends(get_db),
+    officer = Depends(get_current_officer)
+):
+    units = await fetch_all(db, """
+        SELECT status, COUNT(*) as count 
+        FROM patrol_units 
+        GROUP BY status
+    """, [])
+    
+    total = sum([u['count'] for u in units if u['status'] != 'unavailable'])
+    if total == 0:
+        return {"engaged_pct": 0, "available_pct": 0, "breakdown": units}
+    
+    engaged = sum([u['count'] for u in units if u['status'] in ('deployed', 'responding')])
+    available = sum([u['count'] for u in units if u['status'] == 'available'])
+    
+    return {
+        "engaged_pct": round((engaged / total) * 100, 1),
+        "available_pct": round((available / total) * 100, 1),
+        "breakdown": units
+    }
+
+@router.get("/hotspot_surge")
+async def get_hotspot_surge(
+    db = Depends(get_db),
+    officer = Depends(get_current_officer)
+):
+    surges = await fetch_all(db, """
+        SELECT ward, hour_slot, risk_score
+        FROM zone_risk_scores
+        WHERE hour_slot >= EXTRACT(HOUR FROM NOW())::INTEGER
+          AND hour_slot <= EXTRACT(HOUR FROM NOW())::INTEGER + 3
+          AND risk_score >= 70
+        ORDER BY risk_score DESC
+        LIMIT 10
+    """, [])
+    return {"surges": surges}
+
+@router.get("/pattern_matches")
+async def get_pattern_matches(
+    db = Depends(get_db),
+    officer = Depends(get_current_officer)
+):
+    alerts = await fetch_all(db, """
+        SELECT id, alert_type as type, 
+               'Confidence: ' || confidence || ' ' || source as description,
+               confidence, ts as timestamp
+        FROM cctv_alerts
+        ORDER BY ts DESC
+        LIMIT 5
+    """, [])
+    
+    return {"patterns": alerts}

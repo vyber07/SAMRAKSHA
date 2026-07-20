@@ -20,6 +20,11 @@ logger = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    if __import__('os').getenv('ENVIRONMENT') == 'production':
+        secret = __import__('os').getenv('SECRET_KEY', '')
+        if not secret or secret in ('samraksha-super-secret-jwt-key-change-in-prod', 'super-secret-key-1234567890'):
+            raise ValueError("Insecure SECRET_KEY detected in production environment!")
+
     await init_db()
     logger.info("Database connected")
     yield
@@ -32,7 +37,7 @@ limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
     title="SAMRAKSHA API",
     version="1.0.0",
-    description="Unified Predictive Policing & AI Case Intelligence Platform",
+    description="Unified Predictive Policing & Advanced Case Intelligence Platform",
     docs_url="/docs" if __import__('os').getenv('ENVIRONMENT') != 'production' else None,
     redoc_url=None,
     lifespan=lifespan
@@ -43,9 +48,10 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS
+origins = ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
@@ -82,5 +88,5 @@ async def health():
         "status": "ok",
         "service": "SAMRAKSHA",
         "version": "1.0.0",
-        "demo_mode": __import__('os').getenv('DEMO_MODE', 'false')
+        "demo_mode": __import__('os').getenv('DEMO_MODE', 'false').lower() == 'true'
     }

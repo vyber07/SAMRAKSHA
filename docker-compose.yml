@@ -49,7 +49,7 @@ services:
       DATABASE_URL:    postgresql+asyncpg://samraksha:samraksha_secret@postgres:5432/samraksha
       REDIS_URL:       redis://redis:6379/0
       ENVIRONMENT:     development
-      DEMO_MODE:       "true"
+      DEMO_MODE:       "false"
       SECRET_KEY:      samraksha-super-secret-jwt-key-change-in-prod
       ACCESS_TOKEN_EXPIRE_MINUTES: "60"
       DEMO_SEED_PASSWORD: password123
@@ -89,10 +89,34 @@ services:
     networks:
       - samraksha-net
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:80/health || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/health || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 5
+
+  # Llama.cpp Local LLM Server
+  llamacpp:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: samraksha-llamacpp
+    restart: unless-stopped
+    command: -m /models/model.gguf --host 0.0.0.0 --port 8080
+    volumes:
+      - llama_data:/models
+    networks:
+      - samraksha-net
+
+  # OSRM Backend
+  osrm:
+    image: osrm/osrm-backend
+    container_name: samraksha-osrm
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    command: osrm-routed --algorithm mld /data/ahmedabad.osrm
+    volumes:
+      - osrm_data:/data
+    networks:
+      - samraksha-net
 
 networks:
   samraksha-net:
@@ -101,3 +125,5 @@ networks:
 volumes:
   postgres_data:
   uploads:
+  llama_data:
+  osrm_data:

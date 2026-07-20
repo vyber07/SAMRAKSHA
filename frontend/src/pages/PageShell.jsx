@@ -2,14 +2,14 @@ import React from 'react';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
-// Shared page layout: Sidebar + TopBar + scrollable content
+// Shared One UI page layout: floating sidebar + big header + transparent content
 export default function PageShell({ title, onRefresh, children }) {
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'transparent' }}>
       <Sidebar />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <TopBar title={title} onRefresh={onRefresh} />
-        <main style={{ flex: 1, padding: '24px 28px', overflowY: 'auto' }}>
+        <main style={{ flex: 1, padding: '10px 28px 28px', overflowY: 'auto' }}>
           {children}
         </main>
       </div>

@@ -29,8 +29,8 @@ async def get_patrol_routes(
         return {"routes": [], "message": "No active patrol units"}
 
     hotspots = await fetch_all(db, """
-        SELECT ward, risk_score,
-               AVG(lat) as lat, AVG(lon) as lon
+        SELECT i.ward, z.risk_score,
+               AVG(i.lat) as lat, AVG(i.lon) as lon
         FROM incidents i
         JOIN zone_risk_scores z ON i.ward = z.ward
         WHERE i.timestamp > NOW() - INTERVAL '7 days'

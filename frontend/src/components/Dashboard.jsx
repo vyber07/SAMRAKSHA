@@ -131,7 +131,23 @@ export default function Dashboard() {
             gap: 20,
             animationDelay: '0.15s',
           }}>
-            {/* LEFT: Recent Incidents & New Case Notifications beside each other */}
+            {/* LEFT: Big curved Bing-style search bar + quick access buttons + crime types */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <SearchBar />
+
+              <div className="glass" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: 15, marginBottom: 14 }}>⚡ Quick Access</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  {quickActions.map((qa) => (
+                    <QuickActionButton key={qa.label} icon={qa.icon} label={qa.label} variant={qa.variant} color={qa.color} onClick={qa.onClick} />
+                  ))}
+                </div>
+              </div>
+
+              <CrimeTypesChart data={trends?.by_type} />
+            </div>
+
+            {/* RIGHT: Recent Incidents & New Case Notifications beside each other */}
             <div className="dash-left" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignContent: 'start' }}>
               <div className="glass" style={{ padding: 20 }}>
                 <h3 style={{ fontSize: 15, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -154,22 +170,6 @@ export default function Dashboard() {
                   ))}
                 </div>
               </div>
-            </div>
-
-            {/* RIGHT: Big curved Bing-style search bar + quick access buttons + crime types */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <SearchBar />
-
-              <div className="glass" style={{ padding: 20 }}>
-                <h3 style={{ fontSize: 15, marginBottom: 14 }}>⚡ Quick Access</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  {quickActions.map((qa) => (
-                    <QuickActionButton key={qa.label} icon={qa.icon} label={qa.label} variant={qa.variant} color={qa.color} onClick={qa.onClick} />
-                  ))}
-                </div>
-              </div>
-
-              <CrimeTypesChart data={trends?.by_type} />
             </div>
           </div>
         </main>

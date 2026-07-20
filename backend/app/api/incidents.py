@@ -39,3 +39,17 @@ async def receive_pcr_incident(
         }
     })
     return {"incident_id": incident_id['id'], "status": "received"}
+
+@router.get("/sla_breaches")
+async def get_sla_breaches(
+    db = Depends(get_db)
+):
+    from app.db.connection import fetch_all
+    breaches = await fetch_all(db, """
+        SELECT id, crime_type, lat, lon, severity, timestamp
+        FROM incidents
+        WHERE status = 'active'
+          AND timestamp < NOW() - INTERVAL '15 minutes'
+        ORDER BY timestamp ASC
+    """, [])
+    return {"breaches": breaches}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../lib/store';
 
+// One UI large header: big low-set title, floating pill controls
 export default function TopBar({ title = 'Dashboard', onRefresh }) {
   const officer = useAuthStore((s) => s.officer);
   const [time, setTime] = useState(new Date());
@@ -12,50 +13,40 @@ export default function TopBar({ title = 'Dashboard', onRefresh }) {
 
   return (
     <header style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '16px 28px',
-      background: 'rgba(30, 41, 59, 0.45)',
-      backdropFilter: 'blur(12px)',
-      borderBottom: '1px solid var(--border)',
-      position: 'sticky', top: 0, zIndex: 15,
+      padding: '28px 28px 18px',
+      display: 'flex',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      gap: 16,
+      flexWrap: 'wrap',
     }}>
+      {/* One UI big title block */}
       <div>
-        <h1 style={{ fontSize: 20, fontWeight: 700 }}>{title}</h1>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-          {time.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · {time.toLocaleTimeString('en-IN')}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '1px', marginBottom: 6 }}>
+          {time.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })} · {time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
         </div>
+        <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.5px' }}>{title}</h1>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {onRefresh && (
-          <button
-            onClick={onRefresh}
-            style={{
-              padding: '9px 16px',
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-              color: 'var(--text)', fontSize: 13, fontWeight: 500,
-              cursor: 'pointer', transition: 'all var(--t-fast) var(--ease)',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--surface)')}
-          >⟳ Refresh</button>
+          <button className="oui-pill" onClick={onRefresh}>⟳ Refresh</button>
         )}
         {officer && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
-            padding: '7px 14px',
-            background: 'var(--primary-container)',
-            border: '1px solid rgba(37,99,235,0.25)',
-            borderRadius: 'var(--radius-xl)',
+            padding: '10px 18px',
+            background: 'var(--surface)',
+            backdropFilter: 'blur(var(--blur))',
+            WebkitBackdropFilter: 'blur(var(--blur))',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-pill)',
           }}>
-            <div style={{
+            <span style={{
               width: 8, height: 8, borderRadius: '50%',
-              background: 'var(--success)',
-              animation: 'pulse 2s infinite',
+              background: 'var(--success)', animation: 'pulse 2s infinite',
             }} />
-            <span style={{ fontSize: 13, fontWeight: 600 }}>{officer.name}</span>
+            <span style={{ fontSize: 13, fontWeight: 700 }}>{officer.name}</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--tertiary)', textTransform: 'uppercase' }}>{officer.role}</span>
           </div>
         )}

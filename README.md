@@ -10,7 +10,7 @@ Ahmedabad City Police | Cyber Crime Branch | i-Hub Gujarat
 
 SAMRAKSHA is a backend platform for police crime monitoring and case management. It provides a REST API for incident tracking, case management, patrol coordination, and geospatial crime analysis, backed by PostgreSQL with PostGIS and Redis.
 
-> **Note:** This repository currently contains the **backend services only** (API, database, cache). The frontend has been removed.
+> **Note:** This repository contains both **backend services** (API, database, cache) and a **React/Vite frontend** featuring a Samsung OneUI 8.5 styled UI/UX.
 
 ---
 
@@ -35,6 +35,11 @@ SAMRAKSHA is a backend platform for police crime monitoring and case management.
 - **Redis 7** — Caching layer
 - **SQLAlchemy** — ORM
 - **Pydantic** — Data validation
+
+### Frontend
+- **React 18** — UI Library
+- **Vite** — Build tool
+- **OneUI 8.5 Design System** — Fully transparent glass surfaces with 20px blur
 
 ### Deployment
 - **Docker** — Containerization
@@ -90,6 +95,11 @@ SAMRAKSHA/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── README.md               # Backend documentation
+│
+├── frontend/                   # React + Vite Application
+│   ├── src/                    # Source code
+│   ├── package.json            # Dependencies
+│   └── vite.config.js          # Vite config
 │
 ├── docker-compose.yml          # Service orchestration
 ├── .env.example                # Environment template

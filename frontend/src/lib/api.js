@@ -75,9 +75,18 @@ export const cctv = {
   list: () => http.get('/cctv'),
 };
 
-// ─── AI Assistant ──────────────────────────────────────
+// ─── Smart Assistant ──────────────────────────────────────
 export const assistant = {
   query: (query, scope = 'all') => http.post('/assistant/query', { query, scope }),
+  voiceQuery: (audioBlob, mode = 'all_cases', caseId = null) => {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.webm');
+    let url = `/assistant/voice-query?mode=${mode}`;
+    if (caseId) url += `&case_id=${caseId}`;
+    return http.post(url, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  }
 };
 
 // ─── Admin ─────────────────────────────────────────────

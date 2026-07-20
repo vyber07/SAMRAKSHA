@@ -135,7 +135,7 @@ CREATE TABLE doc_log (
                  CHECK (doc_type IN 
                  ('chargesheet','medical_letter','remand_request',
                   'seizure_receipt','court_custody',
-                  'panchanama','face_id')),
+                  'panchanama','face_id','witness_statement')),
     sha256       VARCHAR(64) NOT NULL,
     generated_by UUID REFERENCES officers(id),
     language     VARCHAR(5) DEFAULT 'en',

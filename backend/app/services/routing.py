@@ -3,6 +3,7 @@ from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 import structlog
 from datetime import datetime
+import httpx
 
 logger = structlog.get_logger()
 
@@ -53,17 +54,38 @@ async def optimize_patrol_routes(patrol_units: list, hotspots: list) -> list:
         num_locations = len(locations)
         distance_matrix = np.zeros((num_locations, num_locations))
         
-        for i in range(num_locations):
-            for j in range(num_locations):
-                if i == j:
-                    distance_matrix[i][j] = 0
-                else:
-                    # distance in meters (approx)
-                    dist = haversine_distance(
-                        locations[i][0], locations[i][1],
-                        locations[j][0], locations[j][1]
-                    ) * 1000
-                    distance_matrix[i][j] = int(dist)
+        async def get_osrm_distance_matrix(locs: list) -> list:
+            if len(locs) < 2:
+                return None
+            coords = ";".join([f"{lon},{lat}" for lat, lon in locs])
+            url = f"http://osrm:5000/table/v1/driving/{coords}?annotations=distance"
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(url, timeout=5.0)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        if data.get('code') == 'Ok':
+                            return data.get('distances')
+            except Exception as e:
+                logger.warning(f"OSRM API failed: {e}")
+            return None
+
+        osrm_distances = await get_osrm_distance_matrix(locations)
+        if osrm_distances:
+            for i in range(num_locations):
+                for j in range(num_locations):
+                    distance_matrix[i][j] = int(osrm_distances[i][j]) if osrm_distances[i][j] is not None else 0
+        else:
+            for i in range(num_locations):
+                for j in range(num_locations):
+                    if i == j:
+                        distance_matrix[i][j] = 0
+                    else:
+                        dist = haversine_distance(
+                            locations[i][0], locations[i][1],
+                            locations[j][0], locations[j][1]
+                        ) * 1000
+                        distance_matrix[i][j] = int(dist)
                     
         data['distance_matrix'] = distance_matrix.tolist()
         data['num_vehicles'] = num_units

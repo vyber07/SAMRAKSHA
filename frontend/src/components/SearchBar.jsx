@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { cases, incidents } from '../lib/api';
+import { cases, incidents, assistant } from '../lib/api';
 
 const RECENT_KEY = 'samraksha.recent';
 
@@ -65,6 +65,46 @@ export default function SearchBar() {
   const [recent, setRecent] = useState(() => readRecent());
   const [loading, setLoading] = useState(false);
   const [highlight, setHighlight] = useState(-1);
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorder = useRef(null);
+  const audioChunks = useRef([]);
+
+  const handleVoiceSearch = async () => {
+    if (isRecording) {
+      mediaRecorder.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder.current = new MediaRecorder(stream);
+      audioChunks.current = [];
+      
+      mediaRecorder.current.ondataavailable = e => {
+        if (e.data.size > 0) audioChunks.current.push(e.data);
+      };
+      
+      mediaRecorder.current.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
+        try {
+          const res = await assistant.voiceQuery(audioBlob);
+          if (res.data?.transcription) {
+            setQuery(res.data.transcription);
+            setOpen(true);
+          }
+        } catch (e) {
+          console.error("Voice query failed", e);
+        }
+      };
+      
+      mediaRecorder.current.start();
+      setIsRecording(true);
+    } catch (e) {
+      console.error("Failed to access microphone", e);
+    }
+  };
 
   // Build a flat, navigable list of dropdown rows for keyboard nav.
   const rows = [];
@@ -281,8 +321,13 @@ export default function SearchBar() {
         <button type="button" onClick={() => setOpen(true)} aria-label="Filters" style={{ ...iconBtnStyle, color: 'var(--tertiary)' }}>
           ⚙️
         </button>
-        <button type="button" aria-label="Voice search" style={{ ...iconBtnStyle, color: 'var(--primary)' }}>
-          🎙️
+        <button 
+          type="button" 
+          onClick={handleVoiceSearch}
+          aria-label="Voice search" 
+          style={{ ...iconBtnStyle, color: isRecording ? 'red' : 'var(--primary)' }}
+        >
+          {isRecording ? '⏹️' : '🎙️'}
         </button>
       </div>
 

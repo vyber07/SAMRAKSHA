@@ -9,6 +9,7 @@ python-multipart
 asyncpg
 sqlalchemy[asyncio]
 alembic
+redis
 
 # Security & Auth
 python-jose[cryptography]
@@ -46,7 +47,7 @@ geopy
 pydantic
 pydantic-settings
 
-# NLP / AI (voice, translation, assistant)
+# NLP / Advanced (voice, translation, assistant)
 transformers<4.40.0
 torch
 openai-whisper

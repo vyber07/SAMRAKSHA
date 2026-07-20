@@ -79,21 +79,35 @@ class RiskPredictor:
         )
         self._is_trained = False
         
-    def train_if_needed(self):
+    async def train_if_needed(self, db):
         if not self._is_trained:
-            # Generate historical data to initialize the model to output reasonable risk scores
-            X_dummy = np.random.rand(100, 3) * [24, 6, 12] # hour, dow, month
-            y_dummy = np.random.rand(100) * 100 # Risk scores between 0 and 100
+            from app.db.connection import fetch_all
+            query = """
+                SELECT EXTRACT(HOUR FROM timestamp) as hour,
+                       EXTRACT(DOW FROM timestamp) as dow,
+                       EXTRACT(MONTH FROM timestamp) as month,
+                       severity
+                FROM incidents
+                WHERE ward IS NOT NULL
+            """
+            rows = await fetch_all(db, query)
+            if rows and len(rows) > 10:
+                df = pd.DataFrame(rows)
+                X = df[['hour', 'dow', 'month']].values
+                y = np.array([int(r) * 20 for r in df['severity']])
+                self.model.fit(X, y)
+                self._is_trained = True
+            else:
+                X_dummy = np.random.rand(100, 3) * [24, 6, 12]
+                y_dummy = np.random.rand(100) * 100
+                y_dummy += np.where(X_dummy[:, 0] < 6, 20, 0)
+                y_dummy = np.clip(y_dummy, 0, 100)
+                
+                self.model.fit(X_dummy, y_dummy)
+                self._is_trained = True
             
-            # Make sure some logic exists: night time (hour 0-5) is riskier
-            y_dummy += np.where(X_dummy[:, 0] < 6, 20, 0)
-            y_dummy = np.clip(y_dummy, 0, 100)
-            
-            self.model.fit(X_dummy, y_dummy)
-            self._is_trained = True
-            
-    def predict_zone_risk(self, ward: str, hour: int, dow: int, month: int) -> float:
-        self.train_if_needed()
+    async def predict_zone_risk(self, ward: str, hour: int, dow: int, month: int, db) -> float:
+        await self.train_if_needed(db)
         
         ward_hash = hash(ward) % 100 / 100.0
         X = np.array([[hour, dow, month]])

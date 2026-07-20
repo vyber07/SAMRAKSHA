@@ -11,6 +11,7 @@ TEMPLATES = {
     'court_custody':    'templates/documents/court_custody_bnss.docx',
     'panchanama':       'templates/documents/accused_panchanama.docx',
     'face_id':          'templates/documents/face_identification.docx',
+    'witness_statement': 'templates/documents/witness_statement.docx',
 }
 
 # GUJARATI DOMAIN GLOSSARY — override before IndicTrans2

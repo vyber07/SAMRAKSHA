@@ -80,8 +80,8 @@ async def get_ward_risk(
         for w in wards:
             if not w['ward']:
                 continue
-            score = predictor.predict_zone_risk(
-                w['ward'], hour, dow, month
+            score = await predictor.predict_zone_risk(
+                w['ward'], hour, dow, month, db
             )
             scores.append({
                 'ward':        w['ward'],

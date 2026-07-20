@@ -45,7 +45,7 @@ export default function LoginScreen() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, var(--bg) 0%, var(--bg-elevated) 100%)',
+      background: 'transparent',
       position: 'relative',
       overflow: 'hidden',
     }}>

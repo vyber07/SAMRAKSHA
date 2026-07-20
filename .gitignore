@@ -72,3 +72,7 @@ docker-compose.override.yml
 # IDE Cache
 .eslintcache
 .oxlintcache
+
+# Agent Cache
+.claude/
+.gemini/

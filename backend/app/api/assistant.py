@@ -9,8 +9,8 @@ import httpx, os, structlog
 router = APIRouter()
 logger = structlog.get_logger()
 
-LLM_URL    = os.getenv("LLM_URL", "http://ollama:11434")
-LLM_MODEL  = os.getenv("LLM_MODEL", "llama3.2:3b")  # small local model
+LLM_URL    = os.getenv("LLM_URL", "http://llamacpp:8080")
+LLM_MODEL  = os.getenv("LLM_MODEL", "llama3.2:3b")  # fallback or placeholder
 
 # Out-of-scope patterns — hardcoded rejection, never sent to LLM
 OUT_OF_SCOPE = [
@@ -32,7 +32,7 @@ async def query_assistant(
     officer = Depends(get_current_officer)
 ):
     if officer['role'] == 'constable':
-        raise HTTPException(403, "AI assistant not available for this role")
+        raise HTTPException(403, "Smart assistant not available for this role")
 
     question_lower = body.question.lower()
 
@@ -147,30 +147,32 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
             "Be concise and structured in your response."
         )
 
+    source = "llm"
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post(
-                f"{LLM_URL}/api/generate",
+                f"{LLM_URL}/completion",
                 json={
-                    "model":  LLM_MODEL,
                     "prompt": (
-                        f"{system_prompt}\n\n"
-                        f"{context}\n\n"
-                        f"Question: {body.question}"
+                         f"{system_prompt}\n\n"
+                         f"{context}\n\n"
+                         f"Question: {body.question}"
                     ),
-                    "stream": False,
-                    "options": {"temperature": 0.1, "max_tokens": 500}
+                    "temperature": 0.1,
+                    "n_predict": 500,
+                    "stream": False
                 }
             )
-        answer = resp.json().get("response", "")
+        answer = resp.json().get("content", "")
     except Exception as e:
         logger.warning("LLM unavailable, using fallback", error=str(e))
         answer = simple_keyword_answer(body.question, context)
+        source = "fallback"
 
     return {
         "answer": answer,
         "mode":   body.mode,
-        "source": "llm" if 'resp' in dir() else "fallback"
+        "source": source
     }
 
 def simple_keyword_answer(question: str, context: str) -> str:

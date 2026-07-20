@@ -279,14 +279,14 @@ async def seed():
     for idx, (ward, ps_id) in enumerate(ps_ids.items(), 1):
         # Generate some synthetic loitering and crowd density alerts
         await conn.execute("""
-            INSERT INTO cctv_alerts (camera_id, camera_name, source, alert_type, confidence, person_count, lat, lon, geoloc, ts)
-            VALUES ($1, $2, 'samraksha_model', 'loitering', 0.86, 2, $3, $4, ST_MakePoint($4,$3)::GEOGRAPHY, NOW() - INTERVAL '30 minutes')
-        """, f"CAM_{ward[:3].upper()}_01", f"{ward} Main Road Circle Camera", AHMEDABAD_WARDS[idx-1][1], AHMEDABAD_WARDS[idx-1][2])
+            INSERT INTO cctv_alerts (camera_id, source, alert_type, confidence, person_count, lat, lon, geoloc, ts)
+            VALUES ($1, 'samraksha_model', 'loitering', 0.86, 2, $2, $3, ST_MakePoint($3,$2)::GEOGRAPHY, NOW() - INTERVAL '30 minutes')
+        """, f"CAM_{ward[:3].upper()}_01", AHMEDABAD_WARDS[idx-1][1], AHMEDABAD_WARDS[idx-1][2])
 
         await conn.execute("""
-            INSERT INTO cctv_alerts (camera_id, camera_name, source, alert_type, confidence, person_count, lat, lon, geoloc, ts)
-            VALUES ($1, $2, 'iccc', 'crowd_density', 0.92, 42, $3, $4, ST_MakePoint($4,$3)::GEOGRAPHY, NOW() - INTERVAL '15 minutes')
-        """, f"CAM_{ward[:3].upper()}_02", f"{ward} Market Entrance Camera", AHMEDABAD_WARDS[idx-1][1] + 0.001, AHMEDABAD_WARDS[idx-1][2] - 0.001)
+            INSERT INTO cctv_alerts (camera_id, source, alert_type, confidence, person_count, lat, lon, geoloc, ts)
+            VALUES ($1, 'iccc', 'crowd_density', 0.92, 42, $2, $3, ST_MakePoint($3,$2)::GEOGRAPHY, NOW() - INTERVAL '15 minutes')
+        """, f"CAM_{ward[:3].upper()}_02", AHMEDABAD_WARDS[idx-1][1] + 0.001, AHMEDABAD_WARDS[idx-1][2] - 0.001)
 
     print("Computing hourly zone risk scores cache...")
     for ward, _, _ in AHMEDABAD_WARDS:
@@ -302,8 +302,8 @@ async def seed():
                 # Add random noise
                 score = min(max(base + random.uniform(5.0, 15.0), 10.0), 95.0)
                 await conn.execute("""
-                    INSERT INTO zone_risk_scores (ward, hour_slot, day_of_week, risk_score, crime_breakdown, festival_flag, computed_at)
-                    VALUES ($1, $2, $3, $4, '{}', FALSE, NOW())
+                    INSERT INTO zone_risk_scores (ward, hour_slot, day_of_week, risk_score, festival_flag, computed_at)
+                    VALUES ($1, $2, $3, $4, FALSE, NOW())
                 """, ward, hour, dow, score)
 
     await conn.close()

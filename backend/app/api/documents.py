@@ -11,7 +11,8 @@ logger = structlog.get_logger()
 
 DOC_TYPES = [
     'chargesheet', 'medical_letter', 'remand_request',
-    'seizure_receipt', 'court_custody', 'panchanama', 'face_id'
+    'seizure_receipt', 'court_custody', 'panchanama', 'face_id',
+    'witness_statement'
 ]
 
 class GenerateRequest(BaseModel):
@@ -102,6 +103,7 @@ async def generate_document(
         'court_custody':  'Court Custody Letter',
         'panchanama':     'Accused Panchanama',
         'face_id':        'Face Identification Form',
+        'witness_statement': 'Witness Statement',
     }
     await execute(db, """
         INSERT INTO case_diary

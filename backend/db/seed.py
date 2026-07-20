@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timedelta
 import asyncpg
 
-DB_URL = "postgresql://postgres:postgres@postgres:5432/samraksha"
+DB_URL = "postgresql://samraksha:samraksha_secret@postgres:5432/samraksha"
 
 WARDS = [
     'Jamalpur', 'Kalupur', 'Ambawadi', 'Ellisbridge', 'Satellite', 
