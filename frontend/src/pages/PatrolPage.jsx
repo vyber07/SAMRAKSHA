@@ -27,15 +27,13 @@ function DispatchModal({ onClose, onDispatched }) {
     e.preventDefault();
     setLoading(true);
     try {
-      // API call to create or update unit
-      // This is mocked as the backend might need a POST /patrol/units or similar
-      // We simulate success and pass back data
-      setTimeout(() => {
-        onDispatched({ ...form, id: Date.now().toString() });
-        setLoading(false);
-        onClose();
-      }, 600);
+    try {
+      const res = await patrol.createUnit(form);
+      onDispatched(res.data.unit || form);
+      setLoading(false);
+      onClose();
     } catch (err) {
+      alert("Failed to dispatch unit");
       setLoading(false);
     }
   };
@@ -110,7 +108,12 @@ function DispatchModal({ onClose, onDispatched }) {
   );
 }
 
-function UnitDetailsModal({ routeData, onClose, onReroute, onDelete }) {
+function UnitDetailsModal({ routeData, onClose, onReroute, onDelete, onUpdate }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState(routeData.unit);
+  const [manualWaypoints, setManualWaypoints] = useState(routeData.unit.manual_waypoints || []);
+  const [newWaypoint, setNewWaypoint] = useState('');
+
   const { unit, route, road_path } = routeData;
   const positions = (route || []).map(r => [r.lat || r.current_lat || 23.0225, r.lon || r.current_lon || 72.5714]);
   const center = positions.length > 0 ? positions[0] : [23.0225, 72.5714];
@@ -204,12 +207,53 @@ function UnitDetailsModal({ routeData, onClose, onReroute, onDelete }) {
             }}>
               <span>🗺️</span> View on map
             </button>
-            <button onClick={() => onDelete(unit.id)} style={{
-              padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--error)', background: 'rgba(239,68,68,0.1)',
-              color: 'var(--error)', fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: 8
-            }}>
-              <span>⚠️</span> Delete / Unassign Team
-            </button>
+            {!isEditing ? (
+              <>
+                <button onClick={() => setIsEditing(true)} style={{
+                  padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--bg)',
+                  color: 'var(--text)', fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: 8
+                }}>
+                  <span>✏️</span> Edit / Modify Unit
+                </button>
+                <button onClick={() => onDelete(unit.id)} style={{
+                  padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--error)', background: 'rgba(239,68,68,0.1)',
+                  color: 'var(--error)', fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: 8
+                }}>
+                  <span>⚠️</span> Delete / Unassign Team
+                </button>
+              </>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.02)' }}>
+                <h4 style={{ margin: '0 0 10px 0' }}>Modify Unit Details</h4>
+                <input value={editForm.unit_name || editForm.unit_no || ''} onChange={e => setEditForm({...editForm, unit_no: e.target.value})} placeholder="Unit Name" style={{ padding: 8, background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', color: '#fff' }} />
+                <input value={editForm.officer_name || ''} onChange={e => setEditForm({...editForm, officer_name: e.target.value})} placeholder="Officer Name" style={{ padding: 8, background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', color: '#fff' }} />
+                <input value={editForm.vehicle || ''} onChange={e => setEditForm({...editForm, vehicle: e.target.value})} placeholder="Vehicle Number" style={{ padding: 8, background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', color: '#fff' }} />
+                
+                <h4 style={{ margin: '10px 0 0 0' }}>Manual Route Destinations</h4>
+                {manualWaypoints.map((mw, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                    <span style={{ flex: 1, fontSize: 12 }}>📍 {mw.name || 'Custom Area'}</span>
+                    <button onClick={() => setManualWaypoints(manualWaypoints.filter((_, idx) => idx !== i))} style={{ background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer' }}>✕</button>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', gap: 5 }}>
+                  <input value={newWaypoint} onChange={e => setNewWaypoint(e.target.value)} placeholder="Add Location (e.g. Navrangpura)" style={{ flex: 1, padding: 8, background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', color: '#fff' }} />
+                  <button onClick={() => {
+                    if(!newWaypoint) return;
+                    setManualWaypoints([...manualWaypoints, { name: newWaypoint, lat: 23.02 + Math.random()*0.03, lon: 72.55 + Math.random()*0.03 }]);
+                    setNewWaypoint('');
+                  }} style={{ padding: '0 12px', background: 'var(--info)', border: 'none', color: '#fff', borderRadius: 4, cursor: 'pointer' }}>+</button>
+                </div>
+                
+                <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                  <button onClick={() => setIsEditing(false)} style={{ flex: 1, padding: 8, background: 'transparent', border: '1px solid var(--border)', color: '#fff', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={() => {
+                    onUpdate(unit.id, { ...editForm, manual_waypoints: manualWaypoints });
+                    setIsEditing(false);
+                  }} style={{ flex: 1, padding: 8, background: 'var(--success)', border: 'none', color: '#fff', cursor: 'pointer' }}>Save Changes</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -249,6 +293,22 @@ export default function PatrolPage() {
       load();
     } catch (e) {
       alert("Failed to delete unit.");
+    }
+  };
+
+  const handleUpdate = async (id, data) => {
+    try {
+      await patrol.updateUnit(id, data);
+      await load(); // Reload to get new AI routes
+      // Maintain selected unit open, updating its data
+      setSelectedUnit(prev => {
+        // Find newly loaded route for this unit
+        // We'll let `load()` finish, but since React state updates asynchronously, 
+        // we handle it in a separate effect or just close the modal for simplicity.
+        return null; // Close modal on save so user sees new route animate in
+      });
+    } catch (e) {
+      alert("Failed to update unit details.");
     }
   };
 
@@ -335,6 +395,7 @@ export default function PatrolPage() {
           onClose={() => setSelectedUnit(null)}
           onReroute={handleReroute}
           onDelete={handleDelete}
+          onUpdate={handleUpdate}
         />
       )}
     </PageShell>

@@ -154,7 +154,20 @@ async def optimize_patrol_routes(patrol_units: list, hotspots: list) -> list:
                         previous_index, index, vehicle_id
                     )
                 
-                if unit_route:
+                if unit_route or patrol_units[vehicle_id].get('manual_waypoints'):
+                    # Append manual waypoints if any exist for this unit
+                    manual_wps = patrol_units[vehicle_id].get('manual_waypoints') or []
+                    import json
+                    if isinstance(manual_wps, str):
+                        try:
+                            manual_wps = json.loads(manual_wps)
+                        except:
+                            manual_wps = []
+                            
+                    for mw in manual_wps:
+                        if isinstance(mw, dict) and 'lat' in mw and 'lon' in mw:
+                            unit_route.append(mw)
+                    
                     # Fetch dense polyline from OSRM for this ordered route
                     dense_path = []
                     try:

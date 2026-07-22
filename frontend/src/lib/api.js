@@ -75,6 +75,7 @@ export const hotspot = {
 export const patrol = {
   routes:     () => http.get('/patrol/routes'),
   list:       () => http.get('/patrol/routes'),
+  createUnit: (data) => http.post('/patrol/units', data),
   updateUnit: (unit_id, data) => http.patch(`/patrol/units/${unit_id}`, data),
   deleteUnit: (unit_id) => http.delete(`/patrol/units/${unit_id}`),
 };

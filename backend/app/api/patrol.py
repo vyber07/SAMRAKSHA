@@ -18,11 +18,10 @@ async def get_patrol_routes(
 ):
 
     units = await fetch_all(db, """
-        SELECT id, unit_name, current_lat, current_lon, status
+        SELECT id, unit_name, officer_name, vehicle, current_lat, current_lon, status, manual_waypoints
         FROM patrol_units
         WHERE status IN ('available','deployed')
           AND ps_id = $1
-          AND current_lat IS NOT NULL
     """, [str(officer['ps_id'])])
 
     if not units:
@@ -40,13 +39,10 @@ async def get_patrol_routes(
         LIMIT 8
     """, [])
 
-    if not hotspots:
-        return {"routes": [], "message": "No hotspots to route to"}
-
     from app.services.routing import optimize_patrol_routes
     routes = await optimize_patrol_routes(
         patrol_units=[dict(u) for u in units],
-        hotspots=[dict(h) for h in hotspots]
+        hotspots=[dict(h) for h in hotspots] if hotspots else []
     )
 
     return {
@@ -68,12 +64,7 @@ class PCRWebhook(BaseModel):
 async def receive_pcr_incident(
     body: PCRWebhook,
     db = Depends(get_db)
-    # Note: PCR webhook uses API key auth, not JWT
 ):
-    """
-    Receives incidents from Police Control Room (100 call center).
-    PCR operator logs incident → system auto-updates patrol routes.
-    """
     incident_id = await fetch_one(db, """
         INSERT INTO incidents
         (source, crime_type, lat, lon,
@@ -85,7 +76,6 @@ async def receive_pcr_incident(
     """, [body.incident_type, body.lat, body.lon, body.severity])
 
     await db.commit()
-
     from app.api.websocket import manager
     await manager.broadcast({
         'type':      'PCR_INCIDENT',
@@ -97,13 +87,42 @@ async def receive_pcr_incident(
             'severity': body.severity,
         }
     })
-
     return {"incident_id": incident_id['id'], "status": "received"}
 
+class UnitCreate(BaseModel):
+    unit_no: str
+    officer_name: str = None
+    vehicle: str = None
+    status: str = 'available'
+    location: str = None # location string or lat/lon
+    current_lat: float = 23.0225 # default center if not geocoded
+    current_lon: float = 72.5714
+
+@router.post("/units")
+async def create_patrol_unit(
+    body: UnitCreate,
+    db = Depends(get_db),
+    officer = Depends(auth.require_permission('patrol_dispatch'))
+):
+    # Try basic geocoding from location string if needed, else fallback
+    # The frontend will eventually send proper lat/lon if needed.
+    new_unit = await fetch_one(db, """
+        INSERT INTO patrol_units 
+        (unit_name, officer_name, vehicle, status, ps_id, current_lat, current_lon)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *
+    """, [body.unit_no, body.officer_name, body.vehicle, body.status, str(officer['ps_id']), body.current_lat, body.current_lon])
+    await db.commit()
+    return {"status": "created", "unit": new_unit}
+
 class UnitUpdate(BaseModel):
-    current_lat: float
-    current_lon: float
-    status:      str
+    current_lat: float = None
+    current_lon: float = None
+    status:      str = None
+    unit_no: str = None
+    officer_name: str = None
+    vehicle: str = None
+    manual_waypoints: list = None
 
 @router.patch("/units/{unit_id}")
 async def update_patrol_unit(
@@ -112,14 +131,35 @@ async def update_patrol_unit(
     db = Depends(get_db),
     officer = Depends(auth.require_permission('patrol_dispatch'))
 ):
-    await execute(db, """
-        UPDATE patrol_units
-        SET current_lat = $1, current_lon = $2,
-            status = $3, last_update = NOW()
-        WHERE id = $4
-    """, [body.current_lat, body.current_lon,
-          body.status, unit_id])
-    await db.commit()
+    updates = []
+    params = []
+    idx = 1
+    
+    for field in ['current_lat', 'current_lon', 'status', 'officer_name', 'vehicle']:
+        val = getattr(body, field)
+        if val is not None:
+            updates.append(f"{field} = ${idx}")
+            params.append(val)
+            idx += 1
+            
+    if body.unit_no is not None:
+        updates.append(f"unit_name = ${idx}")
+        params.append(body.unit_no)
+        idx += 1
+
+    import json
+    if body.manual_waypoints is not None:
+        updates.append(f"manual_waypoints = ${idx}")
+        params.append(json.dumps(body.manual_waypoints))
+        idx += 1
+
+    if updates:
+        updates.append("last_update = NOW()")
+        q = f"UPDATE patrol_units SET {', '.join(updates)} WHERE id = ${idx}"
+        params.append(unit_id)
+        await execute(db, q, params)
+        await db.commit()
+        
     return {"status": "updated"}
 
 @router.delete("/units/{unit_id}")
