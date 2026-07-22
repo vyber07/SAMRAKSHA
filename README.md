@@ -6,9 +6,11 @@ Samraksha is a cutting-edge real-time Police Crime Monitoring and Case Managemen
 ## Features
 - **Real-time Map & Routing**: Features dynamic, real-time routing logic that generates exact road-based paths using locally hosted OSRM. 
 - **AI/ML Patrol Dispatching**: Uses Google OR-Tools to dynamically re-calculate and re-route police patrols precisely along real-world road networks, prioritizing areas with active hotspots.
-- **Dynamic Database-backed Infrastructure**: Every piece of data—from unit locations, live incident alerts, officer credentials, and IAM-style granular permissions—is live and directly fed from PostgreSQL. There are NO hardcoded mocks masking data outages.
-- **Analytics & Predictive Insights**: Tracks historical trends and forecasts localized crime hotspots using data science analytics models, helping commanding officers pre-deploy units automatically.
-- **Live Notifications & Control Center**: Integrates live WebSocket events so officers are notified immediately of changes, PCR webhooks, and routing re-assignments.
+- **Dynamic Database-backed Infrastructure**: Every piece of data—from unit locations, live incident alerts, officer credentials, and IAM-style granular permissions (PBAC)—is live and directly fed from PostgreSQL. There are NO hardcoded mocks masking data outages.
+- **Analytics & Predictive Insights**: Tracks historical trends and forecasts localized crime hotspots using data science analytics models (XGBoost, DBSCAN), helping commanding officers pre-deploy units automatically.
+- **Live Notifications & Control Center**: Integrates live WebSocket events (with exponential backoff reconnects) so officers are notified immediately of changes, PCR webhooks, and routing re-assignments.
+- **AI Assistant**: Natural language querying over case documents and data using Llama.cpp and Whisper for voice search.
+- **CCTNS Integration**: Configured endpoints for interfacing with the national CCTNS network.
 
 ## Architecture & Stack
 - **Frontend**: React 19, Vite, Leaflet, Zustand, Axios
@@ -19,4 +21,3 @@ Samraksha is a cutting-edge real-time Police Crime Monitoring and Case Managemen
 ## Deployment
 All services are containerized via Docker and orchestrated using Docker Compose.
 Run `docker compose up -d --build` to deploy the entire stack instantly.
-

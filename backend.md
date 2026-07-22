@@ -21,6 +21,7 @@ graph TD
         IncidentsAPI(Incidents & Patrol Router)
         AssistantAPI(AI Assistant & Voice Router)
         HotspotAPI(Hotspot & Prediction Router)
+        CCTNSAPI(CCTNS Integration Router)
     end
 
     %% Define Services Layer
@@ -44,12 +45,14 @@ graph TD
     Client -->|Dispatch / SLA| IncidentsAPI
     Client -->|Text/Audio Queries| AssistantAPI
     Client -->|View Heatmaps| HotspotAPI
+    Client -->|Sync Reports| CCTNSAPI
 
     %% Connections - API to Storage
     AuthAPI <-->|Validate/Blacklist| Redis
     AuthAPI <-->|Verify Password| PG
     AdminAPI <-->|CRUD Officers| PG
     AnalyticsAPI <-->|Fetch Alerts/Patterns| PG
+    CCTNSAPI <-->|Push/Pull Reports| PG
 
     %% Connections - API to Services
     IncidentsAPI --> RoutingService
@@ -90,7 +93,7 @@ graph TD
 2. It queries PostgreSQL for historical incident data (hour of day, day of week, month, and severity).
 3. The data is processed using **Pandas**, mapping text severities to numerical risk scores.
 4. An **XGBoost Regressor** model is trained on this data asynchronously.
-5. The trained model predicts crime risk scores for various city wards based on current time inputs.
+5. The trained model predicts crime risk scores for various city wards based on current time inputs, adjusting for festival events via the `FESTIVAL_CALENDAR` integration.
 6. For spatial heatmaps, the system applies **KDE (Kernel Density Estimation)** and **DBSCAN (Density-Based Spatial Clustering of Applications with Noise)** to group nearby crimes into actionable red zones on the map.
 
 ### D. AI Assistant & Voice Operations
@@ -107,3 +110,8 @@ graph TD
 2. The data is inserted into the `cctv_alerts` table in PostgreSQL.
 3. The `AnalyticsAPI` queries this table, linking alerts to active FIRs (First Information Reports) to generate **AI Pattern Matches**.
 4. The API returns real-time JSON payloads to populate the dashboard's "AI Pattern Matches" and "Resource Allocation" widgets.
+
+### F. External Integrations (CCTNS)
+**Workflow**:
+1. The backend exposes the `/cctns` router which is fully mounted into the `main.py` application.
+2. This router is responsible for standardizing data schemas to match national databases for pushing and pulling registered cases.
