@@ -1,14 +1,6 @@
 import { useMemo } from 'react';
 
-const MOCK = [
-  { date: 'Mon', count: 12 },
-  { date: 'Tue', count: 19 },
-  { date: 'Wed', count: 8 },
-  { date: 'Thu', count: 22 },
-  { date: 'Fri', count: 16 },
-  { date: 'Sat', count: 27 },
-  { date: 'Sun', count: 14 },
-];
+
 
 // Responsive line + area chart drawn in a fixed viewBox coordinate space.
 const VB_W = 700;
@@ -28,7 +20,7 @@ function shortLabel(d) {
 
 export default function CaseTrendsChart({ data }) {
   const points = useMemo(() => {
-    const src = Array.isArray(data) && data.length ? data.slice(0, 7) : MOCK;
+    const src = Array.isArray(data) && data.length ? data.slice(0, 7) : [];
     // Normalize to exactly what we render; guard counts.
     const clean = src.map((d) => ({
       date: d?.date ?? '',

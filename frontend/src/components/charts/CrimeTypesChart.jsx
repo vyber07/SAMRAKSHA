@@ -2,18 +2,9 @@ import { useMemo } from 'react';
 
 const PALETTE = ['#2563eb', '#f97316', '#16a34a', '#0284c7', '#64748b', '#dc2626'];
 
-const MOCK = [
-  { type: 'Theft', count: 42 },
-  { type: 'Assault', count: 28 },
-  { type: 'Fraud', count: 19 },
-  { type: 'Burglary', count: 15 },
-  { type: 'Vandalism', count: 9 },
-  { type: 'Cybercrime', count: 7 },
-];
-
-export default function CrimeTypesChart({ data }) {
+export default function CrimeTypesChart({ data = [] }) {
   const rows = useMemo(() => {
-    const src = Array.isArray(data) && data.length ? data : MOCK;
+    const src = Array.isArray(data) && data.length ? data : [];
     const clean = src
       .map((d) => ({
         type: d?.type ?? '—',

@@ -2,13 +2,7 @@ import { useMemo } from 'react';
 
 const PALETTE = ['#2563eb', '#f97316', '#16a34a', '#0284c7', '#64748b', '#dc2626'];
 
-const MOCK = [
-  { type: 'Theft', count: 42 },
-  { type: 'Assault', count: 28 },
-  { type: 'Fraud', count: 19 },
-  { type: 'Burglary', count: 15 },
-  { type: 'Vandalism', count: 9 },
-];
+
 
 const VB_W = 700;
 const VB_H = 320;
@@ -16,7 +10,7 @@ const PAD = { top: 28, right: 20, bottom: 48, left: 44 };
 
 export default function CasesByTypeChart({ data }) {
   const bars = useMemo(() => {
-    const src = Array.isArray(data) && data.length ? data : MOCK;
+    const src = Array.isArray(data) && data.length ? data : [];
     return src
       .map((d) => ({
         type: d?.type ?? '—',

@@ -7,13 +7,6 @@ const STATUS_COLORS = {
   Closed: '#64748b',
 };
 
-const MOCK = [
-  { status: 'Open', count: 34 },
-  { status: 'In Progress', count: 21 },
-  { status: 'Solved', count: 48 },
-  { status: 'Closed', count: 17 },
-];
-
 const SIZE = 220;
 const R_OUTER = 96;
 const R_INNER = 58;
@@ -43,7 +36,7 @@ function arcPath(startAngle, endAngle) {
 
 export default function StatusDistributionChart({ data }) {
   const segments = useMemo(() => {
-    const src = Array.isArray(data) && data.length ? data : MOCK;
+    const src = Array.isArray(data) && data.length ? data : [];
     const clean = src.map((d) => ({
       status: d?.status ?? '—',
       count: Number.isFinite(+d?.count) ? +d.count : 0,
