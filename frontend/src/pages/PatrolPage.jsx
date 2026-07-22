@@ -27,7 +27,6 @@ function DispatchModal({ onClose, onDispatched }) {
     e.preventDefault();
     setLoading(true);
     try {
-    try {
       const res = await patrol.createUnit(form);
       onDispatched(res.data.unit || form);
       setLoading(false);
