@@ -11,7 +11,7 @@ import structlog
 from app.api import (
     auth, cases, incidents, documents,
     patrol, hotspot, cctv, assistant,
-    legal, websocket, admin, analytics, translate
+    legal, websocket, admin, analytics, translate, cctns
 )
 from app.db.connection import init_db, close_db
 
@@ -76,6 +76,8 @@ app.include_router(websocket.router,  prefix="/ws",        tags=["WebSocket"])
 app.include_router(admin.router,      prefix="/admin",     tags=["Admin"])
 app.include_router(analytics.router,  prefix="/analytics", tags=["Analytics"])
 app.include_router(translate.router,  prefix="/translate", tags=["Translation"])
+app.include_router(cctns.router,      prefix="/cctns",     tags=["CCTNS"])
+
 
 # FIR create (top level — most important endpoint)
 # We can just mount the cases router again or a specific router, but cases already has it.

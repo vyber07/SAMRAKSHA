@@ -21,12 +21,7 @@ ALGORITHM  = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_EXP = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", 8))
 REDIS_URL  = os.getenv("REDIS_URL", "redis://redis:6379/0")
 redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
-pwd_ctx  = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2   = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key-1234567890")
-ALGORITHM  = os.getenv("JWT_ALGORITHM", "HS256")
-ACCESS_EXP = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", 8))
 
 class LoginRequest(BaseModel):
     badge_no: str
@@ -96,12 +91,18 @@ def require_permission(permission_key: str):
                 raise HTTPException(403, "Permission denied by override")
         
         # Check role default (hardcoded for now)
+        ALL_PERMISSIONS = [
+            'admin_permissions', 'analytics_view', 'case_create', 'case_view_all',
+            'case_view_own_ps', 'case_edit', 'doc_generate', 'patrol_dispatch',
+            'patrol_view', 'cctv_view',
+        ]
         role_permissions = {
-            'constable': [],  # Can do nothing
-            'io': ['case_create', 'case_view_own_ps', 'case_edit', 'patrol_view'],
-            'sho': ['case_view_all', 'case_edit', 'doc_generate', 'patrol_dispatch', 'patrol_view', 'cctv_view', 'analytics_view'],
-            'dcp': ['case_view_all', 'analytics_view', 'patrol_view'],
-            'admin': ['admin_permissions', 'analytics_view'],
+            'constable': [],  # Field officer — read-only access granted separately
+            'io':        ['case_create', 'case_view_own_ps', 'case_edit', 'patrol_view'],
+            'sho':       ['case_view_all', 'case_edit', 'doc_generate', 'patrol_dispatch',
+                          'patrol_view', 'cctv_view', 'analytics_view'],
+            'dcp':       ['case_view_all', 'analytics_view', 'patrol_view', 'cctv_view'],
+            'admin':     ALL_PERMISSIONS,  # Admin has everything
         }
         
         if permission_key not in role_permissions.get(officer['role'], []):

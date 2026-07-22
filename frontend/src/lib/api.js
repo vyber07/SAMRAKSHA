@@ -48,36 +48,51 @@ export const cases = {
 
 // ─── Incidents ─────────────────────────────────────────
 export const incidents = {
-  listMap: () => http.get('/map/incidents'),
+  listMap:     () => http.get('/map/incidents'),
+  slaBreaches: () => http.get('/incidents/sla_breaches'),
 };
 
 // ─── Analytics ─────────────────────────────────────────
 export const analytics = {
-  summary: () => http.get('/analytics/summary'),
-  trends: () => http.get('/analytics/trends'),
+  summary:       () => http.get('/analytics/summary'),
+  trends:        () => http.get('/analytics/trends'),
+  resourceStatus:() => http.get('/analytics/resource_status'),
+  hotspotSurge:  () => http.get('/analytics/hotspot_surge'),
+  patternMatches:() => http.get('/analytics/pattern_matches'),
+  simulate:      (event, crowd_size) => http.post('/analytics/simulate', { event, crowd_size }),
 };
 
 // ─── Map / Hotspots ────────────────────────────────────
 export const hotspot = {
-  hotspots: () => http.get('/map/hotspots'),
-  wards: () => http.get('/map/wards'),
-  incidents: () => http.get('/map/incidents'),
-  alerts: () => http.get('/map/alerts'),
+  hotspots: (days, crime_type) => http.get('/map/hotspots', { params: { days, crime_type } }),
+  wards:    () => http.get('/map/wards'),
+  incidents:(params) => http.get('/map/incidents', { params }),
+  alerts:   (limit) => http.get('/map/alerts', { params: { limit } }),
+  cybercrime:(days) => http.get('/map/cybercrime', { params: { days } }),
 };
 
 // ─── Patrol ────────────────────────────────────────────
 export const patrol = {
-  list: () => http.get('/patrol'),
+  routes:     () => http.get('/patrol/routes'),
+  list:       () => http.get('/patrol/routes'),
+  updateUnit: (unit_id, data) => http.patch(`/patrol/units/${unit_id}`, data),
+  deleteUnit: (unit_id) => http.delete(`/patrol/units/${unit_id}`),
 };
 
 // ─── CCTV ──────────────────────────────────────────────
 export const cctv = {
-  list: () => http.get('/cctv'),
+  list:      () => http.get('/cctv'),
+  cameras:   () => http.get('/cctv/cameras'),
+  anomalies: () => http.get('/cctv/anomalies'),
+  sendAlert: (data) => http.post('/cctv/alert', data),
 };
 
 // ─── Smart Assistant ──────────────────────────────────────
+// FIXED: payload must be { mode, question, case_id } — not { query, scope }
 export const assistant = {
-  query: (query, scope = 'all') => http.post('/assistant/query', { query, scope }),
+  query: (question, mode = 'all_cases', case_id = null) =>
+    http.post('/assistant/query', { mode, question, case_id }),
+
   voiceQuery: (audioBlob, mode = 'all_cases', caseId = null) => {
     const formData = new FormData();
     formData.append('audio', audioBlob, 'recording.webm');
@@ -86,12 +101,26 @@ export const assistant = {
     return http.post(url, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-  }
+  },
 };
 
 // ─── Admin ─────────────────────────────────────────────
 export const admin = {
-  officers: () => http.get('/admin/officers'),
+  officers:          () => http.get('/admin/officers'),
+  createOfficer:     (data) => http.post('/admin/officers', data),
+  updateOfficer:     (badge_no, data) => http.patch(`/admin/officers/${badge_no}`, data),
+  auditLogs:         (params) => http.get('/admin/audit', { params }),
+  health:            () => http.get('/admin/health'),
+  getPermissions:    () => http.get('/admin/permissions'),
+  getOfficerPerms:   (badge_no) => http.get(`/admin/officers/${badge_no}/permissions`),
+  setOfficerPerms:   (badge_no, overrides) => http.put(`/admin/officers/${badge_no}/permissions`, overrides),
+};
+
+// ─── Documents ─────────────────────────────────────────
+export const documents = {
+  list:     (case_id) => http.get('/docs', { params: { case_id } }),
+  generate: (case_id, doc_type, language = 'en') =>
+    http.post('/docs/generate', { case_id, doc_type, language }, { responseType: 'blob' }),
 };
 
 export default http;

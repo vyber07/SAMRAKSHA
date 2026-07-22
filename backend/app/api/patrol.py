@@ -121,3 +121,13 @@ async def update_patrol_unit(
           body.status, unit_id])
     await db.commit()
     return {"status": "updated"}
+
+@router.delete("/units/{unit_id}")
+async def delete_patrol_unit(
+    unit_id: str,
+    db = Depends(get_db),
+    officer = Depends(auth.require_permission('patrol_dispatch'))
+):
+    await execute(db, "DELETE FROM patrol_units WHERE id = $1", [unit_id])
+    await db.commit()
+    return {"status": "deleted"}

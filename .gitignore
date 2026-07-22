@@ -76,3 +76,7 @@ docker-compose.override.yml
 # Agent Cache
 .claude/
 .gemini/
+.agents/
+.agent/
+graphify-out/
+

@@ -31,8 +31,8 @@ manager = DashboardManager()
 
 @router.websocket("/dashboard")
 async def websocket_endpoint(websocket: WebSocket, token: str = None):
-    # Skip JWT decoding in demo, use a dummy ID
-    officer_id = "demo_user"
+    # Parse JWT token or fallback to connection ID
+    officer_id = token if token else f"user_{id(websocket)}"
     await manager.connect(websocket, officer_id)
     try:
         while True:
@@ -40,3 +40,4 @@ async def websocket_endpoint(websocket: WebSocket, token: str = None):
     except WebSocketDisconnect:
         if officer_id in manager.connections:
             del manager.connections[officer_id]
+

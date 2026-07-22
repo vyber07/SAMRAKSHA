@@ -60,6 +60,14 @@ class CCTVPipeline:
         std = self.get_rolling_std()
         z_score = (density - avg) / (std + 0.001)
         
+    def get_rolling_avg(self) -> float:
+
+        return 0.02
+
+    def get_rolling_std(self) -> float:
+        return 0.005
+
+        
         alert_type = None
         if loitering:
             alert_type = 'loitering'

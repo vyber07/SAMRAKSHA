@@ -15,6 +15,7 @@ const NAV_SECTIONS = [
     title: 'Operations',
     items: [
       { to: '/cases', icon: 'folder_open', label: 'Cases', gradient: 'linear-gradient(135deg, #10b981, #047857)' },
+      { to: '/cases/create', icon: 'add_circle', label: 'Create FIR', gradient: 'linear-gradient(135deg, #34d399, #059669)' },
       { to: '/incidents', icon: 'warning', label: 'Incidents', gradient: 'linear-gradient(135deg, #ef4444, #b91c1c)' },
       { to: '/map', icon: 'map', label: 'Crime Map', gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
       { to: '/patrol', icon: 'local_police', label: 'Patrol', gradient: 'linear-gradient(135deg, #eab308, #a16207)' },

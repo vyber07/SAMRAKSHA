@@ -155,11 +155,29 @@ async def optimize_patrol_routes(patrol_units: list, hotspots: list) -> list:
                     )
                 
                 if unit_route:
+                    # Fetch dense polyline from OSRM for this ordered route
+                    dense_path = []
+                    try:
+                        all_pts = [(patrol_units[vehicle_id]['current_lat'], patrol_units[vehicle_id]['current_lon'])] + [(wp['lat'], wp['lon']) for wp in unit_route]
+                        if len(all_pts) >= 2:
+                            coords = ";".join([f"{lon},{lat}" for lat, lon in all_pts])
+                            url = f"http://osrm:5000/route/v1/driving/{coords}?geometries=geojson&overview=full"
+                            async with httpx.AsyncClient() as client:
+                                r_resp = await client.get(url, timeout=5.0)
+                                if r_resp.status_code == 200:
+                                    r_data = r_resp.json()
+                                    if r_data.get('code') == 'Ok':
+                                        # GeoJSON uses [lon, lat], leaflet wants [lat, lon]
+                                        dense_path = [[pt[1], pt[0]] for pt in r_data['routes'][0]['geometry']['coordinates']]
+                    except Exception as e:
+                        logger.error(f"Failed to fetch dense OSRM route: {e}")
+
                     routes.append({
                         "unit_id": patrol_units[vehicle_id]['id'],
                         "unit_name": patrol_units[vehicle_id]['unit_name'],
                         "waypoints": unit_route,
-                        "distance_meters": route_distance
+                        "distance_meters": route_distance,
+                        "road_path": dense_path
                     })
                     
         return routes

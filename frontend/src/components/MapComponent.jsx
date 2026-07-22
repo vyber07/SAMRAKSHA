@@ -9,14 +9,6 @@ const SEVERITY_COLORS = {
   low: '#64748b',
 };
 
-const MOCK_MARKERS = [
-  { lat: 23.0225, lon: 72.5714, type: 'Theft', severity: 'high', location: 'Ellisbridge' },
-  { lat: 23.0395, lon: 72.5660, type: 'Assault', severity: 'critical', location: 'Navrangpura' },
-  { lat: 22.9987, lon: 72.6034, type: 'Vandalism', severity: 'medium', location: 'Maninagar' },
-  { lat: 23.0300, lon: 72.5100, type: 'Fraud', severity: 'low', location: 'Satellite' },
-  { lat: 23.0400, lon: 72.5300, type: 'Robbery', severity: 'high', location: 'Vastrapur' },
-];
-
 export default function MapComponent({ height = '100%', filterSeverity = 'All' }) {
   const [markers, setMarkers] = useState([]);
 
@@ -34,9 +26,9 @@ export default function MapComponent({ height = '100%', filterSeverity = 'All' }
             location: m.location || m.ward || '',
           }))
           .filter((m) => Number.isFinite(m.lat) && Number.isFinite(m.lon));
-        setMarkers(cleaned.length ? cleaned : MOCK_MARKERS);
-      } catch {
-        setMarkers(MOCK_MARKERS);
+        setMarkers(cleaned);
+      } catch (e) {
+        setMarkers([]);
       }
     })();
   }, []);

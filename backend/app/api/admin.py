@@ -69,16 +69,59 @@ async def system_health(db = Depends(get_db)):
 
 @router.get("/audit", dependencies=[Depends(verify_admin_role)])
 async def get_audit_logs(officer: Optional[str] = None, type: Optional[str] = None, db = Depends(get_db)):
-    query = "SELECT * FROM case_audit WHERE 1=1"
+    query = """
+        SELECT a.*, o.name as officer_name, o.badge_no
+        FROM case_audit a
+        LEFT JOIN officers o ON a.officer_id = o.id
+        WHERE 1=1
+    """
     params = []
     idx = 1
     if officer:
-        query += f" AND officer_id = ${idx}"
+        query += f" AND a.officer_id = ${idx}"
         params.append(officer)
         idx += 1
     if type:
-        query += f" AND action = ${idx}"
+        query += f" AND a.action = ${idx}"
         params.append(type)
         idx += 1
-    query += " ORDER BY changed_at DESC LIMIT 100"
+    query += " ORDER BY a.changed_at DESC LIMIT 100"
     return await fetch_all(db, query, params)
+
+class PermissionOverride(BaseModel):
+    permission_key: str
+    granted: bool
+
+@router.get("/permissions", dependencies=[Depends(verify_admin_role)])
+async def get_all_permissions(db = Depends(get_db)):
+    """Get all available permissions (the IAM policies)."""
+    return await fetch_all(db, "SELECT * FROM permissions ORDER BY module, action")
+
+@router.get("/officers/{badge_no}/permissions", dependencies=[Depends(verify_admin_role)])
+async def get_officer_permissions(badge_no: str, db = Depends(get_db)):
+    """Get specific IAM style overrides for an officer."""
+    officer_records = await fetch_all(db, "SELECT id FROM officers WHERE badge_no = $1", [badge_no])
+    if not officer_records:
+        raise HTTPException(404, "Officer not found")
+    officer_id = officer_records[0]['id']
+    return await fetch_all(db, "SELECT permission_key, granted FROM officer_permission_overrides WHERE officer_id = $1", [officer_id])
+
+@router.put("/officers/{badge_no}/permissions", dependencies=[Depends(verify_admin_role)])
+async def set_officer_permissions(badge_no: str, overrides: List[PermissionOverride], db = Depends(get_db)):
+    """Set IAM style overrides for an officer."""
+    officer_records = await fetch_all(db, "SELECT id FROM officers WHERE badge_no = $1", [badge_no])
+    if not officer_records:
+        raise HTTPException(404, "Officer not found")
+    officer_id = officer_records[0]['id']
+    
+    # First delete all existing overrides for this officer
+    await execute(db, "DELETE FROM officer_permission_overrides WHERE officer_id = $1", [officer_id])
+    
+    # Then insert the new ones
+    for override in overrides:
+        await execute(db, """
+            INSERT INTO officer_permission_overrides (officer_id, permission_key, granted)
+            VALUES ($1, $2, $3)
+        """, [officer_id, override.permission_key, override.granted])
+        
+    return {"status": "permissions updated"}

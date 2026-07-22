@@ -7,6 +7,41 @@ import structlog
 
 logger = structlog.get_logger()
 
+# ─── Festival Calendar ─────────────────────────────────────────────────────────
+# Maps event name → expected crime multipliers per crime type
+# Used by /analytics/simulate for crowd-event risk modelling
+FESTIVAL_CALENDAR = {
+    'navratri': {
+        'theft': 2.8, 'assault': 1.9, 'crowd_violence': 2.2,
+        'pickpocketing': 3.5, 'eve_teasing': 2.0,
+    },
+    'diwali': {
+        'theft': 2.5, 'burglary': 3.0, 'robbery': 2.2,
+        'noise_complaint': 1.5, 'fire_incident': 2.0,
+    },
+    'uttarayan': {
+        'kite_injury': 4.0, 'assault': 1.4, 'crowd_violence': 1.6,
+        'theft': 1.8,
+    },
+    'eid': {
+        'crowd_violence': 1.8, 'theft': 2.0, 'traffic_violation': 2.5,
+    },
+    'holi': {
+        'eve_teasing': 3.0, 'assault': 2.2, 'theft': 1.9,
+        'molestation': 2.5,
+    },
+    'ganesh_chaturthi': {
+        'theft': 2.3, 'crowd_violence': 1.7, 'pickpocketing': 3.2,
+        'traffic_violation': 2.0,
+    },
+    'ambedkar_jayanti': {
+        'crowd_violence': 2.0, 'theft': 1.6, 'vandalism': 1.8,
+    },
+    'independence_day': {
+        'security_threat': 3.0, 'crowd_violence': 1.5, 'theft': 1.4,
+    },
+}
+
 def compute_kde_heatmap(df: pd.DataFrame):
     if df.empty or len(df) < 3:
         return []

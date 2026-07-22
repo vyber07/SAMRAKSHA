@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../lib/store';
 
 // One UI large header: big low-set title, floating pill controls
-export default function TopBar({ title = 'Dashboard', onRefresh }) {
+export default function TopBar({ title = 'Dashboard', onRefresh, headerAction }) {
   const officer = useAuthStore((s) => s.officer);
   const [time, setTime] = useState(new Date());
 
@@ -29,6 +29,7 @@ export default function TopBar({ title = 'Dashboard', onRefresh }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {headerAction && headerAction}
         {onRefresh && (
           <button className="oui-pill" onClick={onRefresh} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>refresh</span> Refresh
