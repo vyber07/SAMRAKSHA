@@ -246,7 +246,7 @@ export default function Dashboard() {
         priority: 'medium',
         time: c.created_at,
       }))
-    : wsEvents.map(e => ({ id: e.ts, title: e.event, text: e.data, time: new Date(e.ts).toLocaleTimeString() }));
+    : [];
 
   const quickActions = [
     { icon: 'edit_note',     label: 'FIR / Create Case', variant: 'filled',   color: 'primary',    onClick: () => navigate('/cases') },
