@@ -2,16 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import PageShell, { EmptyState } from './PageShell';
 import IncidentTile from '../components/widgets/IncidentTile';
-import { hotspot } from '../lib/api';
+import { hotspot, incidents as apiIncidents } from '../lib/api';
 
-const MOCK_INCIDENTS = [
-  { type: 'Theft', location: 'Ellisbridge', severity: 'high', time: new Date().toISOString() },
-  { type: 'Assault', location: 'Navrangpura', severity: 'critical', time: new Date(Date.now() - 36e5).toISOString() },
-  { type: 'Vandalism', location: 'Maninagar', severity: 'medium', time: new Date(Date.now() - 72e5).toISOString() },
-  { type: 'Fraud', location: 'Satellite', severity: 'low', time: new Date(Date.now() - 12e6).toISOString() },
-  { type: 'Robbery', location: 'Vastrapur', severity: 'high', time: new Date(Date.now() - 15e6).toISOString() },
-  { type: 'Cybercrime', location: 'Bodakdev', severity: 'medium', time: new Date(Date.now() - 20e6).toISOString() },
-];
 
 const SEVERITIES = ['All', 'Critical', 'High', 'Medium', 'Low'];
 
@@ -28,18 +20,15 @@ function ReportIncidentModal({ onClose, onReported }) {
     e.preventDefault();
     setLoading(true);
     try {
-      // Mocked API call for incident creation
-      setTimeout(() => {
-        onReported({
-          type: form.type,
-          location: form.location,
-          severity: form.severity.toLowerCase(),
-          time: new Date().toISOString(),
-          description: form.description
-        });
-        setLoading(false);
-        onClose();
-      }, 600);
+      const res = await apiIncidents.report({
+        type: form.type,
+        location: form.location,
+        severity: form.severity,
+        description: form.description
+      });
+      onReported(res.data);
+      setLoading(false);
+      onClose();
     } catch (err) {
       setLoading(false);
     }
@@ -131,9 +120,9 @@ export default function IncidentsPage() {
     try {
       const res = await hotspot.incidents();
       const data = Array.isArray(res.data) ? res.data : res.data?.items || [];
-      setItems(data.length ? data : MOCK_INCIDENTS);
+      setItems(data);
     } catch {
-      setItems(MOCK_INCIDENTS);
+      setItems([]);
     }
   }, []);
 

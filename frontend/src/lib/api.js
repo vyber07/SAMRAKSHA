@@ -49,7 +49,8 @@ export const cases = {
 // ─── Incidents ─────────────────────────────────────────
 export const incidents = {
   listMap:     () => http.get('/map/incidents'),
-  slaBreaches: () => http.get('/incidents/sla_breaches'),
+  slaBreaches: () => http.get('/incident/sla_breaches'),
+  report:      (data) => http.post('/incident/report', data),
 };
 
 // ─── Analytics ─────────────────────────────────────────

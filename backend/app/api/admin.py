@@ -39,6 +39,16 @@ async def create_officer(officer: OfficerCreate, db = Depends(get_db)):
         INSERT INTO officers (badge_no, name, role, ps_id, password_hash)
         VALUES ($1, $2, $3, $4, $5)
     """, [officer.badge_no, officer.name, officer.role, officer.ps_id, hashed_pw])
+    
+    from app.services.audit import log_activity
+    from fastapi import Request
+    # assuming we don't have Request, wait, I can just omit ip or use "system"
+    # Actually, we can add `request: Request` to the endpoints or just pass None for IP
+    try:
+        await log_activity(db, str(officer_info['id']) if 'officer_info' in locals() else None, "create_officer", f"Officer {officer.badge_no} created with role {officer.role}")
+    except Exception as e:
+        logger.error("Audit log failed", error=str(e))
+        
     return {"status": "created"}
 
 @router.patch("/officers/{badge_no}", dependencies=[Depends(verify_admin_role)])
@@ -56,6 +66,13 @@ async def update_officer(badge_no: str, officer: OfficerUpdate, db = Depends(get
         
     query = f"UPDATE officers SET {', '.join(updates)} WHERE badge_no = $1"
     await execute(db, query, params)
+    
+    from app.services.audit import log_activity
+    try:
+        await log_activity(db, None, "update_officer", f"Officer {badge_no} updated: {list(officer.dict(exclude_unset=True).keys())}")
+    except Exception as e:
+        logger.error("Audit log failed", error=str(e))
+        
     return {"status": "updated"}
 
 @router.get("/health", dependencies=[Depends(verify_admin_role)])
@@ -68,24 +85,28 @@ async def system_health(db = Depends(get_db)):
     return {"db": db_status, "websockets": 0, "last_seed": None}
 
 @router.get("/audit", dependencies=[Depends(verify_admin_role)])
-async def get_audit_logs(officer: Optional[str] = None, type: Optional[str] = None, db = Depends(get_db)):
+async def get_audit_logs(officer: Optional[str] = None, type: Optional[str] = None, q: Optional[str] = None, db = Depends(get_db)):
     query = """
-        SELECT a.*, o.name as officer_name, o.badge_no
-        FROM case_audit a
+        SELECT a.created_at as changed_at, o.name as officer_name, o.badge_no, a.action, a.details as new_value
+        FROM system_logs a
         LEFT JOIN officers o ON a.officer_id = o.id
         WHERE 1=1
     """
     params = []
     idx = 1
     if officer:
-        query += f" AND a.officer_id = ${idx}"
-        params.append(officer)
+        query += f" AND (o.badge_no = ${idx} OR o.name ILIKE ${idx})"
+        params.append(officer if officer.isalnum() else f"%{officer}%")
         idx += 1
     if type:
         query += f" AND a.action = ${idx}"
         params.append(type)
         idx += 1
-    query += " ORDER BY a.changed_at DESC LIMIT 100"
+    if q:
+        query += f" AND a.details ILIKE ${idx}"
+        params.append(f"%{q}%")
+        idx += 1
+    query += f" ORDER BY a.created_at DESC LIMIT 100"
     return await fetch_all(db, query, params)
 
 class PermissionOverride(BaseModel):
@@ -123,5 +144,11 @@ async def set_officer_permissions(badge_no: str, overrides: List[PermissionOverr
             INSERT INTO officer_permission_overrides (officer_id, permission_key, granted)
             VALUES ($1, $2, $3)
         """, [officer_id, override.permission_key, override.granted])
+        
+    from app.services.audit import log_activity
+    try:
+        await log_activity(db, None, "set_permissions", f"Permissions updated for officer {badge_no}")
+    except Exception as e:
+        logger.error("Audit log failed", error=str(e))
         
     return {"status": "permissions updated"}

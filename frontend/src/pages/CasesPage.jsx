@@ -3,12 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import PageShell, { EmptyState, StatusBadge } from './PageShell';
 import { cases as casesApi, documents as docsApi } from '../lib/api';
 
-const MOCK_CASES = [
-  { case_id: 'C-1201', fir_no: '2026/0341', victim_name: 'R. Shah',    accused_name: 'Unknown', crime_type: 'Theft',   case_status: 'open',          created_at: new Date().toISOString() },
-  { case_id: 'C-1202', fir_no: '2026/0342', victim_name: 'M. Desai',   accused_name: 'K. Yadav', crime_type: 'Assault', case_status: 'investigating', created_at: new Date(Date.now() - 864e5).toISOString() },
-  { case_id: 'C-1203', fir_no: '2026/0338', victim_name: 'P. Mehta',   accused_name: 'Unknown', crime_type: 'Fraud',   case_status: 'solved',        created_at: new Date(Date.now() - 2 * 864e5).toISOString() },
-  { case_id: 'C-1204', fir_no: '2026/0335', victim_name: 'A. Trivedi', accused_name: 'S. Rana',  crime_type: 'Robbery', case_status: 'pending',       created_at: new Date(Date.now() - 3 * 864e5).toISOString() },
-];
+
 
 const FILTERS = ['All', 'Open', 'Investigating', 'Pending', 'Solved', 'Closed'];
 
@@ -129,11 +124,11 @@ export default function CasesPage() {
   const load = useCallback(async () => {
     try {
       const res = await casesApi.list(1, 100);
-      setItems(res.data?.items?.length ? res.data.items : MOCK_CASES);
+      setItems(res.data?.items || []);
       setForbidden(false);
     } catch (err) {
       if (err.response?.status === 403) setForbidden(true);
-      else setItems(MOCK_CASES);
+      else setItems([]);
     }
   }, []);
 

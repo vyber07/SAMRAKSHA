@@ -2,21 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import PageShell, { EmptyState } from './PageShell';
 import { cctv } from '../lib/api';
 
-const MOCK_CAMERAS = [
-  { camera_id: 'CAM-01', location: 'Ellisbridge Circle', status: 'online',  camera_type: 'PTZ' },
-  { camera_id: 'CAM-02', location: 'Navrangpura Cross',  status: 'online',  camera_type: 'Fixed' },
-  { camera_id: 'CAM-03', location: 'Maninagar Station',  status: 'offline', camera_type: 'Fixed' },
-  { camera_id: 'CAM-04', location: 'Satellite Road',     status: 'online',  camera_type: 'ANPR' },
-  { camera_id: 'CAM-05', location: 'Vastrapur Lake',     status: 'online',  camera_type: 'PTZ' },
-  { camera_id: 'CAM-06', location: 'Law Garden',         status: 'offline', camera_type: 'Fixed' },
-];
 
-const MOCK_ANOMALIES = [
-  { id: 1, camera_id: 'CAM-01', alert_type: 'crowd_density', confidence: 0.91, person_count: 45, ts: new Date().toISOString() },
-  { id: 2, camera_id: 'CAM-04', alert_type: 'anpr',          confidence: 0.98, plate_no: 'GJ01AB1234', ts: new Date(Date.now() - 12e5).toISOString() },
-  { id: 3, camera_id: 'CAM-02', alert_type: 'loitering',     confidence: 0.77, person_count: 3, ts: new Date(Date.now() - 36e5).toISOString() },
-  { id: 4, camera_id: 'CAM-05', alert_type: 'anomaly',       confidence: 0.84, ts: new Date(Date.now() - 72e5).toISOString() },
-];
 
 const ALERT_COLOR = {
   crowd_density: 'var(--error)',
@@ -42,18 +28,18 @@ export default function CCTVPage() {
     try {
       const res = await cctv.list();
       const data = Array.isArray(res.data) ? res.data : res.data?.items || [];
-      setCameras(data.length ? data : MOCK_CAMERAS);
+      setCameras(data);
     } catch {
-      setCameras(MOCK_CAMERAS);
+      setCameras([]);
     }
 
     // Load anomaly feed
     try {
       const res = await cctv.anomalies();
       const data = res.data?.anomalies || res.data || [];
-      setAnomalies(Array.isArray(data) && data.length ? data : MOCK_ANOMALIES);
+      setAnomalies(Array.isArray(data) ? data : []);
     } catch {
-      setAnomalies(MOCK_ANOMALIES);
+      setAnomalies([]);
     }
   }, []);
 

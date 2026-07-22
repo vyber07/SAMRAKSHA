@@ -9,12 +9,7 @@ const TABS = [
   { id: 'logs',  icon: '📋', label: 'Audit Logs' },
 ];
 
-const MOCK_OFFICERS = [
-  { badge_no: 'admin',  name: 'Admin Officer', role: 'admin', is_active: true },
-  { badge_no: 'sho001', name: 'SHO Sharma',    role: 'sho',   is_active: true },
-  { badge_no: 'io001',  name: 'IO Patel',       role: 'io',    is_active: true },
-  { badge_no: 'dcp001', name: 'DCP Singh',      role: 'dcp',   is_active: true },
-];
+
 
 const ROLE_MATRIX = [
   { feature: 'View Cases',      admin: true,  sho: true,  dcp: true,  io: true,  constable: false },
@@ -32,6 +27,11 @@ export default function AdminPage() {
   const [logs,      setLogs]     = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
+  // Audit Logs Filters
+  const [logFilterOfficer, setLogFilterOfficer] = useState('');
+  const [logFilterAction, setLogFilterAction] = useState('');
+  const [logFilterQuery, setLogFilterQuery] = useState('');
+
   // IAM state
   const [allPerms, setAllPerms] = useState([]);
   const [selectedOfficer, setSelectedOfficer] = useState('');
@@ -44,9 +44,9 @@ export default function AdminPage() {
       try {
         const res = await admin.officers();
         const data = Array.isArray(res.data) ? res.data : res.data?.items || [];
-        setOfficers(data.length ? data : MOCK_OFFICERS);
+        setOfficers(data);
       } catch {
-        setOfficers(MOCK_OFFICERS);
+        setOfficers([]);
       }
       try {
         const pRes = await admin.getPermissions();
@@ -83,27 +83,22 @@ export default function AdminPage() {
   };
 
   // Load audit logs when tab is switched to logs
-  useEffect(() => {
-    if (tab !== 'logs') return;
+  const fetchLogs = async () => {
     setLogsLoading(true);
-    (async () => {
-      try {
-        const res = await admin.auditLogs();
-        const data = Array.isArray(res.data) ? res.data : [];
-        setLogs(data);
-      } catch {
-        // Fallback to mock
-        setLogs([
-          { changed_at: new Date().toISOString(),         officer_id: 'admin',  action: 'create', field_name: 'case', new_value: 'FIR 2026/0341 registered' },
-          { changed_at: new Date(Date.now()-3e5).toISOString(), officer_id: 'sho001', action: 'document', field_name: 'chargesheet', new_value: 'FIR 2026/0322' },
-          { changed_at: new Date(Date.now()-9e5).toISOString(), officer_id: 'io001',  action: 'create', field_name: 'case', new_value: 'FIR 2026/0341 (Theft)' },
-          { changed_at: new Date(Date.now()-18e5).toISOString(),officer_id: 'system', action: 'view',   field_name: 'risk_score', new_value: 'Nightly recompute' },
-        ]);
-      } finally {
-        setLogsLoading(false);
-      }
-    })();
-  }, [tab]);
+    try {
+      const res = await admin.auditLogs({ officer: logFilterOfficer, type: logFilterAction, q: logFilterQuery });
+      const data = Array.isArray(res.data) ? res.data : [];
+      setLogs(data);
+    } catch {
+      setLogs([]);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === 'logs') fetchLogs();
+  }, [tab, logFilterOfficer, logFilterAction, logFilterQuery]);
 
   const th = { textAlign: 'left', padding: '10px 14px', fontFamily: 'var(--font-mono)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' };
   const td = { padding: '11px 14px', fontSize: 13, borderBottom: '1px solid var(--border)' };
@@ -254,11 +249,46 @@ export default function AdminPage() {
 
         {/* ─── Audit Logs Tab ────────────────────────────────────── */}
         {tab === 'logs' && (
-          logsLoading ? (
-            <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 14 }}>
-              Loading audit logs…
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Filters */}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Filters</span>
+              
+              <input 
+                type="text" 
+                placeholder="Officer Badge or Name..." 
+                value={logFilterOfficer}
+                onChange={e => setLogFilterOfficer(e.target.value)}
+                style={{ flex: 1, minWidth: 150, background: 'var(--surface)', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, outline: 'none' }}
+              />
+              
+              <select
+                value={logFilterAction}
+                onChange={e => setLogFilterAction(e.target.value)}
+                style={{ width: 140, background: 'var(--surface)', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, outline: 'none' }}
+              >
+                <option value="">All Actions</option>
+                <option value="login">Login</option>
+                <option value="logout">Logout</option>
+                <option value="create_case">Create Case</option>
+                <option value="view_case">View Case</option>
+                <option value="generate_document">Gen. Document</option>
+              </select>
+
+              <input 
+                type="text" 
+                placeholder="Search case, docs..." 
+                value={logFilterQuery}
+                onChange={e => setLogFilterQuery(e.target.value)}
+                style={{ flex: 2, minWidth: 200, background: 'var(--surface)', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, outline: 'none' }}
+              />
             </div>
-          ) : logs.length === 0 ? (
+
+            {logsLoading ? (
+              <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 14 }}>
+                Loading audit logs…
+              </div>
+            ) : logs.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 14 }}>
               No audit logs found.
             </div>
@@ -285,7 +315,8 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
-          )
+          )}
+          </div>
         )}
       </div>
     </PageShell>
