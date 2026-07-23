@@ -12,15 +12,14 @@ import os, uuid
 import redis.asyncio as aioredis
 
 router   = APIRouter()
-limiter  = Limiter(key_func=get_remote_address)
+limiter  = Limiter(key_func=get_remote_address, enabled=os.getenv("ENVIRONMENT") != "testing")
 pwd_ctx  = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2   = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key-1234567890")
 ALGORITHM  = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_EXP = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", 8))
-REDIS_URL  = os.getenv("REDIS_URL", "redis://redis:6379/0")
-redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
+from app.core.redis import get_redis, redis_client
 
 
 class LoginRequest(BaseModel):
@@ -47,9 +46,16 @@ async def get_current_officer(
         officer_id_str = payload.get("sub")
         jti = payload.get("jti")
         if jti:
-            is_blacklisted = await redis_client.get(f"blacklist:{jti}")
-            if is_blacklisted:
-                raise HTTPException(401, "Token has been revoked")
+            try:
+                r = get_redis()
+                is_blacklisted = await r.get(f"blacklist:{jti}")
+                await r.aclose()
+                if is_blacklisted:
+                    raise HTTPException(401, "Token has been revoked")
+            except HTTPException:
+                raise
+            except Exception:
+                pass
         if not officer_id_str:
             raise HTTPException(401, "Invalid token")
         # Convert to UUID to match column type
@@ -198,7 +204,12 @@ async def logout(
             now = datetime.utcnow().timestamp()
             ttl = int(exp - now) if exp else int(ACCESS_EXP * 3600)
             if ttl > 0:
-                await redis_client.setex(f"blacklist:{jti}", ttl, "true")
+                try:
+                    r = get_redis()
+                    await r.setex(f"blacklist:{jti}", ttl, "true")
+                    await r.aclose()
+                except Exception:
+                    pass
     except Exception as e:
         import structlog
         structlog.get_logger().error("Logout blacklist failed", error=str(e))

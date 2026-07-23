@@ -51,6 +51,7 @@ CREATE TABLE cases (
     crime_location  TEXT,
     crime_lat       FLOAT,
     crime_lon       FLOAT,
+    ward            VARCHAR(50),
     geoloc          GEOGRAPHY(POINT,4326),
     bns_sections    TEXT[],
     bnss_sections   TEXT[],
@@ -74,6 +75,25 @@ CREATE INDEX ix_cases_geoloc  ON cases USING GIST(geoloc);
 CREATE INDEX ix_cases_search  ON cases USING GIN(search_vector);
 CREATE INDEX ix_cases_status  ON cases(case_status);
 CREATE INDEX ix_cases_ps      ON cases(ps_id);
+
+-- Automatic search_vector population trigger for cases
+CREATE OR REPLACE FUNCTION update_cases_search_vector()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.search_vector :=
+        setweight(to_tsvector('english', COALESCE(NEW.fir_no, '')), 'A') ||
+        setweight(to_tsvector('english', COALESCE(NEW.crime_type, '')), 'A') ||
+        setweight(to_tsvector('english', COALESCE(NEW.victim_name, '')), 'B') ||
+        setweight(to_tsvector('english', COALESCE(NEW.accused_name, '')), 'B') ||
+        setweight(to_tsvector('english', COALESCE(NEW.crime_narrative, '')), 'C');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_cases_search_vector
+BEFORE INSERT OR UPDATE ON cases
+FOR EACH ROW
+EXECUTE FUNCTION update_cases_search_vector();
 
 -- Spatial incidents (feeds hotspot model)
 CREATE TABLE incidents (
@@ -131,11 +151,7 @@ CREATE TABLE case_diary (
 CREATE TABLE doc_log (
     id           BIGSERIAL PRIMARY KEY,
     case_id      UUID REFERENCES cases(case_id) NOT NULL,
-    doc_type     VARCHAR(50) NOT NULL
-                 CHECK (doc_type IN 
-                 ('chargesheet','medical_letter','remand_request',
-                  'seizure_receipt','court_custody',
-                  'panchanama','face_id','witness_statement')),
+    doc_type     VARCHAR(50) NOT NULL,
     sha256       VARCHAR(64) NOT NULL,
     generated_by UUID REFERENCES officers(id),
     language     VARCHAR(5) DEFAULT 'en',
@@ -174,15 +190,18 @@ CREATE TABLE zone_risk_scores (
 
 -- Patrol units
 CREATE TABLE patrol_units (
-    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    unit_name   VARCHAR(100) NOT NULL,
-    ps_id       UUID REFERENCES police_stations(id),
-    current_lat FLOAT,
-    current_lon FLOAT,
-    status      VARCHAR(20) DEFAULT 'available'
-                CHECK (status IN 
-                ('available','deployed','unavailable','responding')),
-    last_update TIMESTAMPTZ DEFAULT NOW()
+    id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    unit_name        VARCHAR(100) NOT NULL,
+    officer_name     VARCHAR(100),
+    vehicle          VARCHAR(50),
+    ps_id            UUID REFERENCES police_stations(id),
+    current_lat      FLOAT,
+    current_lon      FLOAT,
+    manual_waypoints TEXT,
+    status           VARCHAR(20) DEFAULT 'available'
+                     CHECK (status IN 
+                     ('available','deployed','unavailable','responding')),
+    last_update      TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- FIR SEQUENCE TABLE (Atomic Numbering)

@@ -3,7 +3,7 @@
 ## Architecture & System Overview
 - **Backend**: FastAPI (Python 3.11/3.12 async), Async SQLAlchemy, Asyncpg, PostGIS, Redis, Google OR-Tools, XGBoost, Scikit-Learn, python-docx, Llama.cpp / Whisper stub.
 - **Frontend**: React 19, Vite, Leaflet, Zustand, Axios, Glassmorphism UI.
-- **Infrastructure**: Docker Compose (PostgreSQL+PostGIS 16-3.4, Redis 7, FastAPI backend, React/Nginx frontend, OSRM backend, Llama.cpp server).
+- **Infrastructure**: Docker Compose (PostgreSQL+PostGIS 16-3.4, Redis 7, FastAPI backend, React/Nginx frontend, OSRM backend, Llama.cpp server, Seed init).
 
 ## Code Layout
 - Backend: `/home/ubuntu/sa/backend/`
@@ -20,9 +20,9 @@
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
 | 1 | Baseline Exploration & Audit | Comprehensive inspection of codebase, test suite, and requirement gaps | None | DONE |
-| 2 | Phase 1 Rapid Response & Policing | Map hotspots, patrol VRP, CCTV ANPR, incident dispatch, SLA, WebSocket, Analytics | M1 | IN_PROGRESS |
-| 3 | Phase 2 Case Management & Docs | Cases, FIR search, case diary, 8 BNS/BNSS document generation, PBAC, AI assistant | M1, M2 | PLANNED |
-| 4 | E2E Verification & Report | Full functional suite test, generator test cases, generate `verification_report.md` | M2, M3 | PLANNED |
+| 2 | Phase 1 Rapid Response & Policing | Map hotspots, patrol VRP, CCTV ANPR, incident dispatch, SLA, WebSocket, Analytics | M1 | DONE |
+| 3 | Phase 2 Case Management & Docs | Cases, FIR search, case diary, 8 BNS/BNSS document generation, PBAC, AI assistant | M1, M2 | DONE |
+| 4 | E2E Verification & Report | Full functional suite test, generator test cases, generate `verification_report.md` | M2, M3 | IN_PROGRESS |
 | 5 | Docker Compose Deployment | Clean deployment, docker compose build & startup validation without crashing | M4 | PLANNED |
 
 ## Interface Contracts & Standards

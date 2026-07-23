@@ -5,6 +5,8 @@ import IncidentTile from '../components/widgets/IncidentTile';
 import { hotspot, incidents as apiIncidents } from '../lib/api';
 
 
+import { normalizeSeverity } from '../utils/severity';
+
 const SEVERITIES = ['All', 'Critical', 'High', 'Medium', 'Low'];
 
 function ReportIncidentModal({ onClose, onReported }) {
@@ -129,7 +131,7 @@ export default function IncidentsPage() {
   useEffect(() => { load(); }, [load]);
 
   const visible = items.filter((inc) => {
-    const sev = String(inc.severity || '').toLowerCase();
+    const sev = normalizeSeverity(inc.severity);
     const matchesSev = severity === 'All' || sev === severity.toLowerCase();
     const matchesQ = !q || JSON.stringify(inc).toLowerCase().includes(q);
     return matchesSev && matchesQ;

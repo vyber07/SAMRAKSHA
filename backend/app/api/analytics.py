@@ -126,7 +126,7 @@ async def simulate_event(
 
     from app.services.prediction import FESTIVAL_CALENDAR
 
-    festival = FESTIVAL_CALENDAR.get(body.event)
+    festival = FESTIVAL_CALENDAR.get(body.event) or FESTIVAL_CALENDAR.get(body.event.lower().replace(' ', '_'))
     if not festival:
         raise HTTPException(400, f"Unknown event: {body.event}")
 

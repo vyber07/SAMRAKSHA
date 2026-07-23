@@ -1,8 +1,5 @@
 import pandas as pd
 import numpy as np
-import xgboost as xgb
-from sklearn.cluster import DBSCAN
-from scipy.stats import gaussian_kde
 import structlog
 
 logger = structlog.get_logger()
@@ -40,6 +37,9 @@ FESTIVAL_CALENDAR = {
     'independence_day': {
         'security_threat': 3.0, 'crowd_violence': 1.5, 'theft': 1.4,
     },
+    'rath_yatra': {
+        'crowd_violence': 2.5, 'theft': 3.0, 'pickpocketing': 3.2, 'traffic_violation': 2.8,
+    },
 }
 
 def compute_kde_heatmap(df: pd.DataFrame):
@@ -48,6 +48,7 @@ def compute_kde_heatmap(df: pd.DataFrame):
     
     # Simple KDE over lat/lon
     try:
+        from scipy.stats import gaussian_kde
         x = df['lon'].values
         y = df['lat'].values
         # Calculate the point density
@@ -74,6 +75,7 @@ def run_dbscan_clustering(df: pd.DataFrame):
         return []
         
     try:
+        from sklearn.cluster import DBSCAN
         # Convert lat/lon to radians for Haversine distance
         coords = np.radians(df[['lat', 'lon']].values)
         
@@ -106,6 +108,7 @@ def run_dbscan_clustering(df: pd.DataFrame):
 
 class RiskPredictor:
     def __init__(self):
+        import xgboost as xgb
         self.model = xgb.XGBRegressor(
             objective='reg:squarederror',
             n_estimators=100,

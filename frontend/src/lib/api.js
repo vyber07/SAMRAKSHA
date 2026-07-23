@@ -2,8 +2,14 @@ import axios from 'axios';
 
 // Dynamic API base URL — uses current hostname so it works on localhost and LAN
 const getBaseURL = () => {
-  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (import.meta.env.VITE_API_URL !== undefined && import.meta.env.VITE_API_URL !== '') {
+    return import.meta.env.VITE_API_URL;
+  }
   const host = window.location.hostname;
+  const port = window.location.port;
+  if (port === '' || port === '80' || port === '8080') {
+    return '/api';
+  }
   return `http://${host}:8000`;
 };
 

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 import structlog
+import uuid
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -14,10 +15,10 @@ class OfficerCreate(BaseModel):
     password: str
 
 class OfficerUpdate(BaseModel):
-    name: Optional[str]
-    role: Optional[str]
-    ps_id: Optional[str]
-    is_active: Optional[bool]
+    name: Optional[str] = None
+    role: Optional[str] = None
+    ps_id: Optional[str] = None
+    is_active: Optional[bool] = None
 
 from app.db.connection import get_db, fetch_all, execute
 from app.api.auth import get_current_officer
@@ -35,20 +36,19 @@ async def get_officers(db = Depends(get_db)):
 @router.post("/officers", dependencies=[Depends(verify_admin_role)])
 async def create_officer(officer: OfficerCreate, db = Depends(get_db)):
     hashed_pw = bcrypt.hashpw(officer.password.encode(), bcrypt.gensalt(rounds=12)).decode()
+    officer_id = str(uuid.uuid4())
     await execute(db, """
-        INSERT INTO officers (badge_no, name, role, ps_id, password_hash)
-        VALUES ($1, $2, $3, $4, $5)
-    """, [officer.badge_no, officer.name, officer.role, officer.ps_id, hashed_pw])
+        INSERT INTO officers (id, badge_no, name, role, ps_id, password_hash)
+        VALUES ($1, $2, $3, $4, $5, $6)
+    """, [officer_id, officer.badge_no, officer.name, officer.role, officer.ps_id, hashed_pw])
     
     from app.services.audit import log_activity
-    from fastapi import Request
-    # assuming we don't have Request, wait, I can just omit ip or use "system"
-    # Actually, we can add `request: Request` to the endpoints or just pass None for IP
     try:
-        await log_activity(db, str(officer_info['id']) if 'officer_info' in locals() else None, "create_officer", f"Officer {officer.badge_no} created with role {officer.role}")
+        await log_activity(db, None, "create_officer", f"Officer {officer.badge_no} created with role {officer.role}")
     except Exception as e:
         logger.error("Audit log failed", error=str(e))
         
+    await db.commit()
     return {"status": "created"}
 
 @router.patch("/officers/{badge_no}", dependencies=[Depends(verify_admin_role)])
@@ -73,7 +73,22 @@ async def update_officer(badge_no: str, officer: OfficerUpdate, db = Depends(get
     except Exception as e:
         logger.error("Audit log failed", error=str(e))
         
+    await db.commit()
     return {"status": "updated"}
+
+@router.delete("/officers/{badge_no}", dependencies=[Depends(verify_admin_role)])
+async def delete_officer(badge_no: str, db = Depends(get_db)):
+    officer_records = await fetch_all(db, "SELECT id FROM officers WHERE badge_no = $1", [badge_no])
+    if not officer_records:
+        raise HTTPException(404, "Officer not found")
+    await execute(db, "DELETE FROM officers WHERE badge_no = $1", [badge_no])
+    await db.commit()
+    from app.services.audit import log_activity
+    try:
+        await log_activity(db, None, "delete_officer", f"Officer {badge_no} deleted")
+    except Exception as e:
+        logger.error("Audit log failed", error=str(e))
+    return {"status": "deleted"}
 
 @router.get("/health", dependencies=[Depends(verify_admin_role)])
 async def system_health(db = Depends(get_db)):
@@ -151,4 +166,5 @@ async def set_officer_permissions(badge_no: str, overrides: List[PermissionOverr
     except Exception as e:
         logger.error("Audit log failed", error=str(e))
         
+    await db.commit()
     return {"status": "permissions updated"}

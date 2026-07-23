@@ -22,7 +22,7 @@ function SimulationModal({ onClose }) {
       // Direct HTTP fetch as fallback if frontend API not fully updated
       const res = await fetch('/api/analytics/simulate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('samraksha_token')}` },
         body: JSON.stringify({ event: form.event, crowd_size: parseInt(form.crowd_size) })
       });
       const data = await res.json();

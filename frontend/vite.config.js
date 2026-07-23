@@ -9,6 +9,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    emptyOutDir: false,
     chunkSizeWarningLimit: 1500,
   },
 });

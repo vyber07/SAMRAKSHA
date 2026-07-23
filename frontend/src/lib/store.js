@@ -1,9 +1,18 @@
 import { create } from 'zustand';
 
+const getStoredOfficer = () => {
+  try {
+    const item = localStorage.getItem('samraksha_officer');
+    return item ? JSON.parse(item) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
 // ─── Auth Store ────────────────────────────────────────
 export const useAuthStore = create((set) => ({
   token: localStorage.getItem('samraksha_token') || null,
-  officer: JSON.parse(localStorage.getItem('samraksha_officer') || 'null'),
+  officer: getStoredOfficer(),
 
   setAuth: (token, officer) => {
     localStorage.setItem('samraksha_token', token);
@@ -18,7 +27,7 @@ export const useAuthStore = create((set) => ({
   },
 
   get role() {
-    return this.officer?.role || null;
+    return this.officer?.role?.toLowerCase() || null;
   },
 }));
 
@@ -49,6 +58,6 @@ export const useMapStore = create((set) => ({
 }));
 
 // ─── Role helpers ──────────────────────────────────────
-export const isHighRank = (role) => ['admin', 'sho', 'dcp'].includes(role);
-export const canViewAnalytics = (role) => ['admin', 'sho', 'dcp'].includes(role);
-export const canViewMap = (role) => ['io', 'constable', 'sho', 'admin', 'dcp'].includes(role);
+export const isHighRank = (role) => ['admin', 'sho', 'dcp'].includes(role?.toLowerCase());
+export const canViewAnalytics = (role) => ['admin', 'sho', 'dcp'].includes(role?.toLowerCase());
+export const canViewMap = (role) => ['io', 'constable', 'sho', 'admin', 'dcp'].includes(role?.toLowerCase());

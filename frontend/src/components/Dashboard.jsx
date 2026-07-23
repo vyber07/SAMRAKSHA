@@ -186,11 +186,16 @@ export default function Dashboard() {
 
   // ─── WebSocket with proper exponential-backoff reconnect ─────
   const connectWS = useCallback(() => {
-    if (wsRef.current && wsRef.current.readyState < 2) return; // already open/connecting
+    if (wsRef.current && wsRef.current.readyState < 2) return wsRef.current;
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsHost = window.location.hostname;
     const token = localStorage.getItem('samraksha_token');
-    const ws = new WebSocket(`ws://${wsHost}:8000/ws/dashboard?token=${token || ''}`);
+    const ws = new WebSocket(`${wsProtocol}//${wsHost}:8000/ws/dashboard?token=${token || ''}`);
     wsRef.current = ws;
+
+    ws.onopen = () => {
+      ws._retryDelay = 2000;
+    };
 
     ws.onmessage = (event) => {
       try {
@@ -205,17 +210,17 @@ export default function Dashboard() {
 
     ws.onclose = () => {
       // Exponential backoff reconnect: 3s → 6s → 12s → cap 30s
-      const delay = Math.min((ws._retryDelay || 3000) * 1.5, 30000);
+      const delay = Math.min((ws._retryDelay || 2000) * 1.5, 30000);
       console.log(`WS disconnected — reconnecting in ${delay / 1000}s`);
+      wsRef.current = null;
       reconnectTimerRef.current = setTimeout(() => {
-        const newWs = new WebSocket(`ws://${wsHost}:8000/ws/dashboard?token=${token || ''}`);
-        newWs._retryDelay = delay;
-        wsRef.current = newWs;
-        connectWS(); // re-attach handlers
+        const newWs = connectWS();
+        if (newWs) newWs._retryDelay = delay;
       }, delay);
     };
 
     ws.onerror = () => ws.close(); // triggers onclose → reconnect
+    return ws;
   }, [loadData]);
 
   useEffect(() => {

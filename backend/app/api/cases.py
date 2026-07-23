@@ -85,19 +85,25 @@ async def create_fir(
                 accused_name, accused_address, accused_age,
                 crime_type, crime_code, crime_narrative,
                 crime_date, crime_location,
-                crime_lat, crime_lon,
+                crime_lat, crime_lon, ward,
                 geoloc,
-                bns_sections, bnss_sections, bsa_sections
+                bns_sections, bnss_sections, bsa_sections,
+                search_vector
             ) VALUES (
-                $1,$2,$3,$4,
-                $5,$6,$7,
-                $8,$9,$10,
-                $11,$12,$13,
-                $14,$15,$16,
-                $17,$18,
-                $19,$20,
+                $1, CAST($2 AS text), $3, $4,
+                CAST($5 AS text), $6, $7,
+                $8, $9, $10,
+                CAST($11 AS text), $12, $13,
+                CAST($14 AS text), $15, CAST($16 AS text),
+                $17, $18,
+                $19, $20, $21,
                 ST_MakePoint($20,$19)::GEOGRAPHY,
-                $21,$22,$23
+                $22, $23, $24,
+                setweight(to_tsvector('english', coalesce(CAST($2 AS text), '')), 'A') ||
+                setweight(to_tsvector('english', coalesce(CAST($14 AS text), '')), 'A') ||
+                setweight(to_tsvector('english', coalesce(CAST($5 AS text), '')), 'B') ||
+                setweight(to_tsvector('english', coalesce(CAST($11 AS text), '')), 'B') ||
+                setweight(to_tsvector('english', coalesce(CAST($16 AS text), '')), 'C')
             )
         """, [
             case_id, fir_no, str(officer['ps_id']), str(officer['id']),
@@ -106,7 +112,7 @@ async def create_fir(
             body.accused_name, body.accused_address, body.accused_age,
             body.crime_type, body.crime_code, body.crime_narrative,
             body.crime_date, body.crime_location,
-            body.crime_lat, body.crime_lon,
+            body.crime_lat, body.crime_lon, body.ward,
             sections.get('bns', []),
             sections.get('bnss', []),
             sections.get('bsa', [])
@@ -223,7 +229,7 @@ async def search_cases(
         raise HTTPException(403, "Access denied")
 
     if officer['role'] in ('io', 'sho'):
-        where = "AND ps_id = $2"
+        where = "AND ps_id = CAST($2 AS UUID)"
         params = [q, str(officer['ps_id'])]
     else:
         where = ""
@@ -232,9 +238,9 @@ async def search_cases(
     results = await fetch_all(db, f"""
         SELECT case_id, fir_no, victim_name, accused_name,
                crime_type, crime_date, case_status,
-               ts_rank(search_vector, plainto_tsquery($1)) AS rank
+               ts_rank(search_vector, plainto_tsquery('english', CAST($1 AS text))) AS rank
         FROM cases
-        WHERE search_vector @@ plainto_tsquery($1)
+        WHERE search_vector @@ plainto_tsquery('english', CAST($1 AS text))
         {where}
         ORDER BY rank DESC
         LIMIT 20
@@ -293,3 +299,37 @@ async def get_case(
     case['diary_entries'] = diary
 
     return case
+
+
+class CaseDiaryEntryRequest(BaseModel):
+    entry_type: str
+    description: str
+    location: Optional[str] = None
+
+
+@router.post("/{case_id}/diary")
+async def add_case_diary_entry(
+    case_id: str,
+    body: CaseDiaryEntryRequest,
+    db = Depends(get_db),
+    officer = Depends(get_current_officer)
+):
+    if officer['role'] == 'constable':
+        raise HTTPException(403, "Access denied")
+
+    case = await fetch_one(db, "SELECT case_id, ps_id FROM cases WHERE case_id = $1", [case_id])
+    if not case:
+        raise HTTPException(404, "Case not found")
+
+    if officer['role'] == 'io' and str(case['ps_id']) != str(officer['ps_id']):
+        raise HTTPException(403, "Access denied")
+
+    entry = await fetch_one(db, """
+        INSERT INTO case_diary (
+            case_id, entry_type, description, officer_id, location, auto_generated
+        ) VALUES ($1, $2, $3, $4, $5, FALSE)
+        RETURNING id
+    """, [case_id, body.entry_type, body.description, str(officer['id']), body.location])
+    await db.commit()
+
+    return {"id": entry['id'] if entry else None, "message": "Case diary entry added successfully", "case_id": case_id}

@@ -81,6 +81,16 @@ function GenerateDocModal({ caseItem, onClose }) {
               <option value="fir">FIR (First Information Report)</option>
               <option value="chargesheet">Chargesheet (BNS/BNSS)</option>
               <option value="case_diary">Case Diary</option>
+              <option value="remand_request">Remand Request Application</option>
+              <option value="seizure_receipt">Seizure Receipt</option>
+              <option value="court_custody">Court Custody Order / Letter</option>
+              <option value="panchanama">Panchanama (Spot / Accused)</option>
+              <option value="witness_statement">Witness Statement</option>
+              <option value="arrest_memo">Arrest Memo</option>
+              <option value="seizure_list">Seizure List</option>
+              <option value="search_warrant">Search Warrant Application</option>
+              <option value="bail_objection">Bail Objection Petition</option>
+              <option value="medical_letter">Medical Examination Letter</option>
               <option value="closure_report">Closure Report</option>
             </select>
           </div>

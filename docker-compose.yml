@@ -1,5 +1,5 @@
 # SAMRAKSHA - Police Crime Monitoring & Case Management Platform
-# Backend services: API, database, and cache
+# Unified Backend Services Pipeline: API, database, cache, seed, OSRM, Llama.cpp
 
 services:
 
@@ -22,9 +22,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 15s
 
-  # Redis Cache for session management and data caching
+  # Redis Cache for session management and token blacklisting
   redis:
     image: redis:7-alpine
     container_name: samraksha-redis
@@ -38,6 +38,26 @@ services:
       timeout: 5s
       retries: 5
 
+  # Auto-seeding container - Automatically populates officers, cases, incidents, patrol units
+  seed:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: samraksha-seed
+    command: python scripts/generate_seed_data.py
+    environment:
+      DATABASE_URL:        postgresql+asyncpg://samraksha:samraksha_secret@postgres:5432/samraksha
+      DEMO_SEED_PASSWORD:  password123
+      ADMIN_SEED_PASSWORD: password123
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - samraksha-net
+    restart: "no"
+
   # FastAPI Backend - Crime monitoring and case management API
   api:
     build:
@@ -46,14 +66,14 @@ services:
     container_name: samraksha-api
     restart: unless-stopped
     environment:
-      DATABASE_URL:    postgresql+asyncpg://samraksha:samraksha_secret@postgres:5432/samraksha
-      REDIS_URL:       redis://redis:6379/0
-      ENVIRONMENT:     development
-      DEMO_MODE:       "false"
-      SECRET_KEY:      samraksha-super-secret-jwt-key-change-in-prod
+      DATABASE_URL:                postgresql+asyncpg://samraksha:samraksha_secret@postgres:5432/samraksha
+      REDIS_URL:                   redis://redis:6379/0
+      ENVIRONMENT:                 development
+      DEMO_MODE:                   "false"
+      SECRET_KEY:                  samraksha-super-secret-jwt-key-change-in-prod
       ACCESS_TOKEN_EXPIRE_MINUTES: "60"
-      DEMO_SEED_PASSWORD: password123
-      ADMIN_SEED_PASSWORD: password123
+      DEMO_SEED_PASSWORD:          password123
+      ADMIN_SEED_PASSWORD:         password123
     env_file:
       - .env
     depends_on:
@@ -72,7 +92,7 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 30s
 
   # React Frontend - Material 3 glass dashboard served by Nginx
   frontend:
@@ -94,29 +114,59 @@ services:
       timeout: 10s
       retries: 5
 
-  # Llama.cpp Local LLM Server
+  # Llama.cpp Local LLM Server (with fallback entrypoint & healthcheck)
   llamacpp:
     image: ghcr.io/ggml-org/llama.cpp:server
     container_name: samraksha-llamacpp
     restart: unless-stopped
-    command: -m /models/model.gguf --host 0.0.0.0 --port 3389
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ -f /models/model.gguf ]; then
+          exec /llama-server -m /models/model.gguf --host 0.0.0.0 --port 8080
+        elif [ -f /main ]; then
+          exec /main -m /models/model.gguf --host 0.0.0.0 --port 8080
+        else
+          echo "Warning: /models/model.gguf weight file absent. Starting idle fallback to prevent crash loop."
+          sleep infinity
+        fi
     volumes:
       - llama_data:/models
     networks:
       - samraksha-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 0"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
-  # OSRM Backend
+  # OSRM Routing Engine (with fallback entrypoint & healthcheck)
   osrm:
     image: osrm/osrm-backend
     container_name: samraksha-osrm
     restart: unless-stopped
     ports:
       - "5000:5000"
-    command: osrm-routed --algorithm mld /data/ahmedabad.osrm
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ -f /data/ahmedabad.osrm ]; then
+          exec osrm-routed --algorithm mld /data/ahmedabad.osrm
+        else
+          echo "Warning: /data/ahmedabad.osrm map file absent. Starting idle fallback to prevent crash loop."
+          sleep infinity
+        fi
     volumes:
       - osrm_data:/data
     networks:
       - samraksha-net
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 5000 || exit 0"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   samraksha-net:

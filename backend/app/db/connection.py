@@ -9,7 +9,7 @@ import structlog
 
 logger = structlog.get_logger()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://samraksha_user:change_this_strong_password@localhost/samraksha")
 
 engine = create_async_engine(
     DATABASE_URL,

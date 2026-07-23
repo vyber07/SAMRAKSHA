@@ -13,7 +13,8 @@ logger = structlog.get_logger()
 DOC_TYPES = [
     'chargesheet', 'medical_letter', 'remand_request',
     'seizure_receipt', 'court_custody', 'panchanama', 'face_id',
-    'witness_statement'
+    'witness_statement', 'fir', 'case_diary', 'arrest_memo',
+    'seizure_list', 'search_warrant', 'bail_objection'
 ]
 
 class GenerateRequest(BaseModel):
@@ -95,14 +96,20 @@ async def generate_document(
           str(officer['id']), body.language])
 
     doc_labels = {
-        'chargesheet':    'Purvani Chargesheet',
-        'medical_letter': 'Medical Treatment Letter',
-        'remand_request': 'Remand Request Letter',
-        'seizure_receipt':'Seizure Receipt',
-        'court_custody':  'Court Custody Letter',
-        'panchanama':     'Accused Panchanama',
-        'face_id':        'Face Identification Form',
+        'chargesheet':       'Purvani Chargesheet',
+        'medical_letter':    'Medical Treatment Letter',
+        'remand_request':    'Remand Request Letter',
+        'seizure_receipt':   'Seizure Receipt',
+        'court_custody':     'Court Custody Letter',
+        'panchanama':        'Accused Panchanama',
+        'face_id':           'Face Identification Form',
         'witness_statement': 'Witness Statement',
+        'fir':               'First Information Report',
+        'case_diary':        'Case Diary Record',
+        'arrest_memo':       'Arrest Memo',
+        'seizure_list':      'Seizure List',
+        'search_warrant':    'Search Warrant',
+        'bail_objection':    'Bail Objection Application',
     }
     await execute(db, """
         INSERT INTO case_diary

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { normalizeSeverity } from '../../utils/severity';
 
 const SEVERITY_COLORS = {
   critical: 'var(--error)',
@@ -34,7 +35,7 @@ export default function IncidentTile({ incident }) {
   const [hover, setHover] = useState(false);
   const data = incident || {};
 
-  const severity = String(data.severity || 'low').toLowerCase();
+  const severity = normalizeSeverity(data.severity);
   const accent = SEVERITY_COLORS[severity] || 'var(--secondary)';
   const icon = SEVERITY_ICONS[severity] || '⚪';
 

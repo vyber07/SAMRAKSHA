@@ -1,4 +1,4 @@
-from app.db.connection import get_db, fetch_one, fetch_all, execute
+from app.db.connection import get_db, fetch_one, fetch_all, execute, AsyncSessionLocal
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
@@ -87,7 +87,7 @@ async def ingest_alert(
     matched_case_id = None
     if body.plate_no:
         background_tasks.add_task(
-            check_anpr_match, body.plate_no, body.camera_id, db
+            check_anpr_match, body.plate_no, body.camera_id
         )
 
     result = await fetch_one(db, """
@@ -127,47 +127,47 @@ async def ingest_alert(
 
 async def check_anpr_match(
     plate_no: str,
-    camera_id: str,
-    db
+    camera_id: str
 ):
-    matched = await fetch_one(db, """
-        SELECT c.case_id, c.fir_no, c.crime_type
-        FROM cases c
-        WHERE c.case_status IN ('open','arrested')
-          AND c.case_id IN (
-              SELECT case_id FROM cctv_alerts
-              WHERE plate_no = $1 AND matched_case IS NULL
-          )
-        LIMIT 1
-    """, [plate_no])
+    async with AsyncSessionLocal() as db:
+        matched = await fetch_one(db, """
+            SELECT c.case_id, c.fir_no, c.crime_type
+            FROM cases c
+            WHERE c.case_status IN ('open','arrested')
+              AND c.case_id IN (
+                  SELECT matched_case FROM cctv_alerts
+                  WHERE plate_no = $1 AND matched_case IS NOT NULL
+              )
+            LIMIT 1
+        """, [plate_no])
 
-    if matched:
-        await execute(db, """
-            UPDATE cctv_alerts
-            SET matched_case = $1
-            WHERE plate_no = $2
-              AND matched_case IS NULL
-        """, [matched['case_id'], plate_no])
+        if matched:
+            await execute(db, """
+                UPDATE cctv_alerts
+                SET matched_case = $1
+                WHERE plate_no = $2
+                  AND matched_case IS NULL
+            """, [matched['case_id'], plate_no])
 
-        await execute(db, """
-            INSERT INTO case_diary
-            (case_id, entry_type, description, auto_generated)
-            VALUES ($1, 'cctv', $2, TRUE)
-        """, [
-            matched['case_id'],
-            f"Vehicle {plate_no} spotted by camera {camera_id} "
-            f"(ANPR match — auto-flagged)"
-        ])
+            await execute(db, """
+                INSERT INTO case_diary
+                (case_id, entry_type, description, auto_generated)
+                VALUES ($1, 'cctv', $2, TRUE)
+            """, [
+                matched['case_id'],
+                f"Vehicle {plate_no} spotted by camera {camera_id} "
+                f"(ANPR match — auto-flagged)"
+            ])
 
-        await db.commit()
+            await db.commit()
 
-        from app.api.websocket import manager
-        await manager.broadcast({
-            'type':    'ANPR_MATCH',
-            'fir_no':  matched['fir_no'],
-            'plate':   plate_no,
-            'camera':  camera_id,
-        })
+            from app.api.websocket import manager
+            await manager.broadcast({
+                'type':    'ANPR_MATCH',
+                'fir_no':  matched['fir_no'],
+                'plate':   plate_no,
+                'camera':  camera_id,
+            })
 
 from app.api import auth
 

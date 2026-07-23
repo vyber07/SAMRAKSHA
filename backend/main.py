@@ -38,7 +38,7 @@ app = FastAPI(
     title="SAMRAKSHA API",
     version="1.0.0",
     description="Unified Predictive Policing & Advanced Case Intelligence Platform",
-    docs_url="/docs" if __import__('os').getenv('ENVIRONMENT') != 'production' else None,
+    docs_url="/api/docs" if __import__('os').getenv('ENVIRONMENT') != 'production' else None,
     redoc_url=None,
     lifespan=lifespan
 )
