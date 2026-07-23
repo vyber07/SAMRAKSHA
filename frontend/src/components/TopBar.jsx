@@ -25,7 +25,7 @@ export default function TopBar({ title = 'Dashboard', onRefresh, headerAction })
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '1px', marginBottom: 6 }}>
           {time.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })} · {time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
         </div>
-        <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.5px' }}>{title}</h1>
+        <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.5px', textTransform: 'uppercase' }}>{title}</h1>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
