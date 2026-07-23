@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import PageShell, { EmptyState } from './PageShell';
 import { patrol } from '../lib/api';
 import { useAuthStore } from '../lib/store';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 
 const STATUS_COLORS = {
   available: 'var(--success)',
@@ -107,6 +107,18 @@ function DispatchModal({ onClose, onDispatched }) {
   );
 }
 
+function MapBounds({ positions }) {
+  const map = useMap();
+  useEffect(() => {
+    if (positions && positions.length > 1) {
+      map.fitBounds(positions, { padding: [50, 50] });
+    } else if (positions && positions.length === 1) {
+      map.flyTo(positions[0], 15);
+    }
+  }, [map, positions]);
+  return null;
+}
+
 function UnitDetailsModal({ routeData, onClose, onReroute, onDelete, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(routeData.unit);
@@ -152,6 +164,7 @@ function UnitDetailsModal({ routeData, onClose, onReroute, onDelete, onUpdate })
         {/* LEFT: MAP */}
         <div style={{ flex: 1, position: 'relative', borderRight: '1px solid var(--border)' }}>
           <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+            <MapBounds positions={mapPolyline} />
             <TileLayer
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               attribution="&copy; OpenStreetMap contributors"

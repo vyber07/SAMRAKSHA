@@ -27,17 +27,25 @@ async def get_patrol_routes(
     if not units:
         return {"routes": [], "message": "No active patrol units"}
 
-    hotspots = await fetch_all(db, """
-        SELECT i.ward, z.risk_score,
-               AVG(i.lat) as lat, AVG(i.lon) as lon
-        FROM incidents i
-        JOIN zone_risk_scores z ON i.ward = z.ward
-        WHERE i.timestamp > NOW() - INTERVAL '7 days'
-          AND z.hour_slot = EXTRACT(HOUR FROM NOW())::INTEGER
-        GROUP BY i.ward, z.risk_score
-        ORDER BY z.risk_score DESC
-        LIMIT 8
-    """, [])
+    # Fetch PS ward
+    ps_info = await fetch_one(db, "SELECT ward FROM police_stations WHERE id = $1", [officer['ps_id']])
+    ps_ward = ps_info['ward'] if ps_info else None
+
+    # Fetch hotspots constrained by the police station's ward
+    hotspots = []
+    if ps_ward:
+        hotspots = await fetch_all(db, """
+            SELECT i.ward, z.risk_score,
+                   AVG(i.lat) as lat, AVG(i.lon) as lon
+            FROM incidents i
+            JOIN zone_risk_scores z ON i.ward = z.ward
+            WHERE i.timestamp > NOW() - INTERVAL '7 days'
+              AND z.hour_slot = EXTRACT(HOUR FROM NOW())::INTEGER
+              AND i.ward = $1
+            GROUP BY i.ward, z.risk_score
+            ORDER BY z.risk_score DESC
+            LIMIT 8
+        """, [ps_ward])
 
     from app.services.routing import optimize_patrol_routes
     routes = await optimize_patrol_routes(
