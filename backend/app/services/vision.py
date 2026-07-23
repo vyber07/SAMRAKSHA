@@ -50,25 +50,49 @@ class CCTVPipeline:
         )
         return {'loitering': loitering}
     
-    def generate_signal(self, person_count: int, loitering: bool) -> dict:
-        # crowd_density = count / reference area (configurable per camera)
-        area_sqm = 500  # configurable
+    async def generate_signal(self, person_count: int, loitering: bool, frame=None) -> dict:
+        area_sqm = 500  
         density = person_count / area_sqm
         
-        # Anomaly = Z-score > 2.5 vs 7-day rolling average
         avg = self.get_rolling_avg()
         std = self.get_rolling_std()
         z_score = (density - avg) / (std + 0.001)
         
-    def get_rolling_avg(self) -> float:
-
-        return 0.02
-
-    def get_rolling_std(self) -> float:
-        return 0.005
-
-        
         alert_type = None
+        confidence = min(z_score / 5, 1.0)
+        
+        # Integrate LLaVA model for vision anomaly detection if frame is available
+        llava_context = "Clear"
+        if frame is not None and (loitering or z_score > 2.5):
+            import httpx
+            import base64
+            # Encode frame
+            _, buffer = cv2.imencode('.jpg', frame)
+            img_b64 = base64.b64encode(buffer).decode('utf-8')
+            
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.post(
+                        "http://llamacpp:3389/v1/chat/completions",
+                        json={
+                            "messages": [
+                                {
+                                    "role": "user",
+                                    "content": [
+                                        {"type": "text", "text": "Analyze this CCTV frame. Describe any suspicious activity, weapons, or intense crowding."},
+                                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
+                                    ]
+                                }
+                            ],
+                            "stream": False
+                        },
+                        timeout=5.0
+                    )
+                    if resp.status_code == 200:
+                        llava_context = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            except Exception as e:
+                llava_context = f"Vision model unavailable: {str(e)}"
+        
         if loitering:
             alert_type = 'loitering'
         elif z_score > 2.5:
@@ -78,13 +102,20 @@ class CCTVPipeline:
         
         return {
             'camera_id': self.camera_id,
-            'source': 'samraksha_model',
+            'source': 'samraksha_vision_llamacpp',
             'alert_type': alert_type,
-            'confidence': min(z_score / 5, 1.0),
+            'confidence': confidence,
             'person_count': person_count,
+            'context': llava_context,
             'lat': self.lat,
             'lon': self.lon
         }
+
+    def get_rolling_avg(self) -> float:
+        return 0.02
+
+    def get_rolling_std(self) -> float:
+        return 0.005
 
 # WHAT WE DO NOT BUILD:
 # No face recognition

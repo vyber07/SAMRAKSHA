@@ -83,7 +83,7 @@ def _get_model_and_processor(direction: str):
 
 
 class Translator:
-    """Translate text using IndicTrans2. Falls back to glossary on failure."""
+    """Translate text using IndicTrans2 or local Ollama (Llama3). Falls back to glossary on failure."""
 
     GLOSSARY = {
         "FIR": "Prathamik Suchna Report",
@@ -116,8 +116,8 @@ class Translator:
 
         model_tuple, processor = _get_model_and_processor(direction)
         if model_tuple is None:
-            logger.warning("IndicTrans2 unavailable, returning original")
-            return self._apply_glossary(text)
+            logger.warning("IndicTrans2 unavailable, falling back to local Llama.cpp API")
+            return self._apply_llamacpp_translation(text, source_lang, target_lang)
 
         model, tokenizer, device = model_tuple
 
@@ -147,7 +147,29 @@ class Translator:
 
         except Exception as e:
             logger.error("IndicTrans2 inference failed", error=str(e))
-            return self._apply_glossary(text)
+            return self._apply_llamacpp_translation(text, source_lang, target_lang)
+            
+    def _apply_llamacpp_translation(self, text: str, source_lang: str, target_lang: str) -> str:
+        """Fallback translation using the local Llama.cpp model."""
+        import requests
+        try:
+            prompt = f"Translate the following text from {source_lang} to {target_lang}. Reply ONLY with the translated text without any explanation, markdown, or quotes:\\n\\n{text}"
+            resp = requests.post(
+                "http://llamacpp:3389/v1/chat/completions",
+                json={
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": False
+                },
+                timeout=10.0
+            )
+            if resp.status_code == 200:
+                translated = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                if translated:
+                    return translated
+        except Exception as e:
+            logger.error("Llama.cpp translation fallback failed", error=str(e))
+            
+        return self._apply_glossary(text)
 
     def _apply_glossary(self, text: str) -> str:
         for key, val in self.GLOSSARY.items():
