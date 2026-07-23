@@ -384,7 +384,18 @@ export default function PatrolPage() {
       {showModal && (
         <DispatchModal 
           onClose={() => setShowModal(false)} 
-          onDispatched={(unit) => setRoutesData([{unit}, ...routesData])} 
+          onDispatched={(unit) => {
+            // Ensure the unit has all required fields to prevent UnitDetailsModal crash
+            const safeUnit = {
+              ...unit,
+              manual_waypoints: unit.manual_waypoints || [],
+              current_lat: unit.current_lat || 23.0225,
+              current_lon: unit.current_lon || 72.5714,
+            };
+            setRoutesData(prev => [{ unit: safeUnit, route: [safeUnit], road_path: [] }, ...prev]);
+            setShowModal(false);
+            load(); // reload from server to get proper route data
+          }} 
         />
       )}
 
