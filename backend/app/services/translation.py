@@ -151,11 +151,12 @@ class Translator:
             
     def _apply_llamacpp_translation(self, text: str, source_lang: str, target_lang: str) -> str:
         """Fallback translation using the local Llama.cpp model."""
-        import requests
+        import requests, os
         try:
-            prompt = f"Translate the following text from {source_lang} to {target_lang}. Reply ONLY with the translated text without any explanation, markdown, or quotes:\\n\\n{text}"
+            llamacpp_url = os.getenv("LLAMACPP_URL", "http://llamacpp:8080")
+            prompt = f"Translate the following text from {source_lang} to {target_lang}. Reply ONLY with the translated text without any explanation, markdown, or quotes:\n\n{text}"
             resp = requests.post(
-                "http://llamacpp:3389/v1/chat/completions",
+                f"{llamacpp_url}/v1/chat/completions",
                 json={
                     "messages": [{"role": "user", "content": prompt}],
                     "stream": False

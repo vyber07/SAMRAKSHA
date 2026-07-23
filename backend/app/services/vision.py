@@ -1,5 +1,5 @@
-# app/services/vision.py
-
+import os
+from collections import deque
 import mediapipe as mp
 import subprocess, cv2, numpy as np
 
@@ -12,6 +12,7 @@ class CCTVPipeline:
         self.mp_pose = mp.solutions.pose
         self.person_tracks = {}  # centroid tracking
         self.frame_count = 0
+        self.scores_history = deque(maxlen=100)
         
     def extract_frame(self) -> np.ndarray:
         # 1 frame every 2 seconds = low CPU
@@ -53,6 +54,7 @@ class CCTVPipeline:
     async def generate_signal(self, person_count: int, loitering: bool, frame=None) -> dict:
         area_sqm = 500  
         density = person_count / area_sqm
+        self.scores_history.append(density)
         
         avg = self.get_rolling_avg()
         std = self.get_rolling_std()
@@ -71,9 +73,10 @@ class CCTVPipeline:
             img_b64 = base64.b64encode(buffer).decode('utf-8')
             
             try:
+                llamacpp_url = os.getenv("LLAMACPP_URL", "http://llamacpp:8080")
                 async with httpx.AsyncClient() as client:
                     resp = await client.post(
-                        "http://llamacpp:3389/v1/chat/completions",
+                        f"{llamacpp_url}/v1/chat/completions",
                         json={
                             "messages": [
                                 {
@@ -112,10 +115,15 @@ class CCTVPipeline:
         }
 
     def get_rolling_avg(self) -> float:
-        return 0.02
+        if not self.scores_history:
+            return 0.02
+        return float(np.mean(self.scores_history))
 
     def get_rolling_std(self) -> float:
-        return 0.005
+        if not self.scores_history or len(self.scores_history) < 2:
+            return 0.005
+        val = float(np.std(self.scores_history))
+        return val if val > 0 else 0.005
 
 # WHAT WE DO NOT BUILD:
 # No face recognition

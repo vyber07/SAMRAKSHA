@@ -22,8 +22,8 @@
 | 1 | Baseline Exploration & Audit | Comprehensive inspection of codebase, test suite, and requirement gaps | None | DONE |
 | 2 | Phase 1 Rapid Response & Policing | Map hotspots, patrol VRP, CCTV ANPR, incident dispatch, SLA, WebSocket, Analytics | M1 | DONE |
 | 3 | Phase 2 Case Management & Docs | Cases, FIR search, case diary, 8 BNS/BNSS document generation, PBAC, AI assistant | M1, M2 | DONE |
-| 4 | E2E Verification & Report | Full functional suite test, generator test cases, generate `verification_report.md` | M2, M3 | IN_PROGRESS |
-| 5 | Docker Compose Deployment | Clean deployment, docker compose build & startup validation without crashing | M4 | PLANNED |
+| 4 | E2E Verification & Report | Full functional suite test, generator test cases, generate `verification_report.md` | M2, M3 | DONE |
+| 5 | Docker Compose Deployment | Clean deployment, docker compose build & startup validation without crashing | M4 | DONE |
 
 ## Interface Contracts & Standards
 - API Base: `http://localhost:8000/api/v1` (or `/api`)

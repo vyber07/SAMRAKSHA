@@ -151,7 +151,12 @@ CREATE TABLE case_diary (
 CREATE TABLE doc_log (
     id           BIGSERIAL PRIMARY KEY,
     case_id      UUID REFERENCES cases(case_id) NOT NULL,
-    doc_type     VARCHAR(50) NOT NULL,
+    doc_type     VARCHAR(50) NOT NULL
+                 CHECK (doc_type IN (
+                 'chargesheet','medical_letter','remand_request','seizure_receipt',
+                 'court_custody','panchanama','face_id','witness_statement',
+                 'fir','case_diary','arrest_memo','seizure_list',
+                 'search_warrant','bail_objection')),
     sha256       VARCHAR(64) NOT NULL,
     generated_by UUID REFERENCES officers(id),
     language     VARCHAR(5) DEFAULT 'en',
@@ -162,8 +167,8 @@ CREATE TABLE doc_log (
 CREATE TABLE cctv_alerts (
     id           BIGSERIAL PRIMARY KEY,
     camera_id    VARCHAR(100),
-    source       VARCHAR(20) NOT NULL
-                 CHECK (source IN ('iccc','samraksha_model')),
+    source       VARCHAR(50) NOT NULL
+                 CHECK (source IN ('iccc','samraksha_model','samraksha_vision_llamacpp')),
     alert_type   VARCHAR(50) NOT NULL
                  CHECK (alert_type IN 
                  ('crowd_density','loitering','anomaly','anpr')),
@@ -174,6 +179,7 @@ CREATE TABLE cctv_alerts (
     geoloc       GEOGRAPHY(POINT,4326),
     plate_no     VARCHAR(20),
     matched_case UUID REFERENCES cases(case_id),
+    context      TEXT,
     ts           TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -1,10 +1,49 @@
-import pytest
 import sys
+import os
+
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+for p in [
+    os.path.join(backend_dir, "venv/lib/python3.14/site-packages"),
+    "/home/ubuntu/sam/backend/venv/lib/python3.14/site-packages",
+    "/home/ubuntu/sa/backend/venv/lib/python3.14/site-packages"
+]:
+    if os.path.exists(p) and p not in sys.path:
+        sys.path.insert(0, p)
+
+import pytest
+pytest_plugins = ("pytest_asyncio",)
+
+# Set environment for testing before importing connection module
+os.environ["ENVIRONMENT"] = "testing"
+os.environ["SECRET_KEY"] = "samraksha-super-secret-jwt-key-change-in-prod"
+os.environ["DEMO_SEED_PASSWORD"] = "password123"
+os.environ["ADMIN_SEED_PASSWORD"] = "password123"
+os.environ["REDIS_URL"] = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
+# Auto-detect database URL if not set
+if "DATABASE_URL" not in os.environ:
+    import asyncio
+    import asyncpg
+    async def _detect_db():
+        for host in ["172.18.0.2", "172.17.0.2", "localhost"]:
+            url = f"postgresql://samraksha:samraksha_secret@{host}:5432/samraksha"
+            try:
+                conn = await asyncpg.connect(url, timeout=2.0)
+                await conn.close()
+                return url.replace("postgresql://", "postgresql+asyncpg://")
+            except Exception:
+                pass
+        return "postgresql+asyncpg://samraksha:samraksha_secret@localhost:5432/samraksha"
+    os.environ["DATABASE_URL"] = asyncio.run(_detect_db())
+
 import subprocess
 try:
     import redis.asyncio
 except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "redis", "--target=/home/ubuntu/sam/backend/venv/lib/python3.14/site-packages"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "redis"])
 from unittest.mock import MagicMock
 for mod in ["torch", "transformers", "IndicTransToolkit", "whisper"]:
     try:
@@ -14,7 +53,6 @@ for mod in ["torch", "transformers", "IndicTransToolkit", "whisper"]:
 
 import pytest_asyncio
 import asyncio
-import os
 import uuid
 import time
 import httpx
@@ -25,11 +63,6 @@ from main import app
 from app.db.connection import get_db, fetch_one, execute, AsyncSessionLocal, engine
 from app.api.auth import create_access_token, limiter
 
-# Set environment for testing
-os.environ["ENVIRONMENT"] = "testing"
-os.environ["SECRET_KEY"] = "samraksha-super-secret-jwt-key-change-in-prod"
-os.environ["DEMO_SEED_PASSWORD"] = "password123"
-os.environ["ADMIN_SEED_PASSWORD"] = "password123"
 limiter.enabled = False
 
 @pytest.fixture(scope="session")
