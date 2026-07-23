@@ -186,9 +186,8 @@ async def optimize_patrol_routes(patrol_units: list, hotspots: list) -> list:
                         logger.error(f"Failed to fetch dense OSRM route: {e}")
 
                     routes.append({
-                        "unit_id": patrol_units[vehicle_id]['id'],
-                        "unit_name": patrol_units[vehicle_id]['unit_name'],
-                        "waypoints": unit_route,
+                        "unit": patrol_units[vehicle_id],
+                        "route": unit_route,
                         "distance_meters": route_distance,
                         "road_path": dense_path
                     })

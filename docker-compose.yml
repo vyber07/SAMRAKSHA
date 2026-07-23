@@ -123,9 +123,9 @@ services:
     command:
       - |
         if [ -f /models/model.gguf ]; then
-          exec /llama-server -m /models/model.gguf --host 0.0.0.0 --port 8080
-        elif [ -f /main ]; then
-          exec /main -m /models/model.gguf --host 0.0.0.0 --port 8080
+          exec /app/llama-server -m /models/model.gguf --host 0.0.0.0 --port 8080
+        elif [ -f /app/main ]; then
+          exec /app/main -m /models/model.gguf --host 0.0.0.0 --port 8080
         else
           echo "Warning: /models/model.gguf weight file absent. Starting idle fallback to prevent crash loop."
           sleep infinity

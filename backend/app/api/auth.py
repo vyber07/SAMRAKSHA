@@ -103,12 +103,14 @@ def require_permission(permission_key: str):
             'patrol_view', 'cctv_view',
         ]
         role_permissions = {
-            'constable': [],  # Field officer — read-only access granted separately
-            'io':        ['case_create', 'case_view_own_ps', 'case_edit', 'patrol_view'],
+            'constable': ['patrol_view'],
+            'io':        ['case_create', 'case_view_own_ps', 'case_edit',
+                          'patrol_view', 'doc_generate'],
             'sho':       ['case_view_all', 'case_edit', 'doc_generate', 'patrol_dispatch',
                           'patrol_view', 'cctv_view', 'analytics_view'],
-            'dcp':       ['case_view_all', 'analytics_view', 'patrol_view', 'cctv_view'],
-            'admin':     ALL_PERMISSIONS,  # Admin has everything
+            'dcp':       ['case_view_all', 'analytics_view', 'patrol_view',
+                          'cctv_view', 'doc_generate'],
+            'admin':     ALL_PERMISSIONS,
         }
         
         if permission_key not in role_permissions.get(officer['role'], []):
