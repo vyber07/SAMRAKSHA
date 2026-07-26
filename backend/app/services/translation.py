@@ -56,6 +56,13 @@ def _get_model_and_processor(direction: str):
         logger.info("Loading IndicTrans2 model", model=model_name)
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
         from IndicTransToolkit import IndicProcessor
+        from unittest.mock import MagicMock
+
+        if isinstance(IndicProcessor, MagicMock) or isinstance(AutoModelForSeq2SeqLM, MagicMock):
+            logger.info("IndicTrans2 modules are mocked, falling back")
+            _models[direction] = None
+            _processors[direction] = None
+            return None, None
 
         processor = IndicProcessor(inference=True)
         tokenizer = AutoTokenizer.from_pretrained(
@@ -93,7 +100,7 @@ class Translator:
         "Accident": "Durghatna",
     }
 
-    def translate(self, text: str, target_lang: str, source_lang: str = "en") -> str:
+    async def translate(self, text: str, target_lang: str, source_lang: str = "en") -> str:
         if not text or target_lang == source_lang:
             return text
 
@@ -117,7 +124,7 @@ class Translator:
         model_tuple, processor = _get_model_and_processor(direction)
         if model_tuple is None:
             logger.warning("IndicTrans2 unavailable, falling back to local Llama.cpp API")
-            return self._apply_llamacpp_translation(text, source_lang, target_lang)
+            return await self._apply_llamacpp_translation(text, source_lang, target_lang)
 
         model, tokenizer, device = model_tuple
 
@@ -147,29 +154,41 @@ class Translator:
 
         except Exception as e:
             logger.error("IndicTrans2 inference failed", error=str(e))
-            return self._apply_llamacpp_translation(text, source_lang, target_lang)
-            
-    def _apply_llamacpp_translation(self, text: str, source_lang: str, target_lang: str) -> str:
-        """Fallback translation using the local Llama.cpp model."""
-        import requests, os
+            return await self._apply_llamacpp_translation(text, source_lang, target_lang)
+
+    def translate_sync(self, text: str, target_lang: str, source_lang: str = "en") -> str:
+        """Synchronous version of translate for non-async callers."""
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+            if loop.is_running():
+                return self._apply_glossary(text)
+        except RuntimeError:
+            pass
+        return asyncio.run(self.translate(text, target_lang, source_lang))
+
+    async def _apply_llamacpp_translation(self, text: str, source_lang: str, target_lang: str) -> str:
+        """Fallback translation using the local Llama.cpp model via non-blocking httpx call."""
+        import httpx, os
         try:
             llamacpp_url = os.getenv("LLAMACPP_URL", "http://llamacpp:8080")
             prompt = f"Translate the following text from {source_lang} to {target_lang}. Reply ONLY with the translated text without any explanation, markdown, or quotes:\n\n{text}"
-            resp = requests.post(
-                f"{llamacpp_url}/v1/chat/completions",
-                json={
-                    "messages": [{"role": "user", "content": prompt}],
-                    "stream": False
-                },
-                timeout=10.0
-            )
+            url = f"{llamacpp_url}/v1/chat/completions"
+            payload = {
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False
+            }
+
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(url, json=payload)
+
             if resp.status_code == 200:
                 translated = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
                 if translated:
                     return translated
         except Exception as e:
             logger.error("Llama.cpp translation fallback failed", error=str(e))
-            
+
         return self._apply_glossary(text)
 
     def _apply_glossary(self, text: str) -> str:

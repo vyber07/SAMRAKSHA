@@ -36,24 +36,67 @@ GLOSSARY = {
 def replace_in_paragraph(para, ctx):
     for key, val in ctx.items():
         tag = '{{' + key + '}}'
-        if tag not in para.text:
-            continue
         val_str = str(val) if val is not None else ''
-        
-        replaced_in_run = False
-        for run in para.runs:
-            if tag in run.text:
-                run.text = run.text.replace(tag, val_str)
-                replaced_in_run = True
-                
-        if not replaced_in_run and tag in para.text:
-            full_text = para.text.replace(tag, val_str)
-            if para.runs:
-                para.runs[0].text = full_text
-                for run in para.runs[1:]:
-                    run.text = ""
+
+        while True:
+            if not para.runs:
+                if tag in para.text:
+                    para.text = para.text.replace(tag, val_str)
+                break
+
+            full_text = "".join(r.text for r in para.runs)
+            tag_start = full_text.find(tag)
+            if tag_start == -1:
+                break
+
+            tag_end = tag_start + len(tag)
+
+            # Build run character offset mapping
+            run_spans = []
+            char_cursor = 0
+            for run in para.runs:
+                r_len = len(run.text)
+                run_spans.append((run, char_cursor, char_cursor + r_len))
+                char_cursor += r_len
+
+            # Find start and end run indices
+            start_run_idx = None
+            end_run_idx = None
+            for idx, (run, rstart, rend) in enumerate(run_spans):
+                if start_run_idx is None and rstart <= tag_start < rend:
+                    start_run_idx = idx
+                if rend >= tag_end and rstart < tag_end:
+                    end_run_idx = idx
+                    break
+
+            if start_run_idx is not None and end_run_idx is not None:
+                if start_run_idx == end_run_idx:
+                    run, rstart, _ = run_spans[start_run_idx]
+                    l_start = tag_start - rstart
+                    l_end = tag_end - rstart
+                    run.text = run.text[:l_start] + val_str + run.text[l_end:]
+                else:
+                    # First run
+                    first_run, rstart_first, _ = run_spans[start_run_idx]
+                    l_start = tag_start - rstart_first
+                    first_run.text = first_run.text[:l_start] + val_str
+
+                    # Middle runs
+                    for mid_idx in range(start_run_idx + 1, end_run_idx):
+                        run_spans[mid_idx][0].text = ""
+
+                    # Last run
+                    last_run, rstart_last, _ = run_spans[end_run_idx]
+                    l_end = tag_end - rstart_last
+                    last_run.text = last_run.text[l_end:]
             else:
-                para.text = full_text
+                # Fallback if run span mapping failed unexpectedly
+                if tag in para.text:
+                    full_text = para.text.replace(tag, val_str)
+                    para.runs[0].text = full_text
+                    for run in para.runs[1:]:
+                        run.text = ""
+                break
 
 def generate_document(
     doc_type: str, 
@@ -125,10 +168,10 @@ def generate_document(
 # Ctrl+F "Section " in every template before demo
 # Any "IPC" or "CrPC" as primary section = court rejection risk
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 def today_formatted():
-    return datetime.utcnow().strftime('%Y-%m-%d')
+    return datetime.now(timezone.utc).strftime('%Y-%m-%d')
 
 def format_date(d):
     return d.strftime('%Y-%m-%d') if d else ''
@@ -137,6 +180,8 @@ def translate(text, lang):
     from app.services.translation import translator_service
     if not text: return ''
     if lang == 'en': return text
+    if hasattr(translator_service, 'translate_sync'):
+        return translator_service.translate_sync(text, lang)
     return translator_service.translate(text, lang)
 
 def format_landmark_cases(cases):

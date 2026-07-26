@@ -40,6 +40,14 @@ FESTIVAL_CALENDAR = {
     'rath_yatra': {
         'crowd_violence': 2.5, 'theft': 3.0, 'pickpocketing': 3.2, 'traffic_violation': 2.8,
     },
+    'protest': {
+        'crowd_violence': 3.0, 'vandalism': 2.5, 'traffic_violation': 3.5,
+        'theft': 1.8, 'assault': 2.2,
+    },
+    'cricket_match': {
+        'crowd_violence': 2.0, 'theft': 2.5, 'pickpocketing': 3.0,
+        'traffic_violation': 3.0, 'drunk_driving': 1.8,
+    },
 }
 
 def compute_kde_heatmap(df: pd.DataFrame):
@@ -129,25 +137,44 @@ class RiskPredictor:
                 WHERE ward IS NOT NULL
             """
             rows = await fetch_all(db, query)
-            if rows and len(rows) > 10:
+            if rows and len(rows) >= 10:
                 df = pd.DataFrame(rows)
                 X = df[['hour', 'dow', 'month']].values
                 y = np.array([int(r) * 20 for r in df['severity']])
                 self.model.fit(X, y)
                 self._is_trained = True
             else:
-                X_dummy = np.random.rand(100, 3) * [24, 6, 12]
-                y_dummy = np.random.rand(100) * 100
-                y_dummy += np.where(X_dummy[:, 0] < 6, 20, 0)
-                y_dummy = np.clip(y_dummy, 0, 100)
-                
-                self.model.fit(X_dummy, y_dummy)
+                # Deterministic feature-weighted heuristic risk modeling when DB records are sparse (< 10)
+                grid = []
+                targets = []
+                for h in range(24):
+                    for d in range(7):
+                        for m in range(1, 13):
+                            # Feature-weighted heuristic risk factors:
+                            # Night time risk peak (22:00 to 04:00)
+                            night_w = 35.0 if (h >= 22 or h <= 4) else (20.0 if (18 <= h < 22) else 10.0)
+                            # Weekend risk multiplier (Fri=5, Sat=6, Sun=0)
+                            weekend_w = 15.0 if d in (0, 5, 6) else 5.0
+                            # Seasonal month weighting (Oct=10, Nov=11, Dec=12, Jan=1)
+                            month_w = 12.0 if m in (10, 11, 12, 1) else 6.0
+                            # Hour cosine periodicity (peaks around midnight h=0)
+                            time_cycle = 15.0 * np.cos(h * 2.0 * np.pi / 24.0) + 15.0
+                            
+                            score = 15.0 + night_w + weekend_w + month_w + time_cycle
+                            grid.append([float(h), float(d), float(m)])
+                            targets.append(float(np.clip(score, 5.0, 95.0)))
+                            
+                X_heur = np.array(grid, dtype=np.float32)
+                y_heur = np.array(targets, dtype=np.float32)
+                self.model.fit(X_heur, y_heur)
                 self._is_trained = True
             
     async def predict_zone_risk(self, ward: str, hour: int, dow: int, month: int, db) -> float:
         await self.train_if_needed(db)
         
-        ward_hash = hash(ward) % 100 / 100.0
+        import hashlib
+        ward_int = int(hashlib.sha256(ward.encode('utf-8')).hexdigest(), 16)
+        ward_hash = (ward_int % 100) / 100.0
         X = np.array([[hour, dow, month]])
         
         base_risk = float(self.model.predict(X)[0])

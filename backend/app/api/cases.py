@@ -3,7 +3,7 @@ from app.api import auth
 from app.api.auth import get_current_officer
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from datetime import datetime
 import uuid, structlog
@@ -35,19 +35,22 @@ class FIRCreateRequest(BaseModel):
 
     language: str = 'en'
 
-    @validator('severity')
+    @field_validator('severity')
+    @classmethod
     def severity_range(cls, v):
         if not 1 <= v <= 5:
             raise ValueError('Severity must be 1-5')
         return v
 
-    @validator('crime_lat')
+    @field_validator('crime_lat')
+    @classmethod
     def valid_lat(cls, v):
         if not 22.5 <= v <= 23.5:
             raise ValueError('Latitude out of Ahmedabad range')
         return v
 
-    @validator('crime_lon')
+    @field_validator('crime_lon')
+    @classmethod
     def valid_lon(cls, v):
         if not 72.0 <= v <= 73.2:
             raise ValueError('Longitude out of Ahmedabad range')
@@ -207,6 +210,7 @@ async def list_cases(
             ORDER BY created_at DESC
             LIMIT $2 OFFSET $3
         """, [str(officer['ps_id']), limit, offset])
+        count_row = await fetch_one(db, "SELECT COUNT(*) as count FROM cases WHERE ps_id = $1", [str(officer['ps_id'])])
     else:
         results = await fetch_all(db, """
             SELECT case_id, fir_no, victim_name, accused_name,
@@ -216,8 +220,10 @@ async def list_cases(
             ORDER BY created_at DESC
             LIMIT $1 OFFSET $2
         """, [limit, offset])
+        count_row = await fetch_one(db, "SELECT COUNT(*) as count FROM cases", [])
 
-    return {"items": results, "page": page, "limit": limit}
+    total_count = count_row['count'] if count_row else len(results)
+    return {"items": results, "total": total_count, "page": page, "limit": limit}
 
 @router.get("/search")
 async def search_cases(

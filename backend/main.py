@@ -62,21 +62,23 @@ app.add_middleware(
 #     allowed_hosts=["localhost", "127.0.0.1", "*.samraksha.local"]
 # )
 
-# Routers
-app.include_router(auth.router,       prefix="/auth",      tags=["Auth"])
-app.include_router(cases.router,      prefix="/cases",     tags=["Cases"])
-app.include_router(incidents.router,  prefix="/incident",  tags=["Incidents"])
-app.include_router(documents.router,  prefix="/docs",      tags=["Documents"])
-app.include_router(patrol.router,     prefix="/patrol",    tags=["Patrol"])
-app.include_router(hotspot.router,    prefix="/map",       tags=["Map"])
-app.include_router(cctv.router,       prefix="/cctv",      tags=["CCTV"])
-app.include_router(assistant.router,  prefix="/assistant", tags=["Assistant"])
-app.include_router(legal.router,      prefix="/legal",     tags=["Legal"])
-app.include_router(websocket.router,  prefix="/ws",        tags=["WebSocket"])
-app.include_router(admin.router,      prefix="/admin",     tags=["Admin"])
-app.include_router(analytics.router,  prefix="/analytics", tags=["Analytics"])
-app.include_router(translate.router,  prefix="/translate", tags=["Translation"])
-app.include_router(cctns.router,      prefix="/cctns",     tags=["CCTNS"])
+# Routers (mounted under both root and /api/v1 prefixes)
+for prefix in ["", "/api/v1"]:
+    app.include_router(auth.router,       prefix=f"{prefix}/auth",      tags=["Auth"])
+    app.include_router(cases.router,      prefix=f"{prefix}/cases",     tags=["Cases"])
+    app.include_router(incidents.router,  prefix=f"{prefix}/incident",  tags=["Incidents"])
+    app.include_router(documents.router,  prefix=f"{prefix}/docs",      tags=["Documents"])
+    app.include_router(patrol.router,     prefix=f"{prefix}/patrol",    tags=["Patrol"])
+    app.include_router(hotspot.router,    prefix=f"{prefix}/map",       tags=["Map"])
+    app.include_router(cctv.router,       prefix=f"{prefix}/cctv",      tags=["CCTV"])
+    app.include_router(assistant.router,  prefix=f"{prefix}/assistant", tags=["Assistant"])
+    app.include_router(legal.router,      prefix=f"{prefix}/legal",     tags=["Legal"])
+    app.include_router(websocket.router,  prefix=f"{prefix}/ws",        tags=["WebSocket"])
+    app.include_router(admin.router,      prefix=f"{prefix}/admin",     tags=["Admin"])
+    app.include_router(analytics.router,  prefix=f"{prefix}/analytics", tags=["Analytics"])
+    app.include_router(translate.router,  prefix=f"{prefix}/translate", tags=["Translation"])
+    app.include_router(cctns.router,      prefix=f"{prefix}/cctns",     tags=["CCTNS"])
+
 
 
 # FIR create (top level — most important endpoint)

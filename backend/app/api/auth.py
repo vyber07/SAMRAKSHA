@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from pydantic import BaseModel
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import os, uuid
@@ -18,8 +18,10 @@ oauth2   = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key-1234567890")
 ALGORITHM  = os.getenv("JWT_ALGORITHM", "HS256")
-ACCESS_EXP = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", 8))
+# Read from ACCESS_TOKEN_EXPIRE_MINUTES (as set in .env/docker-compose) and convert to hours
+ACCESS_EXP = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480")) / 60  # default 8 hours
 from app.core.redis import get_redis, redis_client
+import structlog as _structlog
 
 
 class LoginRequest(BaseModel):
@@ -27,12 +29,13 @@ class LoginRequest(BaseModel):
     password: str
 
 def create_access_token(officer_id: str, role: str, ps_id: str) -> str:
+    now = datetime.now(timezone.utc)
     payload = {
         "sub":     officer_id,
         "role":    role,
         "ps_id":   ps_id,
-        "exp":     datetime.utcnow() + timedelta(hours=ACCESS_EXP),
-        "iat":     datetime.utcnow(),
+        "exp":     now + timedelta(hours=ACCESS_EXP),
+        "iat":     now,
         "jti":     str(uuid.uuid4()),  # Unique token ID
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
@@ -203,12 +206,12 @@ async def logout(
         jti = payload.get("jti")
         if jti:
             exp = payload.get("exp")
-            now = datetime.utcnow().timestamp()
+            now = datetime.now(timezone.utc).timestamp()
             ttl = int(exp - now) if exp else int(ACCESS_EXP * 3600)
             if ttl > 0:
                 try:
                     r = get_redis()
-                    await r.setex(f"blacklist:{jti}", ttl, "true")
+                    await r.set(f"blacklist:{jti}", "true", ex=ttl)
                     await r.aclose()
                 except Exception:
                     pass

@@ -136,12 +136,13 @@ async def report_incident(
         "type": body.type,
         "location": body.location,
         "severity": body.severity,
-        "time": __import__('datetime').datetime.utcnow().isoformat(),
+        "time": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(),
         "description": body.description
     }
 @router.get("/sla_breaches")
 async def get_sla_breaches(
-    db = Depends(get_db)
+    db = Depends(get_db),
+    auth_check = Depends(verify_incident_auth)
 ):
     from app.db.connection import fetch_all
     breaches = await fetch_all(db, """

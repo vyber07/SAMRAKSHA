@@ -14,7 +14,9 @@ for p in [
         sys.path.insert(0, p)
 
 import pytest
-pytest_plugins = ("pytest_asyncio",)
+# pytest_plugins defined in root conftest.py
+
+
 
 # Set environment for testing before importing connection module
 os.environ["ENVIRONMENT"] = "testing"
@@ -49,7 +51,12 @@ for mod in ["torch", "transformers", "IndicTransToolkit", "whisper"]:
     try:
         __import__(mod)
     except ImportError:
-        sys.modules[mod] = MagicMock()
+        mock_mod = MagicMock()
+        if mod == "torch":
+            class Tensor:
+                pass
+            mock_mod.Tensor = Tensor
+        sys.modules[mod] = mock_mod
 
 import pytest_asyncio
 import asyncio

@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node src/tests/transpile_for_test.js && node --test src/tests/store_and_component_state.test.js src/tests/stress_harness.test.js src/tests/incident_frequency_chart_challenger.test.js src/tests/m1_challenger_stress.test.js"
   },
   "dependencies": {
     "axios": "^1.7.9",

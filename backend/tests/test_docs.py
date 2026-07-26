@@ -1,7 +1,7 @@
 import pytest
 import io
 import docx
-from datetime import datetime
+from datetime import datetime, timezone
 
 DOC_TYPES = [
     'chargesheet',
@@ -28,7 +28,7 @@ async def test_document_generation_all_types(async_client, sho_headers, io_heade
         "crime_type": "robbery",
         "crime_code": 309,
         "crime_narrative": "Victim injured during robbery attempt near Bodakdev.",
-        "crime_date": datetime.utcnow().isoformat(),
+        "crime_date": datetime.now(timezone.utc).isoformat(),
         "crime_location": "Bodakdev S.G. Highway, Ahmedabad",
         "crime_lat": 23.0470,
         "crime_lon": 72.5060,
@@ -74,7 +74,7 @@ async def test_list_case_documents(async_client, sho_headers, io_headers):
         "victim_injury": True,
         "crime_type": "assault",
         "crime_narrative": "Assault incident",
-        "crime_date": datetime.utcnow().isoformat(),
+        "crime_date": datetime.now(timezone.utc).isoformat(),
         "crime_location": "Jamalpur Gate",
         "crime_lat": 23.0370,
         "crime_lon": 72.6050,

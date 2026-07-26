@@ -16,7 +16,8 @@ async def test_cctv_alert_ingestion(async_client):
         "lon": 72.5714
     }
 
-    response = await async_client.post("/cctv/alert", json=payload)
+    headers = {"X-API-Key": "iccc_api_key_2026"}
+    response = await async_client.post("/cctv/alert", json=payload, headers=headers)
     assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
     data = response.json()
     assert "id" in data
@@ -54,7 +55,7 @@ async def test_anpr_matching(async_client, io_headers):
         "plate_no": plate
     }
 
-    response = await async_client.post("/cctv/alert", json=anpr_payload)
+    response = await async_client.post("/cctv/alert", json=anpr_payload, headers={"X-API-Key": "iccc_api_key_2026"})
     assert response.status_code == 200
     alert_id = response.json()["id"]
 

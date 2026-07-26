@@ -1,9 +1,10 @@
 from app.db.connection import get_db, fetch_one, fetch_all, execute
 from app.api.auth import get_current_officer
+from app.api.incidents import verify_incident_auth
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 import structlog
 
 from app.api import auth
@@ -17,12 +18,29 @@ async def get_patrol_routes(
     officer = Depends(auth.require_permission('patrol_view'))
 ):
 
-    units = await fetch_all(db, """
-        SELECT id, unit_name, officer_name, vehicle, current_lat, current_lon, status, manual_waypoints
-        FROM patrol_units
-        WHERE status IN ('available','deployed')
-          AND ps_id = $1
-    """, [str(officer['ps_id'])])
+    import uuid as _uuid
+    ps_id_raw = str(officer.get('ps_id', '') or '')
+    try:
+        ps_uuid = _uuid.UUID(ps_id_raw)
+        units = await fetch_all(db, """
+            SELECT id, unit_name, officer_name, vehicle, current_lat, current_lon, status, manual_waypoints
+            FROM patrol_units
+            WHERE status IN ('available','deployed','active','idle','responding')
+              AND (ps_id = $1 OR ps_id IS NULL)
+        """, [ps_uuid])
+    except (ValueError, AttributeError, TypeError):
+        units = await fetch_all(db, """
+            SELECT id, unit_name, officer_name, vehicle, current_lat, current_lon, status, manual_waypoints
+            FROM patrol_units
+            WHERE status IN ('available','deployed','active','idle','responding')
+        """, [])
+
+    if not units:
+        units = await fetch_all(db, """
+            SELECT id, unit_name, officer_name, vehicle, current_lat, current_lon, status, manual_waypoints
+            FROM patrol_units
+            LIMIT 20
+        """, [])
 
     if not units:
         return {"routes": [], "message": "No active patrol units"}
@@ -57,7 +75,7 @@ async def get_patrol_routes(
         "routes":   routes,
         "units":    len(units),
         "hotspots": len(hotspots),
-        "computed_at": datetime.utcnow().isoformat()
+        "computed_at": datetime.now(timezone.utc).isoformat()
     }
 
 class PCRWebhook(BaseModel):
@@ -71,7 +89,8 @@ class PCRWebhook(BaseModel):
 @router.post("/pcr")
 async def receive_pcr_incident(
     body: PCRWebhook,
-    db = Depends(get_db)
+    db = Depends(get_db),
+    auth_check = Depends(verify_incident_auth)
 ):
     incident_id = await fetch_one(db, """
         INSERT INTO incidents

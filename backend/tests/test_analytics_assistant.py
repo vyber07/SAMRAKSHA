@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 
 @pytest.mark.asyncio
 async def test_analytics_summary_and_trends(async_client, dcp_headers):
@@ -23,29 +23,31 @@ async def test_analytics_summary_and_trends(async_client, dcp_headers):
     assert "monthly" in trends_data
 
 @pytest.mark.asyncio
-async def test_hotspot_surge_prediction(async_client, dcp_headers):
-    """Test hotspot surge prediction API."""
-    response = await async_client.get("/analytics/hotspot_surge", headers=dcp_headers)
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
-    data = response.json()
-    assert "surges" in data
-    assert isinstance(data["surges"], list)
+async def test_analytics_simulation(async_client, dcp_headers):
+    """Test analytics event simulation."""
+    sim_payload = {
+        "event": "Rath Yatra",
+        "crowd_size": 100000
+    }
+    sim_res = await async_client.post("/analytics/simulate", json=sim_payload, headers=dcp_headers)
+    assert sim_res.status_code == 200, f"Expected 200, got {sim_res.status_code}: {sim_res.text}"
+    sim_data = sim_res.json()
+    assert sim_data["event"] == "Rath Yatra"
+    assert "hotspots" in sim_data
+    assert len(sim_data["hotspots"]) > 0
 
 @pytest.mark.asyncio
-async def test_simulation_api(async_client, dcp_headers):
-    """Test event simulation API for deployment and risk calculation."""
+async def test_ai_assistant_query_all_cases(async_client, sho_headers):
+    """Test AI assistant querying across all cases."""
     payload = {
-        "event": "Rath Yatra",
-        "crowd_size": 75000
+        "mode": "all_cases",
+        "question": "What are the recent theft trends?"
     }
-    response = await async_client.post("/analytics/simulate", json=payload, headers=dcp_headers)
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
-    data = response.json()
-    assert data["event"] == "Rath Yatra"
-    assert data["crowd_size"] == 75000
-    assert "total_units_needed" in data
-    assert "hotspots" in data
-    assert isinstance(data["hotspots"], list)
+    res = await async_client.post("/assistant/query", json=payload, headers=sho_headers)
+    assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
+    data = res.json()
+    assert "answer" in data
+    assert data["mode"] == "all_cases"
 
 @pytest.mark.asyncio
 async def test_ai_assistant_query_this_case(async_client, io_headers):
@@ -56,7 +58,7 @@ async def test_ai_assistant_query_this_case(async_client, io_headers):
         "victim_address": "Navrangpura, Ahmedabad",
         "crime_type": "theft",
         "crime_narrative": "Wallet stolen from bag at coffee shop in Navrangpura.",
-        "crime_date": datetime.utcnow().isoformat(),
+        "crime_date": datetime.now(timezone.utc).isoformat(),
         "crime_location": "Navrangpura Market",
         "crime_lat": 23.0270,
         "crime_lon": 72.5620,

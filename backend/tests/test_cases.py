@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 
 @pytest.mark.asyncio
 async def test_create_fir(async_client, io_headers):
@@ -14,7 +14,7 @@ async def test_create_fir(async_client, io_headers):
         "crime_type": "theft",
         "crime_code": 303,
         "crime_narrative": "Victim reported that two unknown persons on a bike stole his wallet and gold chain containing Rs. 15,000 near Ellisbridge town hall.",
-        "crime_date": datetime.utcnow().isoformat(),
+        "crime_date": datetime.now(timezone.utc).isoformat(),
         "crime_location": "Near Ellisbridge Town Hall, Ahmedabad",
         "crime_lat": 23.0225,
         "crime_lon": 72.5714,
@@ -68,7 +68,7 @@ async def test_case_diary_entry(async_client, io_headers):
         "crime_type": "theft",
         "crime_code": 303,
         "crime_narrative": "Mobile phone snatched while standing at bus stop.",
-        "crime_date": datetime.utcnow().isoformat(),
+        "crime_date": datetime.now(timezone.utc).isoformat(),
         "crime_location": "Satellite Bus Stop, Ahmedabad",
         "crime_lat": 23.0300,
         "crime_lon": 72.5100,

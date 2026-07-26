@@ -135,7 +135,7 @@ services:
     networks:
       - samraksha-net
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 0"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -162,7 +162,7 @@ services:
     networks:
       - samraksha-net
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 5000 || exit 0"]
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 5000 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -2,7 +2,7 @@ from app.db.connection import get_db, fetch_one, fetch_all, execute
 from app.api.auth import get_current_officer
 
 from fastapi import APIRouter, Depends, Query
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import asyncio
 
 router = APIRouter()
@@ -55,7 +55,7 @@ async def get_ward_risk(
     db = Depends(get_db),
     officer = Depends(get_current_officer)
 ):
-    now   = datetime.utcnow()
+    now   = datetime.now(timezone.utc)
     hour  = now.hour
     dow   = now.weekday()
     month = now.month
@@ -106,10 +106,10 @@ def risk_level(score: float) -> str:
 
 @router.get("/incidents")
 async def get_incidents(
-    lat_min: float = Query(22.9),
-    lat_max: float = Query(23.2),
-    lon_min: float = Query(72.4),
-    lon_max: float = Query(72.7),
+    lat_min: float = Query(22.5),
+    lat_max: float = Query(23.5),
+    lon_min: float = Query(72.0),
+    lon_max: float = Query(73.2),
     hours:   int   = Query(72),
     db = Depends(get_db),
     officer = Depends(get_current_officer)

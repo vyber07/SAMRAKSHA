@@ -51,7 +51,7 @@ async def test_sla_breach_detection(async_client):
         """)
         await db.commit()
 
-    response = await async_client.get("/incident/sla_breaches")
+    response = await async_client.get("/incident/sla_breaches", headers={"X-API-Key": "report_token_2026"})
     assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
     data = response.json()
     assert "breaches" in data

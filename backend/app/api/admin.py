@@ -56,7 +56,7 @@ async def update_officer(badge_no: str, officer: OfficerUpdate, db = Depends(get
     updates = []
     params = [badge_no]
     idx = 2
-    for field, value in officer.dict(exclude_unset=True).items():
+    for field, value in officer.model_dump(exclude_unset=True).items():
         updates.append(f"{field} = ${idx}")
         params.append(value)
         idx += 1
@@ -69,7 +69,7 @@ async def update_officer(badge_no: str, officer: OfficerUpdate, db = Depends(get
     
     from app.services.audit import log_activity
     try:
-        await log_activity(db, None, "update_officer", f"Officer {badge_no} updated: {list(officer.dict(exclude_unset=True).keys())}")
+        await log_activity(db, None, "update_officer", f"Officer {badge_no} updated: {list(officer.model_dump(exclude_unset=True).keys())}")
     except Exception as e:
         logger.error("Audit log failed", error=str(e))
         
@@ -110,8 +110,8 @@ async def get_audit_logs(officer: Optional[str] = None, type: Optional[str] = No
     params = []
     idx = 1
     if officer:
-        query += f" AND (o.badge_no = ${idx} OR o.name ILIKE ${idx})"
-        params.append(officer if officer.isalnum() else f"%{officer}%")
+        query += f" AND (o.badge_no ILIKE ${idx} OR o.name ILIKE ${idx})"
+        params.append(f"%{officer.strip()}%")
         idx += 1
     if type:
         query += f" AND a.action = ${idx}"

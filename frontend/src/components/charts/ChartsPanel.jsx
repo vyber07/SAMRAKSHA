@@ -1,19 +1,10 @@
 import { useMemo } from 'react';
-import CaseTrendsChart from './CaseTrendsChart';
+import IncidentFrequencyChart from './IncidentFrequencyChart';
 import CasesByTypeChart from './CasesByTypeChart';
 import StatusDistributionChart from './StatusDistributionChart';
 
 // Map raw analytics/trends + cases props into the shapes each child expects,
 // always falling back to undefined so children render their own mocks.
-
-function mapTrends(trends) {
-  // Backend trends.weekly: [{day,count}] or trends.daily/hourly. Prefer weekly.
-  const weekly = trends?.weekly;
-  if (Array.isArray(weekly) && weekly.length) {
-    return weekly.slice(0, 7).map((d) => ({ date: d.day ?? d.date ?? '', count: +d.count || 0 }));
-  }
-  return undefined;
-}
 
 function mapByType(trends, cases) {
   // Prefer analytics trends.by_type: [{type,count}].
@@ -59,13 +50,12 @@ function mapStatus(cases) {
 export default function ChartsPanel({ trends, cases }) {
   const caseList = Array.isArray(cases) ? cases : cases?.items;
 
-  const trendData = useMemo(() => mapTrends(trends), [trends]);
   const byTypeData = useMemo(() => mapByType(trends, caseList), [trends, caseList]);
   const statusData = useMemo(() => mapStatus(caseList), [caseList]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%' }}>
-      <CaseTrendsChart data={trendData} />
+      <IncidentFrequencyChart trends={trends} cases={caseList} />
 
       <div
         style={{

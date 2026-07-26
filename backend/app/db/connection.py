@@ -87,7 +87,7 @@ async def fetch_all(
         return [dict(row._mapping) for row in rows] if rows else []
     except Exception as e:
         logger.error("Fetch all failed", query=query[:50], error=str(e))
-        return []
+        raise
 
 async def fetch_one(
     db: AsyncSession,
@@ -101,4 +101,4 @@ async def fetch_one(
         return dict(row._mapping) if row else None
     except Exception as e:
         logger.error("Fetch one failed", query=query[:50], error=str(e))
-        return None
+        raise

@@ -43,7 +43,7 @@ async def translate_text(
     if not body.text.strip():
         raise HTTPException(400, "text cannot be empty")
 
-    translated = translator_service.translate(
+    translated = await translator_service.translate(
         body.text,
         target_lang=body.target_lang,
         source_lang=body.source_lang,

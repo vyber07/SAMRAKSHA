@@ -2,7 +2,7 @@
 
 ## Architecture & System Overview
 - **Backend**: FastAPI (Python 3.11/3.12 async), Async SQLAlchemy, Asyncpg, PostGIS, Redis, Google OR-Tools, XGBoost, Scikit-Learn, python-docx, Llama.cpp / Whisper stub.
-- **Frontend**: React 19, Vite, Leaflet, Zustand, Axios, Glassmorphism UI.
+- **Frontend**: React 19 / Vite / Tailwind CSS / Shadcn UI / Leaflet / Zustand / Axios.
 - **Infrastructure**: Docker Compose (PostgreSQL+PostGIS 16-3.4, Redis 7, FastAPI backend, React/Nginx frontend, OSRM backend, Llama.cpp server, Seed init).
 
 ## Code Layout
@@ -11,22 +11,24 @@
   - Services: `/home/ubuntu/sa/backend/app/services/` (prediction, routing, legal_intel, document_gen, translation, vision, voice, audit, assistant)
   - DB Schema & Models: `/home/ubuntu/sa/backend/app/db/`, `/home/ubuntu/sa/backend/db/schema.sql`
   - Tests: `/home/ubuntu/sa/backend/tests/`
-- Frontend: `/home/ubuntu/sa/frontend/`
-  - Components & Widgets: `/home/ubuntu/sa/frontend/src/components/`
-  - Pages: `/home/ubuntu/sa/frontend/src/pages/`
-  - API Client & Store: `/home/ubuntu/sa/frontend/src/lib/`
+- Frontend Live: `/home/ubuntu/sa/frontend/`
+  - Components: `/home/ubuntu/sa/frontend/src/components/` (including `ui/` for 48 Shadcn components)
+  - Pages: `/home/ubuntu/sa/frontend/src/pages/` (10 core pages migrated & integrated)
+  - Stores & API: `/home/ubuntu/sa/frontend/src/lib/store.js` (Zustand) and `/home/ubuntu/sa/frontend/src/lib/api.js` (Axios)
+- Frontend Source Source/New: `/home/ubuntu/sa/frontend_new/`
 
-## Milestones
+## Milestones for Frontend Migration & Integration
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | Baseline Exploration & Audit | Comprehensive inspection of codebase, test suite, and requirement gaps | None | DONE |
-| 2 | Phase 1 Rapid Response & Policing | Map hotspots, patrol VRP, CCTV ANPR, incident dispatch, SLA, WebSocket, Analytics | M1 | DONE |
-| 3 | Phase 2 Case Management & Docs | Cases, FIR search, case diary, 8 BNS/BNSS document generation, PBAC, AI assistant | M1, M2 | DONE |
-| 4 | E2E Verification & Report | Full functional suite test, generator test cases, generate `verification_report.md` | M2, M3 | DONE |
-| 5 | Docker Compose Deployment | Clean deployment, docker compose build & startup validation without crashing | M4 | DONE |
+| 1 | Baseline Exploration & Architecture Mapping | Audit `frontend/` vs `frontend_new/`, state stores, API clients, and UI component dependencies | None | DONE |
+| 2 | Package Dependencies & UI Components Setup | Update `package.json`, install Tailwind/Shadcn deps, copy `ui` components to `frontend/src/components/ui` | M1 | DONE |
+| 3 | Page Features Migration & API/Store Integration | Rebuild/update pages in `frontend/src/pages/` using UI components and real Zustand stores/Axios APIs | M2 | DONE |
+| 4 | Build Verification & Docker Deployment | Verify `npm run build` exit code 0, build and launch `docker compose build frontend && docker compose up -d frontend` | M3 | DONE |
+| 5 | Verification Gate & Forensic Audit | Run Reviewer, Challenger, and Forensic Auditor verification checks | M4 | DONE |
 
 ## Interface Contracts & Standards
-- API Base: `http://localhost:8000/api/v1` (or `/api`)
-- JWT Auth: Bearer token header (`samraksha_token`), Redis blacklist check
-- Document Templates: `.docx` format in `/backend/templates/documents`
-- Verification Report: `/home/ubuntu/sa/verification_report.md`
+- API Base: `http://localhost:8000` (or `/api`)
+- JWT Auth: Bearer token header (`samraksha_token` or `Authorization: Bearer <token>`)
+- State Management: Zustand (`authStore`, `wsStore`, `mapStore`, `dashboardStore`)
+- HTTP Client: Axios
+- UI System: Tailwind CSS v4 + Shadcn UI primitives + Leaflet maps

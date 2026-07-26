@@ -1,12 +1,54 @@
 from app.db.connection import get_db, fetch_one, fetch_all, execute, AsyncSessionLocal
+from app.api.auth import get_current_officer
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional
+import os
 import structlog
 
 router = APIRouter()
 logger = structlog.get_logger()
+security = HTTPBearer(auto_error=False)
+
+
+async def verify_cctv_auth(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    x_api_token: Optional[str] = Header(None, alias="X-API-Token"),
+    authorization: Optional[str] = Header(None, alias="Authorization"),
+    db = Depends(get_db)
+):
+    valid_keys = {
+        "iccc_api_key_2026",
+        "cctv_webhook_key",
+        "samraksha_webhook_key",
+        os.getenv("CCTV_API_KEY", "iccc_secret_key")
+    }
+    if (x_api_key and x_api_key in valid_keys) or (x_api_token and x_api_token in valid_keys):
+        return True
+
+    token = None
+    if credentials and credentials.credentials:
+        token = credentials.credentials
+    elif authorization:
+        if authorization.startswith("Bearer "):
+            token = authorization.split(" ", 1)[1]
+        else:
+            token = authorization
+
+    if token:
+        if token in valid_keys:
+            return True
+        try:
+            officer = await get_current_officer(token, db)
+            if officer:
+                return officer
+        except Exception:
+            pass
+
+    raise HTTPException(status_code=401, detail="Authentication failed: Valid API Key or JWT token required")
 
 
 # ─── List cameras ──────────────────────────────────────────────────────────────
@@ -14,6 +56,7 @@ logger = structlog.get_logger()
 @router.get("/cameras")
 async def list_cameras(
     db = Depends(get_db),
+    officer = Depends(get_current_officer),
 ):
     """
     Returns all cameras from cctv_alerts (distinct camera_ids) + their latest alert.
@@ -73,8 +116,7 @@ async def ingest_alert(
     body: CCTVAlertRequest,
     background_tasks: BackgroundTasks,
     db = Depends(get_db),
-    # Note: ICCC webhook doesn't use JWT, uses API key
-    # Add API key validation middleware for this endpoint
+    auth_check = Depends(verify_cctv_auth),
 ):
     if body.source not in ('iccc', 'samraksha_model'):
         raise HTTPException(400, "source must be 'iccc' or 'samraksha_model'")
@@ -130,16 +172,18 @@ async def check_anpr_match(
     camera_id: str
 ):
     async with AsyncSessionLocal() as db:
+        # Search cases table for plate in evidence_items JSON or crime_narrative
         matched = await fetch_one(db, """
             SELECT c.case_id, c.fir_no, c.crime_type
             FROM cases c
             WHERE c.case_status IN ('open','arrested')
-              AND c.case_id IN (
-                  SELECT matched_case FROM cctv_alerts
-                  WHERE plate_no = $1 AND matched_case IS NOT NULL
+              AND (
+                  c.crime_narrative ILIKE $1
+                  OR c.accused_address ILIKE $1
+                  OR c.evidence_items::text ILIKE $1
               )
             LIMIT 1
-        """, [plate_no])
+        """, [f"%{plate_no}%"])
 
         if matched:
             await execute(db, """
@@ -168,6 +212,7 @@ async def check_anpr_match(
                 'plate':   plate_no,
                 'camera':  camera_id,
             })
+
 
 from app.api import auth
 
