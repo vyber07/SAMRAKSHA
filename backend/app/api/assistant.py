@@ -9,7 +9,7 @@ import httpx, os, structlog
 router = APIRouter()
 logger = structlog.get_logger()
 
-LLM_URL    = os.getenv("LLM_URL", "http://llamacpp:8080")
+LLM_URL    = os.getenv("LLAMACPP_URL", os.getenv("LLM_URL", "http://llamacpp:8080"))
 LLM_MODEL  = os.getenv("LLM_MODEL", "llama3.2:3b")  # fallback or placeholder
 
 # Out-of-scope patterns — hardcoded rejection, never sent to LLM
@@ -148,6 +148,7 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
         )
 
     source = "llm"
+    answer = ""
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post(
@@ -163,7 +164,21 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
                     "stream": False
                 }
             )
-        answer = resp.json().get("content", "")
+        if resp.status_code == 200:
+            res_json = resp.json()
+            if isinstance(res_json, dict):
+                answer = res_json.get("content") or ""
+                if not answer and "choices" in res_json and isinstance(res_json["choices"], list) and len(res_json["choices"]) > 0:
+                    choice = res_json["choices"][0]
+                    if isinstance(choice, dict):
+                        message = choice.get("message")
+                        if isinstance(message, dict):
+                            answer = message.get("content") or ""
+                        if not answer:
+                            answer = choice.get("text") or ""
+        if not answer or not str(answer).strip():
+            raise ValueError(f"LLM response empty or HTTP status {resp.status_code}")
+        answer = str(answer).strip()
     except Exception as e:
         logger.warning("LLM unavailable, using fallback", error=str(e))
         answer = simple_keyword_answer(body.question, context)

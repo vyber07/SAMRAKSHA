@@ -86,6 +86,7 @@ for prefix in ["", "/api/v1"]:
 # We'll just rely on the cases router.
 
 @app.get("/health")
+@app.get("/api/health")
 async def health():
     return {
         "status": "ok",

@@ -1,26 +1,29 @@
 {
   "name": "samraksha-frontend",
-  "description": "Police Crime Monitoring & Case Management Dashboard - Material 3 Design",
-  "version": "3.0.0",
-  "type": "module",
+  "description": "SAMRAKSHA Police Crime Monitoring & Case Management Platform — Frontend",
   "private": true,
+  "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node src/tests/transpile_for_test.js && node --test src/tests/store_and_component_state.test.js src/tests/stress_harness.test.js src/tests/incident_frequency_chart_challenger.test.js src/tests/m1_challenger_stress.test.js"
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "axios": "^1.7.9",
+    "@types/leaflet": "^1.9.21",
+    "axios": "^1.8.0",
     "leaflet": "^1.9.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-leaflet": "^5.0.0",
-    "react-router-dom": "^7.1.1",
-    "zustand": "^5.0.2"
+    "lucide-react": "0.487.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "recharts": "2.15.2"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.7"
+    "@tailwindcss/vite": "4.1.12",
+    "@vitejs/plugin-react": "4.7.0",
+    "tailwindcss": "4.1.12",
+    "typescript": "^5.5.0",
+    "vite": "^6.4.3"
   }
 }

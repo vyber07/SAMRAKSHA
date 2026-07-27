@@ -168,7 +168,7 @@ CREATE TABLE cctv_alerts (
     id           BIGSERIAL PRIMARY KEY,
     camera_id    VARCHAR(100),
     source       VARCHAR(50) NOT NULL
-                 CHECK (source IN ('iccc','samraksha_model','samraksha_vision_llamacpp')),
+                 CHECK (source IN ('iccc','samraksha_model','samraksha_vision_llamacpp','pcr_unit')),
     alert_type   VARCHAR(50) NOT NULL
                  CHECK (alert_type IN 
                  ('crowd_density','loitering','anomaly','anpr')),

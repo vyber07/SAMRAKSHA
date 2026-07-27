@@ -16,12 +16,11 @@ async def verify_incident_auth(
     authorization: Optional[str] = Header(None, alias="Authorization"),
     db = Depends(get_db)
 ):
-    valid_tokens = {
-        "pcr_webhook_token_2026",
-        "report_token_2026",
-        "samraksha_webhook_key",
-        os.getenv("INCIDENT_WEBHOOK_KEY", "pcr_secret_key")
-    }
+    valid_tokens = set(filter(None, [
+        os.getenv("PCR_WEBHOOK_TOKEN"),
+        os.getenv("INCIDENT_WEBHOOK_KEY"),
+        os.getenv("REPORT_TOKEN"),
+    ]))
     if (x_api_key and x_api_key in valid_tokens) or (x_api_token and x_api_token in valid_tokens):
         return True
 

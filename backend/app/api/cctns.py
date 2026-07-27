@@ -18,7 +18,7 @@ class CCTNSSyncRequest(BaseModel):
     district: str = "Ahmedabad City"
 
 def verify_cctns_token(x_api_key: str = Header(None)):
-    expected_key = os.getenv("CCTNS_API_KEY", "cctns_secret_key_2026")
+    expected_key = os.getenv("CCTNS_API_KEY", "")
     if not x_api_key or x_api_key != expected_key:
         raise HTTPException(status_code=401, detail="Invalid CCTNS API Key")
     return True

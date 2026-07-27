@@ -290,10 +290,12 @@ async def get_case(
 
     await db.commit()
 
-    io = await fetch_one(db,
-        "SELECT name, badge_no FROM officers WHERE id = $1",
-        [str(case['io_id'])]
-    )
+    io = None
+    if case.get('io_id'):
+        io = await fetch_one(db,
+            "SELECT name, badge_no FROM officers WHERE id = $1",
+            [str(case['io_id'])]
+        )
     diary = await fetch_all(db, """
         SELECT entry_type, description, ts, auto_generated
         FROM case_diary WHERE case_id = $1

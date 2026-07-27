@@ -65,6 +65,19 @@ async def get_patrol_routes(
             LIMIT 8
         """, [ps_ward])
 
+    if not hotspots:
+        hotspots = await fetch_all(db, """
+            SELECT i.ward, z.risk_score,
+                   AVG(i.lat) as lat, AVG(i.lon) as lon
+            FROM incidents i
+            JOIN zone_risk_scores z ON i.ward = z.ward
+            WHERE i.timestamp > NOW() - INTERVAL '7 days'
+              AND z.hour_slot = EXTRACT(HOUR FROM NOW())::INTEGER
+            GROUP BY i.ward, z.risk_score
+            ORDER BY z.risk_score DESC
+            LIMIT 8
+        """, [])
+
     from app.services.routing import optimize_patrol_routes
     routes = await optimize_patrol_routes(
         patrol_units=[dict(u) for u in units],
@@ -124,6 +137,17 @@ class UnitCreate(BaseModel):
     location: str = None # location string or lat/lon
     current_lat: float = 23.0225 # default center if not geocoded
     current_lon: float = 72.5714
+
+@router.get("/units")
+async def list_patrol_units(
+    db = Depends(get_db),
+    officer = Depends(auth.require_permission('patrol_view'))
+):
+    units = await fetch_all(db, """
+        SELECT id, unit_name as name, officer_name, vehicle, current_lat as lat, current_lon as lon, status
+        FROM patrol_units
+    """, [])
+    return units
 
 @router.post("/units")
 async def create_patrol_unit(

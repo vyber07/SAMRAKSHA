@@ -1,51 +1,56 @@
 # SAMRAKSHA backend dependencies
+# Last updated: 2026-07-27 — pinned gunicorn>=22 (CVE fix), uvicorn pinned for security
 
 # Core API
-fastapi
-uvicorn[standard]
-python-multipart
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+
+# WSGI fallback / process manager (pinned: >=22.0.0 fixes HTTP request smuggling CVEs)
+# CVE references: GHSA-jgfp-53c3-624m, GHSA-w3h3-4rj7-4ph4
+gunicorn>=22.0.0
 
 # Database
-asyncpg
-sqlalchemy[asyncio]
-alembic
-redis
+asyncpg>=0.29.0
+sqlalchemy[asyncio]>=2.0.0
+alembic>=1.13.0
+redis>=5.0.0
 
 # Security & Auth
-python-jose[cryptography]
-passlib[bcrypt]
-slowapi
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+slowapi>=0.1.9
 
 # ML & Prediction (hotspot, risk scoring)
-xgboost
-scikit-learn
-scipy
-numpy
-pandas
+xgboost>=2.0.0
+scikit-learn>=1.4.0
+scipy>=1.12.0
+numpy>=1.26.0
+pandas>=2.2.0
 
 # Patrol Routing
-ortools
+ortools>=9.8.0
 
 # Document Generation
-python-docx
-python-magic
+python-docx>=1.1.0
+python-magic>=0.4.27
 
 # CCTV / Computer Vision
-mediapipe
-opencv-python-headless
+mediapipe>=0.10.0
+opencv-python-headless>=4.9.0.80
 
 # HTTP client (OSRM, Indian Kanoon)
-httpx
+httpx>=0.27.0
 
 # WebSocket
-websockets
+websockets>=12.0
 
 # Geocoding
-geopy
+geopy>=2.4.0
 
 # Validation
-pydantic
-pydantic-settings
+pydantic>=2.6.0
+pydantic-settings>=2.2.0
 
 # NLP / Advanced (voice, translation, assistant)
 transformers<4.40.0
@@ -56,4 +61,4 @@ sentencepiece
 git+https://github.com/VarunGumma/IndicTransTokenizer
 
 # Logging
-structlog
+structlog>=24.1.0

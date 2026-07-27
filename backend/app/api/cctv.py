@@ -20,12 +20,11 @@ async def verify_cctv_auth(
     authorization: Optional[str] = Header(None, alias="Authorization"),
     db = Depends(get_db)
 ):
-    valid_keys = {
-        "iccc_api_key_2026",
-        "cctv_webhook_key",
-        "samraksha_webhook_key",
-        os.getenv("CCTV_API_KEY", "iccc_secret_key")
-    }
+    valid_keys = set(filter(None, [
+        os.getenv("ICCC_API_KEY"),
+        os.getenv("CCTV_API_KEY"),
+        os.getenv("CCTV_WEBHOOK_KEY"),
+    ]))
     if (x_api_key and x_api_key in valid_keys) or (x_api_token and x_api_token in valid_keys):
         return True
 
@@ -103,7 +102,7 @@ async def list_cameras(
 class CCTVAlertRequest(BaseModel):
     camera_id:    str
     camera_name:  Optional[str] = None
-    source:       str   # 'iccc' or 'samraksha_model'
+    source:       str   # 'iccc', 'samraksha_model', 'samraksha_vision_llamacpp', 'pcr_unit'
     alert_type:   str   # 'crowd_density','loitering','anomaly','anpr'
     confidence:   float
     person_count: Optional[int] = None
@@ -118,8 +117,8 @@ async def ingest_alert(
     db = Depends(get_db),
     auth_check = Depends(verify_cctv_auth),
 ):
-    if body.source not in ('iccc', 'samraksha_model'):
-        raise HTTPException(400, "source must be 'iccc' or 'samraksha_model'")
+    if body.source not in ('iccc', 'samraksha_model', 'samraksha_vision_llamacpp', 'pcr_unit'):
+        raise HTTPException(400, "source must be 'iccc', 'samraksha_model', 'samraksha_vision_llamacpp', or 'pcr_unit'")
 
     if body.alert_type not in (
         'crowd_density', 'loitering', 'anomaly', 'anpr'

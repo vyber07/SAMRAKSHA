@@ -85,6 +85,8 @@ async def prepare_test_database():
         # Schema migration fix for cases ward column
         try:
             await execute(session, "ALTER TABLE cases ADD COLUMN IF NOT EXISTS ward VARCHAR(50);")
+            await execute(session, "ALTER TABLE cctv_alerts DROP CONSTRAINT IF EXISTS cctv_alerts_source_check;")
+            await execute(session, "ALTER TABLE cctv_alerts ADD CONSTRAINT cctv_alerts_source_check CHECK (source IN ('iccc','samraksha_model','samraksha_vision_llamacpp','pcr_unit'));")
             await session.commit()
         except Exception:
             pass
