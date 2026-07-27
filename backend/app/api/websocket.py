@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from jose import JWTError, jwt
+import jwt as _jwt  # PyJWT — replaces python-jose (CVE-2024-33663, CVE-2024-33664)
 from collections import defaultdict
 import os
 import structlog
@@ -7,7 +7,7 @@ import structlog
 SECRET_KEY = os.getenv("SECRET_KEY") or ""
 if not SECRET_KEY:
     import warnings; warnings.warn("SECRET_KEY env var not set — WebSocket JWT verification will reject all connections", RuntimeWarning)
-ALGORITHM  = os.getenv("JWT_ALGORITHM", "HS256")
+ALGORITHM = "HS256"  # pinned — no algorithm negotiation
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -66,12 +66,12 @@ async def websocket_endpoint(websocket: WebSocket, token: str = None):
     clean_token = token.split(" ", 1)[1] if token.startswith("Bearer ") else token
 
     try:
-        payload = jwt.decode(clean_token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = _jwt.decode(clean_token, SECRET_KEY, algorithms=[ALGORITHM])  # algorithms pinned, no negotiation
         officer_id = payload.get("sub")
         if not officer_id:
             await websocket.close(code=1008, reason="Invalid token payload")
             return
-    except JWTError:
+    except (_jwt.ExpiredSignatureError, _jwt.InvalidTokenError):
         await websocket.close(code=1008, reason="Invalid or expired token")
         return
     except Exception:

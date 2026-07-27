@@ -3,7 +3,7 @@ from app.db.connection import get_db, fetch_one, fetch_all, execute
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
-from jose import JWTError, jwt
+import jwt as _jwt  # PyJWT — replaces python-jose (CVE-2024-33663, CVE-2024-33664)
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
 from slowapi import Limiter
@@ -16,8 +16,13 @@ limiter  = Limiter(key_func=get_remote_address, enabled=os.getenv("ENVIRONMENT")
 pwd_ctx  = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2   = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key-1234567890")
-ALGORITHM  = os.getenv("JWT_ALGORITHM", "HS256")
+SECRET_KEY = os.getenv("SECRET_KEY") or ""
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable must be set to a strong random value (min 32 chars)")
+if len(SECRET_KEY) < 32:
+    import warnings
+    warnings.warn("SECRET_KEY is shorter than 32 characters — use a longer key for production", RuntimeWarning)
+ALGORITHM  = "HS256"  # pinned — do not allow algorithm negotiation from token header
 # Read from ACCESS_TOKEN_EXPIRE_MINUTES (as set in .env/docker-compose) and convert to hours
 ACCESS_EXP = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480")) / 60  # default 8 hours
 from app.core.redis import get_redis, redis_client
@@ -38,14 +43,14 @@ def create_access_token(officer_id: str, role: str, ps_id: str) -> str:
         "iat":     now,
         "jti":     str(uuid.uuid4()),  # Unique token ID
     }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return _jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 async def get_current_officer(
     token: str = Depends(oauth2),
     db = Depends(get_db)
 ):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = _jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])  # algorithm pinned, no negotiation
         officer_id_str = payload.get("sub")
         jti = payload.get("jti")
         if jti:
@@ -63,7 +68,7 @@ async def get_current_officer(
             raise HTTPException(401, "Invalid token")
         # Convert to UUID to match column type
         officer_id = uuid.UUID(officer_id_str)
-    except JWTError:
+    except (_jwt.ExpiredSignatureError, _jwt.InvalidTokenError):
         raise HTTPException(401, "Invalid or expired token")
     except ValueError:
         raise HTTPException(401, "Invalid token")
@@ -202,7 +207,7 @@ async def logout(
     db = Depends(get_db)
 ):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = _jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         jti = payload.get("jti")
         if jti:
             exp = payload.get("exp")
