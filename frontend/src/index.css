@@ -3,260 +3,341 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ==========================================================================
-   SAMRAKSHA Law Enforcement Intelligence Theme Engine
-   Material Design 3 + Samsung OneUI 8.5 Command Architecture
+   SAMRAKSHA Law Enforcement Intelligence Command Platform
+   Design Architecture: Material Design 3 (Expressive) + Samsung OneUI 8.5
+   - Soft squircle container radii (OneUI 8.5 28px/24px rounded corners)
+   - Dynamic elevation & surface tonal containers (MD3 Surface Tonal Palette)
+   - Pill navigation, smooth spring interactions & tactile feedback
+   - High-contrast accessible typography (Inter / Plus Jakarta Sans)
    ========================================================================== */
 
 :root {
   /* --------------------------------------------------------------------------
-     LIGHT MODE CONFIGURATION
+     LIGHT MODE CONFIGURATION (OneUI 8.5 / MD3 Light Tonal Surface)
      -------------------------------------------------------------------------- */
-  --color-primary: #2563EB;            /* Primary Blue */
-  --color-primary-container: #DBEAFE;  /* Primary Container Sky Blue */
+  --color-primary: #1E50A2;            /* OneUI Deep Command Blue */
+  --color-primary-container: #D8E2FF;  /* MD3 Primary Container Soft Sky */
   --color-on-primary: #FFFFFF;         /* Text on Primary */
+  --color-on-primary-container: #001A43;
 
-  --color-secondary: #0F766E;          /* Secondary Deep Teal */
-  --color-secondary-container: #CCFBF1;/* Secondary Soft Mint Container */
+  --color-secondary: #006A6A;          /* OneUI Tactical Cyan Teal */
+  --color-secondary-container: #6FF7F6;/* Soft Mint Container */
   --color-on-secondary: #FFFFFF;
+  --color-on-secondary-container: #002020;
 
-  --color-tertiary: #D97706;           /* Tertiary Warm Amber */
-  --color-tertiary-container: #FEF3C7; /* Tertiary Soft Amber Container */
+  --color-tertiary: #825500;           /* Material Amber Alert */
+  --color-tertiary-container: #FFDDAE; /* Amber Container */
   --color-on-tertiary: #FFFFFF;
+  --color-on-tertiary-container: #2A1800;
 
-  --color-success: #16A34A;            /* Emerald Success */
-  --color-warning: #D97706;            /* Amber Warning */
-  --color-error: #DC2626;              /* Critical Red */
-  --color-info: #0284C7;               /* Sky Blue Information */
+  --color-success: #198754;            /* OneUI Signal Green */
+  --color-warning: #E65100;            /* OneUI Alert Amber */
+  --color-error: #BA1A1A;              /* MD3 High Critical Red */
+  --color-info: #0284C7;               /* Intelligence Blue */
 
-  --color-background: #F8FAFC;         /* Background Canvas Slate-50 */
-  --bg-gradient: radial-gradient(circle at 0% 0%, rgba(219, 234, 254, 0.45) 0%, rgba(238, 244, 255, 0) 50%), linear-gradient(135deg, #F8FAFC 0%, #EEF4FF 100%);
-  --color-surface: #FFFFFF;            /* Card Surface Crisp White */
-  --color-surface-variant: #E2E8F0;    /* Subtle Surface Slate-200 */
-  --color-outline: #CBD5E1;            /* Borders Slate-300 */
-  --color-outline-variant: #E2E8F0;    /* Divider Slate-200 */
+  --color-background: #F4F6FB;         /* OneUI Light Background Soft Gray-Blue */
+  --bg-gradient: radial-gradient(circle at 10% 10%, rgba(216, 226, 255, 0.4) 0%, rgba(244, 246, 251, 0) 60%), linear-gradient(180deg, #F4F6FB 0%, #EBF0F9 100%);
+  
+  --color-surface: #FFFFFF;            /* Card Surface White Squircle */
+  --color-surface-dim: #D9E2EC;        /* Low Elevation Surface */
+  --color-surface-variant: #E1E2EC;    /* OneUI Pill Container Surface */
+  --color-on-surface: #191C20;         /* Primary Body Text */
+  --color-on-surface-variant: #44474E; /* Subtitle / Secondary Text */
+  
+  --color-outline: #74777F;            /* Tactile Border Outline */
+  --color-outline-variant: #C4C6D0;    /* Hairline Divider */
 
-  /* Text & Global Tone */
-  --color-text-main: #0F172A;          /* Primary Text Slate-900 */
-  --color-text-secondary: #475569;     /* Secondary Text Slate-600 */
-  --color-text-muted: #64748B;         /* Muted Text Slate-500 */
+  /* Glassmorphism / OneUI Frost Tokens (Light Mode) */
+  --glass-blur: 16px;
+  --glass-opacity: 0.90;
+  --glass-border: 1px solid rgba(196, 198, 208, 0.5);
+  --glass-card-bg: rgba(255, 255, 255, 0.88);
 
-  /* Glass Morphism Tokens (Light Variant) */
-  --glass-blur: 12px;
-  --glass-opacity: 0.85;
-  --glass-border: 1px solid rgba(203, 213, 225, 0.8);
-  --glass-card-bg: rgba(255, 255, 255, 0.92);
-
-  /* App Specific Token Mappings */
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* OneUI 8.5 & MD3 Specific Tokens */
+  --background: #f4f6fb;
+  --foreground: #191c20;
 
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #191c20;
 
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --popover-foreground: #191c20;
 
-  --primary: #2563eb;
+  --primary: #1e50a2;
   --primary-foreground: #ffffff;
 
-  --secondary: #e2e8f0;
-  --secondary-foreground: #0f172a;
+  --secondary: #e1e2ec;
+  --secondary-foreground: #191c20;
 
-  --muted: #f1f5f9;
-  --muted-foreground: #475569;
+  --muted: #f0f2fa;
+  --muted-foreground: #44474e;
 
-  --accent: #e2e8f0;
-  --accent-foreground: #0f172a;
+  --accent: #e1e2ec;
+  --accent-foreground: #191c20;
 
-  --destructive: #dc2626;
+  --destructive: #ba1a1a;
   --destructive-foreground: #ffffff;
 
-  --border: #cbd5e1;
-  --input: #f8fafc;
-  --ring: #2563eb;
+  --border: #c4c6d0;
+  --input: #f4f6fb;
+  --ring: #1e50a2;
 
-  --sidebar-bg: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
+  --sidebar-bg: rgba(255, 255, 255, 0.92);
+  --sidebar-foreground: #191c20;
+  --sidebar-border: #e1e2ec;
 
-  --topbar-bg: rgba(255, 255, 255, 0.92);
-  --topbar-border: #e2e8f0;
+  --topbar-bg: rgba(255, 255, 255, 0.88);
+  --topbar-border: #e1e2ec;
 
-  --radius: 0.5rem;
+  /* OneUI 8.5 Signature Rounded Corners */
+  --radius-oneui-pill: 9999px;
+  --radius-oneui-card: 26px;
+  --radius-oneui-modal: 32px;
+  --radius-oneui-button: 18px;
+  --radius: 18px;
 
-  --bg: var(--card);
-  --text: var(--foreground);
-  --text-muted: var(--muted-foreground);
-  --radius-xl: 1rem;
-  --radius-md: 0.5rem;
-  --radius-sm: 0.375rem;
   --font-headline: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
   --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
 /* --------------------------------------------------------------------------
-   DARK MODE CONFIGURATION (Activated via .dark, [data-theme="dark"] or System Preference)
+   DARK MODE CONFIGURATION (MD3 Dark Tonal Surface + OneUI 8.5 Dark Glass)
    -------------------------------------------------------------------------- */
 .dark,
 [data-theme="dark"], 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not(.light) {
-    --color-primary: #60A5FA;          /* Electric Command Blue */
-    --color-primary-container: #1E3A8A;/* Deep Navy Container */
-    --color-on-primary: #000000;
+    --color-primary: #ADC6FF;          /* MD3 Electric Primary Blue */
+    --color-primary-container: #003B8E;/* Deep Command Navy Container */
+    --color-on-primary: #002E69;
+    --color-on-primary-container: #D8E2FF;
 
-    --color-secondary: #2DD4BF;        /* Bright Night-Vision Teal */
-    --color-secondary-container: #134E4A;/* Dark Teal Container */
-    --color-on-secondary: #000000;
+    --color-secondary: #4CDADA;        /* OneUI Neon Teal */
+    --color-secondary-container: #004F4F;/* Deep Teal Container */
+    --color-on-secondary: #003737;
+    --color-on-secondary-container: #6FF7F6;
 
-    --color-tertiary: #FBBF24;         /* Tactical Amber */
-    --color-tertiary-container: #78350F;/* Dark Amber Container */
-    --color-on-tertiary: #000000;
+    --color-tertiary: #FFB95B;         /* MD3 Glow Amber */
+    --color-tertiary-container: #633F00;
+    --color-on-tertiary: #452B00;
+    --color-on-tertiary-container: #FFDDAE;
 
-    --color-success: #4ADE80;          /* Bright Emerald */
-    --color-warning: #FBBF24;          /* Tactical Orange */
-    --color-error: #F87171;            /* Crimson Alert */
-    --color-info: #38BDF8;             /* Sky Blue */
+    --color-success: #3DDC84;          /* OneUI Vivid Green */
+    --color-warning: #FFB95B;          /* Vivid Tactical Amber */
+    --color-error: #FFB4AB;            /* MD3 Dark Red Alert */
+    --color-info: #78D1FF;             /* Sky Blue Glow */
 
-    --color-background: #090D16;       /* Deep Midnight Slate Canvas */
-    --bg-gradient: radial-gradient(circle at 0% 0%, rgba(30, 58, 138, 0.22) 0%, rgba(19, 27, 46, 0) 55%), linear-gradient(135deg, #090D16 0%, #131B2E 100%);
-    --color-surface: #131B2E;          /* Raised Dark Command Surface */
-    --color-surface-variant: #1E293B;  /* Subtle Element Elevation */
-    --color-outline: #475569;          /* Dark Divider */
-    --color-outline-variant: #1E293B;  /* Subtle Hairline Divider */
+    --color-background: #0B0E14;       /* OneUI Deep Midnight Base */
+    --bg-gradient: radial-gradient(circle at 10% 10%, rgba(0, 59, 142, 0.25) 0%, rgba(11, 14, 20, 0) 65%), linear-gradient(180deg, #0B0E14 0%, #111622 100%);
+    
+    --color-surface: #141A26;          /* OneUI Dark Elevated Card Surface */
+    --color-surface-dim: #0E121C;      /* Deep Embedded Surface */
+    --color-surface-variant: #202736;  /* OneUI Dark Pill / Button Container */
+    --color-on-surface: #E1E2E9;       /* Primary Text Slate-100 */
+    --color-on-surface-variant: #C4C6D0; /* Subtitle / Secondary Muted Text */
+    
+    --color-outline: #8E9099;          /* Outline Border */
+    --color-outline-variant: #44474E;  /* Hairline Divider */
 
-    --color-text-main: #F8FAFC;        /* Slate-50 Crisp Text */
-    --color-text-muted: #94A3B8;       /* Slate-400 Subdued Text */
+    /* Glassmorphism Tokens (Dark Mode) */
+    --glass-blur: 20px;
+    --glass-opacity: 0.85;
+    --glass-border: 1px solid rgba(255, 255, 255, 0.12);
+    --glass-card-bg: rgba(20, 26, 38, 0.82);
 
-    /* Glass Morphism Tokens (Dark Mode) */
-    --glass-blur: 16px;
-    --glass-opacity: 0.75;
-    --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-    --glass-card-bg: rgba(19, 27, 46, 0.85);
+    --background: #0b0e14;
+    --foreground: #e1e2e9;
+
+    --card: #141a26;
+    --card-foreground: #e1e2e9;
+
+    --popover: #141a26;
+    --popover-foreground: #e1e2e9;
+
+    --primary: #adc6ff;
+    --primary-foreground: #002e69;
+
+    --secondary: #202736;
+    --secondary-foreground: #e1e2e9;
+
+    --muted: #1c2230;
+    --muted-foreground: #8e9099;
+
+    --accent: #202736;
+    --accent-foreground: #e1e2e9;
+
+    --destructive: #ffb4ab;
+    --destructive-foreground: #690005;
+
+    --border: rgba(255, 255, 255, 0.12);
+    --input: rgba(255, 255, 255, 0.07);
+    --ring: #adc6ff;
+
+    --sidebar-bg: rgba(11, 14, 20, 0.90);
+    --sidebar-foreground: #e1e2e9;
+    --sidebar-border: rgba(255, 255, 255, 0.1);
+
+    --topbar-bg: rgba(14, 18, 28, 0.82);
+    --topbar-border: rgba(255, 255, 255, 0.1);
   }
 }
 
 .dark,
 [data-theme="dark"] {
-  --color-primary: #60A5FA;
-  --color-primary-container: #1E3A8A;
-  --color-on-primary: #000000;
+  --color-primary: #ADC6FF;
+  --color-primary-container: #003B8E;
+  --color-on-primary: #002E69;
+  --color-on-primary-container: #D8E2FF;
 
-  --color-secondary: #2DD4BF;
-  --color-secondary-container: #134E4A;
-  --color-on-secondary: #000000;
+  --color-secondary: #4CDADA;
+  --color-secondary-container: #004F4F;
+  --color-on-secondary: #003737;
+  --color-on-secondary-container: #6FF7F6;
 
-  --color-tertiary: #FBBF24;
-  --color-tertiary-container: #78350F;
-  --color-on-tertiary: #000000;
+  --color-tertiary: #FFB95B;
+  --color-tertiary-container: #633F00;
+  --color-on-tertiary: #452B00;
+  --color-on-tertiary-container: #FFDDAE;
 
-  --color-success: #4ADE80;
-  --color-warning: #FBBF24;
-  --color-error: #F87171;
-  --color-info: #38BDF8;
+  --color-success: #3DDC84;
+  --color-warning: #FFB95B;
+  --color-error: #FFB4AB;
+  --color-info: #78D1FF;
 
-  --color-background: #090D16;
-  --bg-gradient: radial-gradient(circle at 0% 0%, rgba(30, 58, 138, 0.22) 0%, rgba(19, 27, 46, 0) 55%), linear-gradient(135deg, #090D16 0%, #131B2E 100%);
-  --color-surface: #131B2E;
-  --color-surface-variant: #1E293B;
-  --color-outline: #475569;
-  --color-outline-variant: #1E293B;
+  --color-background: #0B0E14;
+  --bg-gradient: radial-gradient(circle at 10% 10%, rgba(0, 59, 142, 0.25) 0%, rgba(11, 14, 20, 0) 65%), linear-gradient(180deg, #0B0E14 0%, #111622 100%);
+  
+  --color-surface: #141A26;
+  --color-surface-dim: #0E121C;
+  --color-surface-variant: #202736;
+  --color-on-surface: #E1E2E9;
+  --color-on-surface-variant: #C4C6D0;
+  
+  --color-outline: #8E9099;
+  --color-outline-variant: #44474E;
 
-  --color-text-main: #F8FAFC;
-  --color-text-muted: #94A3B8;
+  --glass-blur: 20px;
+  --glass-opacity: 0.85;
+  --glass-border: 1px solid rgba(255, 255, 255, 0.12);
+  --glass-card-bg: rgba(20, 26, 38, 0.82);
 
-  --glass-blur: 16px;
-  --glass-opacity: 0.75;
-  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-  --glass-card-bg: rgba(19, 27, 46, 0.85);
+  --background: #0b0e14;
+  --foreground: #e1e2e9;
 
-  --background: #090d16;
-  --foreground: #f8fafc;
+  --card: #141a26;
+  --card-foreground: #e1e2e9;
 
-  --card: #131b2e;
-  --card-foreground: #f8fafc;
+  --popover: #141a26;
+  --popover-foreground: #e1e2e9;
 
-  --popover: #131b2e;
-  --popover-foreground: #f8fafc;
+  --primary: #adc6ff;
+  --primary-foreground: #002e69;
 
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
+  --secondary: #202736;
+  --secondary-foreground: #e1e2e9;
 
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
+  --muted: #1c2230;
+  --muted-foreground: #8e9099;
 
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
+  --accent: #202736;
+  --accent-foreground: #e1e2e9;
 
-  --accent: #1e293b;
-  --accent-foreground: #f8fafc;
+  --destructive: #ffb4ab;
+  --destructive-foreground: #690005;
 
-  --destructive: #ef4444;
-  --destructive-foreground: #f8fafc;
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.07);
+  --ring: #adc6ff;
 
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.06);
-  --ring: #3b82f6;
-
-  --sidebar-bg: #090d16;
-  --sidebar-foreground: #f8fafc;
+  --sidebar-bg: rgba(11, 14, 20, 0.90);
+  --sidebar-foreground: #e1e2e9;
   --sidebar-border: rgba(255, 255, 255, 0.1);
 
-  --topbar-bg: rgba(9, 13, 22, 0.85);
+  --topbar-bg: rgba(14, 18, 28, 0.82);
   --topbar-border: rgba(255, 255, 255, 0.1);
 }
 
 /* ==========================================================================
-   THEME APPLICATOR CLASSES & TRANSITIONS
+   ONEUI 8.5 + MD3 COMPONENT STYLES & INTERACTION ANIMATIONS
    ========================================================================== */
 body {
   background: var(--bg-gradient, var(--color-background));
   background-attachment: fixed;
   background-repeat: no-repeat;
-  color: var(--color-text-main, var(--foreground));
-  font-family: var(--font-body, 'Inter', sans-serif);
-  transition: background 300ms ease, color 300ms ease;
+  color: var(--color-on-surface, var(--foreground));
+  font-family: var(--font-body, 'Plus Jakarta Sans', system-ui, sans-serif);
+  transition: background 350ms cubic-bezier(0.4, 0, 0.2, 1), color 350ms cubic-bezier(0.4, 0, 0.2, 1);
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* OneUI 8.5 Glass Squircle Card Container */
 .glass-card {
   background: var(--glass-card-bg);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: var(--glass-border);
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 8px 32px rgba(120, 122, 145, 0.15);
-  color: var(--color-text-main, var(--foreground));
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-oneui-card);
+  padding: 22px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  color: var(--color-on-surface, var(--foreground));
+  transition: transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 250ms ease, border-color 250ms ease;
 }
 
 .glass-card:hover {
-  box-shadow: 0 12px 48px rgba(120, 122, 145, 0.25);
-  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px) scale(1.002);
   border-color: var(--color-primary);
 }
 
-/* Custom scrollbar */
+/* MD3 Pill Badge */
+.oneui-pill {
+  border-radius: var(--radius-oneui-pill);
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* OneUI Squircle Interactive Button */
+.oneui-button {
+  border-radius: var(--radius-oneui-button);
+  padding: 10px 20px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.oneui-button:active {
+  transform: scale(0.96);
+}
+
+/* Custom OneUI 8.5 Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(10, 14, 26, 0.5);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--color-outline-variant);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.5);
+  background: var(--color-primary);
 }
 
-/* Print layout styles for PDF export */
+/* Print layout styles */
 @media print {
   body {
     background-color: #ffffff !important;

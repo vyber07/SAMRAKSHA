@@ -960,13 +960,14 @@ function Sidebar({ wsConnected }: { wsConnected: boolean }) {
     <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="hidden md:flex flex-col h-screen sticky top-0 select-none z-50 transition-all duration-300 ease-in-out shadow-2xl"
+      className="hidden md:flex flex-col h-[calc(100vh-24px)] sticky top-3 my-3 ml-3 select-none z-50 transition-all duration-300 ease-in-out shadow-2xl"
       style={{
-        width: isHovered ? 240 : 72,
-        background: "var(--sidebar-bg)",
+        width: isHovered ? 240 : 76,
+        background: "var(--glass-card-bg)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
-        borderRight: "1px solid var(--sidebar-border)",
+        border: "var(--glass-border)",
+        borderRadius: "var(--radius-oneui-card)",
         color: "var(--sidebar-foreground)",
         flexShrink: 0,
       }}
@@ -996,16 +997,16 @@ function Sidebar({ wsConnected }: { wsConnected: boolean }) {
             <button
               key={item.id}
               onClick={() => navigate(item.id)}
-              className="flex items-center gap-3 w-full py-2.5 px-3 rounded-xl transition-all relative group cursor-pointer"
+              className="flex items-center gap-3 w-full py-3 px-3.5 transition-all relative group cursor-pointer"
               style={{
-                color: active ? "var(--sidebar-accent-foreground)" : "var(--sidebar-foreground)",
-                background: active ? "var(--sidebar-accent)" : "transparent",
-                border: active ? "1px solid rgba(128,247,235,0.25)" : "1px solid transparent",
+                color: active ? "var(--color-on-primary-container)" : "var(--color-on-surface-variant)",
+                background: active ? "var(--color-primary-container)" : "transparent",
+                borderRadius: "var(--radius-oneui-pill)",
               }}
               title={!isHovered ? item.label : undefined}
             >
               {active && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r bg-[#80F7EB]" />
+                <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-5 rounded-full bg-[var(--color-primary)]" />
               )}
               <item.icon size={20} className="flex-shrink-0 transition-transform group-hover:scale-110" />
               {isHovered ? (
@@ -1069,8 +1070,14 @@ function BottomNav() {
 
   return (
     <div
-      className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around z-50 px-2 pb-2 transition-colors"
-      style={{ backgroundColor: "transparent", borderTop: "1px solid var(--sidebar-border)", paddingTop: 8 }}
+      className="md:hidden fixed bottom-4 left-4 right-4 flex items-center justify-around z-50 px-3 py-2 transition-all shadow-2xl"
+      style={{
+        background: "var(--glass-card-bg)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        border: "var(--glass-border)",
+        borderRadius: "var(--radius-oneui-pill)",
+      }}
     >
       {allowed.map((item) => {
         const active = page === item.id;
