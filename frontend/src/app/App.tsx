@@ -5986,7 +5986,7 @@ function PatrolPage() {
 function AppShell({ children }: { children: React.ReactNode }) {
   const { wsConnected } = useApp();
   return (
-    <div className="glass-background flex min-h-screen transition-colors duration-300 bg-[var(--color-background)] text-[var(--foreground)]" style={{ fontFamily: "var(--font-body), sans-serif" }}>
+    <div className="flex min-h-screen transition-colors duration-300 bg-[var(--background)] text-[var(--foreground)]" style={{ fontFamily: "Inter, sans-serif" }}>
       <Sidebar wsConnected={wsConnected} />
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar wsConnected={wsConnected} />
