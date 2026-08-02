@@ -39,6 +39,17 @@ async def suggest_sections(
         )
     }
 
+@router.get("/sections")
+async def list_legal_sections(q: str = "", officer = Depends(get_current_officer)):
+    from app.services.legal_intel import SECTION_MAP, BNS_IPC_MAPPING
+    rows = []
+    for pattern, values in SECTION_MAP.items():
+        for code in values.get("bns", []):
+            if q and q.lower() not in (code + " " + pattern).lower():
+                continue
+            rows.append({"id": code, "bns_section": code, "bns_title": pattern.replace("\\", "").replace("|", " / "), "ipc_section": BNS_IPC_MAPPING.get(code, "N/A"), "category": "Legal reference", "description": "Section mapping for officer review; verify against the current bare act.", "punishment": "Refer to current bare act", "bailable": False})
+    return rows
+
 @router.get("/search")
 async def search_case_law_endpoint(
     q: str,

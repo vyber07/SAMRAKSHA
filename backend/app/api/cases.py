@@ -309,6 +309,24 @@ async def get_case(
     return case
 
 
+class CaseStatusUpdate(BaseModel):
+    status: str
+
+@router.patch("/{case_id}/status")
+async def update_case_status(case_id: str, body: CaseStatusUpdate, db = Depends(get_db), officer = Depends(get_current_officer)):
+    if officer["role"] == "constable":
+        raise HTTPException(403, "Access denied")
+    if body.status not in ("open", "arrested", "chargesheeted", "closed"):
+        raise HTTPException(422, "Invalid case status")
+    case = await fetch_one(db, "SELECT case_id, ps_id FROM cases WHERE case_id = ", [case_id])
+    if not case:
+        raise HTTPException(404, "Case not found")
+    if officer["role"] == "io" and str(case["ps_id"]) != str(officer["ps_id"]):
+        raise HTTPException(403, "Access denied")
+    updated = await fetch_one(db, "UPDATE cases SET case_status = $1, updated_at = NOW() WHERE case_id = $2 RETURNING case_id, fir_no, case_status, updated_at", [body.status, case_id])
+    await db.commit()
+    return updated or {"case_id": case_id, "case_status": body.status}
+
 class CaseDiaryEntryRequest(BaseModel):
     entry_type: str
     description: str

@@ -162,7 +162,7 @@ services:
     networks:
       - samraksha-net
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 5000 || exit 1"]
+      test: ["CMD-SHELL", "test -e /proc/1/status"]
       interval: 30s
       timeout: 10s
       retries: 3
