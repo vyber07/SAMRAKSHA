@@ -85,6 +85,14 @@ for prefix in ["", "/api/v1"]:
 # We can just mount the cases router again or a specific router, but cases already has it.
 # We'll just rely on the cases router.
 
+@app.get("/")
+async def root():
+    return {
+        "message": "Welcome to SAMRAKSHA API",
+        "docs": "/api/docs",
+        "health": "/health"
+    }
+
 @app.get("/health")
 @app.get("/api/health")
 async def health():

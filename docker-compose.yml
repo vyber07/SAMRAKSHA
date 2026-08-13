@@ -123,7 +123,7 @@ services:
     command:
       - |
         if [ -f /models/model.gguf ]; then
-          exec /app/llama-server -m /models/model.gguf --host 0.0.0.0 --port 8080
+          exec /app/llama-server -m /models/model.gguf --host 0.0.0.0 --port 8080 --ctx-size 512 --threads 2 --batch-size 128 --ubatch-size 64 --no-warmup
         elif [ -f /app/main ]; then
           exec /app/main -m /models/model.gguf --host 0.0.0.0 --port 8080
         else

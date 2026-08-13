@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  samraksha:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: samraksha-app
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    labels:
+      - "app=samraksha"
+      - "description=Ahmedabad City Police Command Intelligence Platform"
