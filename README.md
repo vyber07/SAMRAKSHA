@@ -39,6 +39,21 @@ All data is live — no mock data. Every UI element fetches from the live FastAP
 
 ---
 
+## Visuals / Screenshots
+
+*(Placeholders for future screenshots)*
+
+<p align="center">
+  <img src="https://via.placeholder.com/800x400.png?text=Dashboard+Overview" alt="Dashboard Overview" width="48%">
+  <img src="https://via.placeholder.com/800x400.png?text=Live+CCTV+Analytics" alt="Live CCTV Analytics" width="48%">
+</p>
+<p align="center">
+  <img src="https://via.placeholder.com/800x400.png?text=Patrol+Routing+Map" alt="Patrol Routing Map" width="48%">
+  <img src="https://via.placeholder.com/800x400.png?text=FIR+Case+Management" alt="FIR Case Management" width="48%">
+</p>
+
+---
+
 ## Features
 
 ### 🗂️ Case Management (FIR)
