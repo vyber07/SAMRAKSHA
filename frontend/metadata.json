@@ -1,0 +1,6 @@
+{
+  "name": "SAMRAKSHA - AI Case Intelligence & Predictive Policing",
+  "description": "Unified Predictive Policing & AI Case Intelligence Platform for Ahmedabad City Police with live crime map, CCTV feeds, case management, and legal documentation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

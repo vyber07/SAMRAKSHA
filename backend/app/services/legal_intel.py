@@ -8,9 +8,8 @@ INDIAN_KANOON_TOKEN = os.getenv("INDIAN_KANOON_TOKEN", "mock_token_for_now")
 
 # Layer 1: Rule table
 # IMPORTANT: Every section below must be verified against
-# actual BNS/BNSS/BSA bare act by a law student before demo.
+# actual BNS/BNSS/BSA bare act by a law student.
 # Wrong section = immediate credibility loss with legal-expert judges.
-
 SECTION_MAP = {
     r'snatch|snatching|chain pull':  {'bns':['BNS 309'],'bnss':['BNSS 170']},
     r'robbery|loot':                 {'bns':['BNS 309','BNS 310'],'bnss':['BNSS 170']},
