@@ -50,53 +50,34 @@ async def verify_cctv_auth(
     raise HTTPException(status_code=401, detail="Authentication failed: Valid API Key or JWT token required")
 
 
-# ─── List cameras ──────────────────────────────────────────────────────────────
 @router.get("")
+async def list_alerts(
+    limit: int = 100,
+    db = Depends(get_db),
+    officer = Depends(get_current_officer),
+):
+    """Returns recent CCTV alert records with full fields for the frontend."""
+    rows = await fetch_all(db, """
+        SELECT id, camera_id, source, alert_type, confidence, person_count,
+               lat, lon, ts, plate_no, matched_case AS matched_fir
+        FROM cctv_alerts
+        ORDER BY ts DESC
+        LIMIT $1
+    """, [limit])
+    return rows
+
 @router.get("/cameras")
 async def list_cameras(
     db = Depends(get_db),
     officer = Depends(get_current_officer),
 ):
-    """
-    Returns all cameras from cctv_alerts (distinct camera_ids) + their latest alert.
-    Falls back to an empty list if no cameras have ever fired an alert.
-    """
+    """Returns distinct cameras with their latest alert timestamp."""
     rows = await fetch_all(db, """
         SELECT DISTINCT ON (camera_id)
-            camera_id,
-            source,
-            lat,
-            lon,
-            ts AS last_alert_at
+            camera_id, source, lat, lon, ts AS last_alert_at
         FROM cctv_alerts
         ORDER BY camera_id, ts DESC
     """, [])
-
-    # If no rows exist yet, return a static seed so the page is never blank
-    if not rows:
-        rows = [
-            {"camera_id": "CAM-01", "location": "Ellisbridge Circle",  "status": "online",  "camera_type": "PTZ",   "lat": 23.0225, "lon": 72.5714},
-            {"camera_id": "CAM-02", "location": "Navrangpura Cross",   "status": "online",  "camera_type": "Fixed", "lat": 23.0395, "lon": 72.5660},
-            {"camera_id": "CAM-03", "location": "Maninagar Station",   "status": "offline", "camera_type": "Fixed", "lat": 22.9987, "lon": 72.6034},
-            {"camera_id": "CAM-04", "location": "Satellite Road",      "status": "online",  "camera_type": "ANPR",  "lat": 23.0300, "lon": 72.5100},
-            {"camera_id": "CAM-05", "location": "Vastrapur Lake",      "status": "online",  "camera_type": "PTZ",   "lat": 23.0400, "lon": 72.5300},
-            {"camera_id": "CAM-06", "location": "Law Garden",          "status": "offline", "camera_type": "Fixed", "lat": 23.0275, "lon": 72.5570},
-        ]
-    else:
-        # Enrich with static metadata
-        meta = {
-            "CAM-01": {"location": "Ellisbridge Circle",  "camera_type": "PTZ",   "status": "online"},
-            "CAM-02": {"location": "Navrangpura Cross",   "camera_type": "Fixed", "status": "online"},
-            "CAM-03": {"location": "Maninagar Station",   "camera_type": "Fixed", "status": "offline"},
-            "CAM-04": {"location": "Satellite Road",      "camera_type": "ANPR",  "status": "online"},
-            "CAM-05": {"location": "Vastrapur Lake",      "camera_type": "PTZ",   "status": "online"},
-        }
-        enriched = []
-        for r in rows:
-            m = meta.get(r["camera_id"], {})
-            enriched.append({**r, **m})
-        rows = enriched
-
     return rows
 
 class CCTVAlertRequest(BaseModel):

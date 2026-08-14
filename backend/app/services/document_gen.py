@@ -165,9 +165,7 @@ def generate_document(
 
 # CRITICAL: All templates use BNS/BNSS/BSA 2024 ONLY
 # IPC/CrPC appear only in cross-reference column
-# Ctrl+F "Section " in every template before demo
 # Any "IPC" or "CrPC" as primary section = court rejection risk
-
 from datetime import datetime, timezone
 
 def today_formatted():

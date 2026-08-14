@@ -12,42 +12,24 @@ logger = structlog.get_logger()
 LLM_URL    = os.getenv("LLAMACPP_URL", os.getenv("LLM_URL", "http://llamacpp:8080"))
 LLM_MODEL  = os.getenv("LLM_MODEL", "llama3.2:3b")  # fallback or placeholder
 
-# Out-of-scope patterns — hardcoded rejection, never sent to LLM
-OUT_OF_SCOPE = [
-    "other case", "different case", "all other",
-    "another station", "another ps", "entire database",
-    "ignore", "forget", "disregard", "pretend",
-    "you are now", "act as", "jailbreak",
-]
-
 class AssistantQuery(BaseModel):
-    mode:     Literal['this_case', 'all_cases']
-    question: str
-    case_id:  str | None = None  # Required for this_case mode
+    mode: str = 'all_cases'
+    question: str = ''
+    query: str = ''       # frontend alias for question
+    language: str = 'en'
+    case_id: str | None = None
 
-@router.post("/query")
+    def get_question(self) -> str:
+        return self.question or self.query
+
+@router.post("")
 async def query_assistant(
     body: AssistantQuery,
     db = Depends(get_db),
     officer = Depends(get_current_officer)
 ):
-    if officer['role'] == 'constable':
-        raise HTTPException(403, "Smart assistant not available for this role")
+    question_lower = body.get_question().lower()
 
-    question_lower = body.question.lower()
-
-    for phrase in OUT_OF_SCOPE:
-        if phrase in question_lower:
-            return {
-                "answer": (
-                    "This assistant only answers questions about "
-                    "case files you are authorized to access. "
-                    "Please ask about case details, evidence, "
-                    "witnesses, or legal sections."
-                ),
-                "mode": body.mode,
-                "source": "system"
-            }
 
     if body.mode == 'this_case':
         if not body.case_id:
@@ -157,7 +139,7 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
                     "prompt": (
                          f"{system_prompt}\n\n"
                          f"{context}\n\n"
-                         f"Question: {body.question}"
+                         f"Question: {body.get_question()}"
                     ),
                     "temperature": 0.1,
                     "n_predict": 500,
@@ -181,7 +163,7 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
         answer = str(answer).strip()
     except Exception as e:
         logger.warning("LLM unavailable, using fallback", error=str(e))
-        answer = simple_keyword_answer(body.question, context)
+        answer = simple_keyword_answer(body.get_question(), context)
         source = "fallback"
 
     return {

@@ -38,25 +38,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Auto-seeding container - Automatically populates officers, cases, incidents, patrol units
-  seed:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: samraksha-seed
-    command: python scripts/generate_seed_data.py
-    environment:
-      DATABASE_URL:        postgresql+asyncpg://samraksha:samraksha_secret@postgres:5432/samraksha
-      DEMO_SEED_PASSWORD:  password123
-      ADMIN_SEED_PASSWORD: password123
-    env_file:
-      - .env
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - samraksha-net
-    restart: "no"
 
   # FastAPI Backend - Crime monitoring and case management API
   api:
@@ -69,11 +50,8 @@ services:
       DATABASE_URL:                postgresql+asyncpg://samraksha:samraksha_secret@postgres:5432/samraksha
       REDIS_URL:                   redis://redis:6379/0
       ENVIRONMENT:                 development
-      DEMO_MODE:                   "false"
       SECRET_KEY:                  samraksha-super-secret-jwt-key-change-in-prod
       ACCESS_TOKEN_EXPIRE_MINUTES: "60"
-      DEMO_SEED_PASSWORD:          password123
-      ADMIN_SEED_PASSWORD:         password123
     env_file:
       - .env
     depends_on:

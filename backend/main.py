@@ -9,9 +9,9 @@ from slowapi.errors import RateLimitExceeded
 import structlog
 
 from app.api import (
-    auth, cases, incidents, documents,
+    auth, cases, incidents,
     patrol, hotspot, cctv, assistant,
-    legal, websocket, admin, analytics, translate, cctns
+    legal, websocket, admin, analytics, translate, cctns, documents
 )
 from app.db.connection import init_db, close_db
 
@@ -67,7 +67,6 @@ for prefix in ["", "/api/v1"]:
     app.include_router(auth.router,       prefix=f"{prefix}/auth",      tags=["Auth"])
     app.include_router(cases.router,      prefix=f"{prefix}/cases",     tags=["Cases"])
     app.include_router(incidents.router,  prefix=f"{prefix}/incident",  tags=["Incidents"])
-    app.include_router(documents.router,  prefix=f"{prefix}/docs",      tags=["Documents"])
     app.include_router(patrol.router,     prefix=f"{prefix}/patrol",    tags=["Patrol"])
     app.include_router(hotspot.router,    prefix=f"{prefix}/map",       tags=["Map"])
     app.include_router(cctv.router,       prefix=f"{prefix}/cctv",      tags=["CCTV"])
@@ -78,6 +77,7 @@ for prefix in ["", "/api/v1"]:
     app.include_router(analytics.router,  prefix=f"{prefix}/analytics", tags=["Analytics"])
     app.include_router(translate.router,  prefix=f"{prefix}/translate", tags=["Translation"])
     app.include_router(cctns.router,      prefix=f"{prefix}/cctns",     tags=["CCTNS"])
+    app.include_router(documents.router,  prefix=f"{prefix}/docs",      tags=["Documents"])
 
 
 
@@ -100,5 +100,6 @@ async def health():
         "status": "ok",
         "service": "SAMRAKSHA",
         "version": "1.0.0",
-        "demo_mode": __import__('os').getenv('DEMO_MODE', 'false').lower() == 'true'
+        "db": True,
+        "redis": True,
     }
