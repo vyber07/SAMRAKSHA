@@ -61,8 +61,10 @@ async def generate_document(
 
     try:
         from app.services.document_gen import generate_document
+        from fastapi.concurrency import run_in_threadpool
 
-        doc_bytes, sha256 = generate_document(
+        doc_bytes, sha256 = await run_in_threadpool(
+            generate_document,
             doc_type=body.doc_type,
             case={
                 **dict(case),
@@ -141,6 +143,7 @@ async def generate_document(
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
             "X-Document-SHA256":   sha256,
+            "Access-Control-Expose-Headers": "Content-Disposition, X-Document-SHA256"
         }
     )
 

@@ -518,23 +518,72 @@ function GenerateDocumentModal({
   caseNo: initialCaseNo = "FIR JAM/2026/0127",
   onDownload,
 }: GenerateDocumentModalProps) {
-  const { cases } = useApp();
+  const { cases, token } = useApp();
   const [selectedCaseId, setSelectedCaseId] = useState(initialCaseNo);
   const [docType, setDocType] = useState("fir");
   const [docLang, setDocLang] = useState("en");
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
+  const [docTypes, setDocTypes] = useState<{id: string, name: string}[]>([]);
 
   useEffect(() => {
     setSelectedCaseId(initialCaseNo);
-  }, [initialCaseNo, open]);
+    if (open && docTypes.length === 0) {
+      fetch("/api/v1/docs/templates", {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDocTypes(data);
+          if (!data.find(d => d.id === docType)) setDocType(data[0].id);
+        }
+      })
+      .catch(console.error);
+    }
+  }, [initialCaseNo, open, token, docType, docTypes.length]);
 
   if (!open) return null;
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     setDownloading(true);
-    setTimeout(() => {
-      setDownloading(false);
+    try {
+      const res = await fetch("/api/v1/docs/generate", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          case_id: selectedCaseId,
+          doc_type: docType,
+          language: docLang
+        })
+      });
+      
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+        throw new Error(err.detail || "Generation failed");
+      }
+      
+      const blob = await res.blob();
+      const contentDisposition = res.headers.get("Content-Disposition");
+      let filename = `${docType}_${selectedCaseId}_${docLang}.docx`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match) filename = match[1];
+      }
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
       setDownloaded(true);
       if (onDownload) {
         onDownload(docType, docLang);
@@ -543,7 +592,12 @@ function GenerateDocumentModal({
         setDownloaded(false);
         onClose();
       }, 1000);
-    }, 1200);
+    } catch (e) {
+      console.error("Document generation failed", e);
+      alert(e instanceof Error ? e.message : "Document generation failed");
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -670,20 +724,11 @@ function GenerateDocumentModal({
                     boxSizing: "border-box",
                   }}
                 >
-                  <option value="fir" className="bg-[var(--card)] text-[var(--foreground)]">FIR (First Information Report)</option>
-                  <option value="chargesheet" className="bg-[var(--card)] text-[var(--foreground)]">Chargesheet (BNS/BNSS)</option>
-                  <option value="case_diary" className="bg-[var(--card)] text-[var(--foreground)]">Case Diary</option>
-                  <option value="remand_request" className="bg-[var(--card)] text-[var(--foreground)]">Remand Request Application</option>
-                  <option value="seizure_receipt" className="bg-[var(--card)] text-[var(--foreground)]">Seizure Receipt</option>
-                  <option value="court_custody" className="bg-[var(--card)] text-[var(--foreground)]">Court Custody Order / Letter</option>
-                  <option value="panchanama" className="bg-[var(--card)] text-[var(--foreground)]">Panchanama (Spot / Accused)</option>
-                  <option value="witness_statement" className="bg-[var(--card)] text-[var(--foreground)]">Witness Statement</option>
-                  <option value="arrest_memo" className="bg-[var(--card)] text-[var(--foreground)]">Arrest Memo</option>
-                  <option value="seizure_list" className="bg-[var(--card)] text-[var(--foreground)]">Seizure List</option>
-                  <option value="search_warrant" className="bg-[var(--card)] text-[var(--foreground)]">Search Warrant Application</option>
-                  <option value="bail_objection" className="bg-[var(--card)] text-[var(--foreground)]">Bail Objection Petition</option>
-                  <option value="medical_letter" className="bg-[var(--card)] text-[var(--foreground)]">Medical Examination Letter</option>
-                  <option value="closure_report" className="bg-[var(--card)] text-[var(--foreground)]">Closure Report</option>
+                  {docTypes.map((type) => (
+                    <option key={type.id} value={type.id} className="bg-[var(--card)] text-[var(--foreground)]">
+                      {type.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -1088,7 +1133,7 @@ function BottomNav() {
 }
 
 function TopBar({ wsConnected }: { wsConnected: boolean }) {
-  const { officer, navigate, themeMode, toggleTheme, cases } = useApp();
+  const { officer, navigate, themeMode, toggleTheme, cases, language, setLanguage } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
 
@@ -1208,6 +1253,17 @@ function TopBar({ wsConnected }: { wsConnected: boolean }) {
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Language Switcher */}
+        <select
+          value={language}
+          onChange={(e) => setLanguage(e.target.value as Language)}
+          className="bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] text-xs font-semibold px-2 py-1.5 rounded-xl border outline-none cursor-pointer hidden md:block"
+        >
+          <option value="en">English</option>
+          <option value="hi">हिंदी</option>
+          <option value="gu">ગુજરાતી</option>
+        </select>
+
         {/* Theme Switcher Toggle Button */}
         <button
           onClick={toggleTheme}
