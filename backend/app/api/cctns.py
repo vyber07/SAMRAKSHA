@@ -7,7 +7,7 @@ from pydantic import BaseModel
 import os
 import uuid
 from typing import Optional
-from app.db.connection import get_db, fetch_one, fetch_all, execute
+from app.db.connection import get_db
 
 router = APIRouter()
 

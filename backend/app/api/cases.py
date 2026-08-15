@@ -1,6 +1,6 @@
 from sqlalchemy import text
 from sqlalchemy import text
-from app.db.connection import get_db, fetch_one, fetch_all, execute
+from app.db.connection import get_db
 from app.api import auth
 from app.api.auth import get_current_officer
 

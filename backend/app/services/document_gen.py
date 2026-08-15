@@ -1,6 +1,7 @@
 from docxtpl import DocxTemplate
 import hashlib, io, os
 
+# Default legacy mappings
 TEMPLATES = {
     'chargesheet':       'templates/documents/chargesheet_bns2024.docx',
     'medical_letter':    'templates/documents/medical_letter.docx',
@@ -10,13 +11,33 @@ TEMPLATES = {
     'panchanama':        'templates/documents/accused_panchanama.docx',
     'face_id':           'templates/documents/face_identification.docx',
     'witness_statement': 'templates/documents/witness_statement.docx',
-    'fir':               'templates/documents/chargesheet_bns2024.docx',
-    'case_diary':        'templates/documents/accused_panchanama.docx',
-    'arrest_memo':       'templates/documents/accused_panchanama.docx',
-    'seizure_list':      'templates/documents/seizure_receipt.docx',
-    'search_warrant':    'templates/documents/court_custody_bnss.docx',
-    'bail_objection':    'templates/documents/remand_request_bnss.docx',
 }
+
+def get_template_path(doc_type: str) -> str:
+    # First check exact match in templates
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    dynamic_path = os.path.join(base_dir, 'templates', 'documents', f'{doc_type}.docx')
+    if os.path.exists(dynamic_path):
+        return f'templates/documents/{doc_type}.docx'
+        
+    # Fallback to legacy mapped files or defaults
+    if doc_type in TEMPLATES:
+        return TEMPLATES[doc_type]
+    
+    # Generic fallback mapping for related documents
+    generic_fallbacks = {
+        'fir': 'chargesheet_bns2024.docx',
+        'case_diary': 'accused_panchanama.docx',
+        'arrest_memo': 'accused_panchanama.docx',
+        'seizure_list': 'seizure_receipt.docx',
+        'search_warrant': 'court_custody_bnss.docx',
+        'bail_objection': 'remand_request_bnss.docx'
+    }
+    if doc_type in generic_fallbacks:
+        return f'templates/documents/{generic_fallbacks[doc_type]}'
+        
+    # Final default assumption
+    return f'templates/documents/{doc_type}.docx'
 
 # GUJARATI DOMAIN GLOSSARY — override before IndicTrans2
 GLOSSARY = {
@@ -69,7 +90,7 @@ def generate_document(
         'ARREST_LOCATION':  case.get('arrest_location', ''),
     }
     
-    template_path = TEMPLATES[doc_type]
+    template_path = get_template_path(doc_type)
     if not os.path.exists(template_path):
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         alt_path = os.path.join(base_dir, template_path)

@@ -3402,7 +3402,10 @@ export function CrimeGPTDocumentStudio({ selectedCase, form }: { selectedCase?: 
                 const a = document.createElement("a");
                 a.href = url;
                 a.download = `${activeDocType}.docx`;
+                document.body.appendChild(a);
                 a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
               } else { alert("Failed to generate document"); }
             }}
             className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold shadow-sm flex items-center gap-1 cursor-pointer transition-all"

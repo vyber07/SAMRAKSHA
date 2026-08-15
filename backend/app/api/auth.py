@@ -1,6 +1,6 @@
 from sqlalchemy import text
 from sqlalchemy import text
-from app.db.connection import get_db, fetch_one, fetch_all, execute
+from app.db.connection import get_db
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import OAuth2PasswordBearer

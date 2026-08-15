@@ -40,44 +40,4 @@ async def get_db():
         finally:
             await session.close()
 
-async def execute(
-    db: AsyncSession,
-    query: str,
-    params: list = None
-):
-    """Execute SQLAlchemy query with proper parameter handling."""
-    try:
-        converted_query, param_dict = convert_query(query, params)
-        result = await db.execute(text(converted_query), param_dict)
-        return result
-    except Exception as e:
-        logger.error("Execute query failed", query=query[:50], error=str(e))
-        raise
 
-async def fetch_all(
-    db: AsyncSession,
-    query: str,
-    params: list = None
-) -> list:
-    """Fetch all rows as list of dicts."""
-    try:
-        result = await execute(db, query, params)
-        rows = result.fetchall()
-        return [dict(row._mapping) for row in rows] if rows else []
-    except Exception as e:
-        logger.error("Fetch all failed", query=query[:50], error=str(e))
-        raise
-
-async def fetch_one(
-    db: AsyncSession,
-    query: str,
-    params: list = None
-) -> dict | None:
-    """Fetch single row as dict."""
-    try:
-        result = await execute(db, query, params)
-        row = result.fetchone()
-        return dict(row._mapping) if row else None
-    except Exception as e:
-        logger.error("Fetch one failed", query=query[:50], error=str(e))
-        raise

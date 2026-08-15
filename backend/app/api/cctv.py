@@ -1,6 +1,6 @@
 from sqlalchemy import text
 from sqlalchemy import text
-from app.db.connection import get_db, fetch_one, fetch_all, execute, AsyncSessionLocal
+from app.db.connection import get_db, AsyncSessionLocal
 from app.api.auth import get_current_officer
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header
