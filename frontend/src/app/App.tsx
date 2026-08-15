@@ -6416,12 +6416,15 @@ function AdminPage() {
           badge_no: badgeFormatted,
           name: newName.trim(),
           role: newRole,
-          ps_id: newStation.trim() || "HQ",
+          ps_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", // Must be a valid UUID
           password: "password123" // Default password
         })
       });
       
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed");
+      }
       
       const newUser: AdminUser = {
         badge: badgeFormatted,
