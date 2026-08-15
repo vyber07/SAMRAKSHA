@@ -22,7 +22,7 @@ class AssistantQuery(BaseModel):
     def get_question(self) -> str:
         return self.question or self.query
 
-@router.post("")
+@router.post("/query")
 async def query_assistant(
     body: AssistantQuery,
     db = Depends(get_db),
@@ -167,7 +167,7 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
         source = "fallback"
 
     return {
-        "answer": answer,
+        "response": answer,
         "mode":   body.mode,
         "source": source
     }

@@ -318,7 +318,7 @@ async def update_case_status(case_id: str, body: CaseStatusUpdate, db = Depends(
         raise HTTPException(403, "Access denied")
     if body.status not in ("open", "arrested", "chargesheeted", "closed"):
         raise HTTPException(422, "Invalid case status")
-    case = await fetch_one(db, "SELECT case_id, ps_id FROM cases WHERE case_id = ", [case_id])
+    case = await fetch_one(db, "SELECT case_id, ps_id FROM cases WHERE case_id = $1", [case_id])
     if not case:
         raise HTTPException(404, "Case not found")
     if officer["role"] == "io" and str(case["ps_id"]) != str(officer["ps_id"]):

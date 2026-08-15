@@ -58,8 +58,11 @@ class DashboardManager:
 manager = DashboardManager()
 
 @router.websocket("/dashboard")
-async def websocket_endpoint(websocket: WebSocket, token: str = None):
-    if not token:
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        token = await websocket.receive_text()
+    except Exception:
         await websocket.close(code=1008, reason="Missing authentication token")
         return
 
@@ -78,7 +81,16 @@ async def websocket_endpoint(websocket: WebSocket, token: str = None):
         await websocket.close(code=1008, reason="Authentication failed")
         return
 
-    await manager.connect(websocket, officer_id)
+    if officer_id not in manager.connections:
+        manager.connections[officer_id] = []
+    if websocket not in manager.connections[officer_id]:
+        manager.connections[officer_id].append(websocket)
+    
+    await websocket.send_json({
+        'type': 'INIT',
+        'message': 'Connected'
+    })
+
     try:
         while True:
             data = await websocket.receive_text()

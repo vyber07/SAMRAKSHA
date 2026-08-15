@@ -50,20 +50,20 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=["http://localhost:3000", "http://localhost", "https://samraksha.local"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Trusted hosts
-# app.add_middleware(
-#     TrustedHostMiddleware,
-#     allowed_hosts=["localhost", "127.0.0.1", "*.samraksha.local"]
-# )
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["localhost", "127.0.0.1", "*.samraksha.local", "backend", "*"]
+)
 
-# Routers (mounted under both root and /api/v1 prefixes)
-for prefix in ["", "/api/v1"]:
+# Routers (mounted under /api/v1 prefixes)
+for prefix in ["/api/v1"]:
     app.include_router(auth.router,       prefix=f"{prefix}/auth",      tags=["Auth"])
     app.include_router(cases.router,      prefix=f"{prefix}/cases",     tags=["Cases"])
     app.include_router(incidents.router,  prefix=f"{prefix}/incident",  tags=["Incidents"])
@@ -96,10 +96,27 @@ async def root():
 @app.get("/health")
 @app.get("/api/health")
 async def health():
+    db_ok = False
+    redis_ok = False
+    try:
+        from app.db.connection import engine
+        from sqlalchemy import text
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+        db_ok = True
+    except Exception:
+        pass
+    try:
+        from app.core.redis import redis_client
+        await redis_client.ping()
+        redis_ok = True
+    except Exception:
+        pass
+
     return {
-        "status": "ok",
+        "status": "ok" if db_ok and redis_ok else "error",
         "service": "SAMRAKSHA",
         "version": "1.0.0",
-        "db": True,
-        "redis": True,
+        "db": db_ok,
+        "redis": redis_ok,
     }

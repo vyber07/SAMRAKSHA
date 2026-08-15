@@ -144,6 +144,14 @@ async def generate_document(
         }
     )
 
+@router.get("/templates")
+async def list_templates(
+    db = Depends(get_db),
+    officer = Depends(get_current_officer)
+):
+    """Return available document templates."""
+    return [{"id": k, "name": v} for k, v in DOC_TYPES.items()] if isinstance(DOC_TYPES, dict) else [{"id": d, "name": d.replace("_", " ").title()} for d in DOC_TYPES]
+
 @router.get("")
 async def list_documents(
     case_id: str,
