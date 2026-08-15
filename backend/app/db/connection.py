@@ -40,27 +40,6 @@ async def get_db():
         finally:
             await session.close()
 
-def convert_query(query: str, params: list = None) -> tuple[str, dict]:
-    CAST_RE = re.compile(r'::([\w.]+(?:\[\])?)')
-    casts: dict[str, str] = {}
-
-    def _stash(m: re.Match) -> str:
-        key = f"__CAST{len(casts)}__"
-        casts[key] = m.group(0)
-        return key
-
-    q = CAST_RE.sub(_stash, query)
-    q = re.sub(r'\$(\d+)', r':p\1', q)
-    for key, cast in casts.items():
-        q = q.replace(key, cast)
-
-    param_dict = {}
-    if params:
-        for idx, val in enumerate(params):
-            param_dict[f"p{idx+1}"] = val
-
-    return q, param_dict
-
 async def execute(
     db: AsyncSession,
     query: str,

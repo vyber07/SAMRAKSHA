@@ -1,3 +1,5 @@
+from sqlalchemy import text
+from sqlalchemy import text
 from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -59,15 +61,15 @@ async def receive_pcr_incident(
     db = Depends(get_db),
     auth_check = Depends(verify_incident_auth)
 ):
-    incident_id = await fetch_one(db, """
+    incident_id = (await db.execute(text("""
         INSERT INTO incidents
         (source, crime_type, lat, lon,
          geoloc, severity, status)
-        VALUES ('pcr', $1, $2, $3,
-                ST_MakePoint($3,$2)::GEOGRAPHY,
-                $4, 'active')
+        VALUES ('pcr', :p1, :p2, :p3,
+                ST_MakePoint(:p3,:p2)::GEOGRAPHY,
+                :p4, 'active')
         RETURNING id
-    """, [body.incident_type, body.lat, body.lon, body.severity])
+    """), {'p1': body.incident_type, 'p2': body.lat, 'p3': body.lon, 'p4': body.severity})).mappings().fetchone()
     await db.commit()
     from app.api.websocket import manager
     await manager.broadcast({
@@ -102,7 +104,7 @@ async def report_incident(
     if body.lat is not None and body.lon is not None:
         lat, lon = body.lat, body.lon
     else:
-        ps = await fetch_one(db, "SELECT lat, lon FROM police_stations WHERE ward ILIKE $1 OR name ILIKE $1 LIMIT 1", [f"%{body.location}%"])
+        ps = (await db.execute(text("SELECT lat, lon FROM police_stations WHERE ward ILIKE :p1 OR name ILIKE :p1 LIMIT 1"), {'p1': f"%{body.location}%"})).mappings().fetchone()
         if ps and ps.get('lat') is not None and ps.get('lon') is not None:
             lat = float(ps['lat'])
             lon = float(ps['lon'])
@@ -110,12 +112,12 @@ async def report_incident(
             lat = 23.0225
             lon = 72.5714
     
-    incident_id = await fetch_one(db, """
+    incident_id = (await db.execute(text("""
         INSERT INTO incidents
         (source, crime_type, lat, lon, geoloc, severity, status, ward)
-        VALUES ('manual', $1, $2, $3, ST_MakePoint($3,$2)::GEOGRAPHY, $4, 'active', $5)
+        VALUES ('manual', :p1, :p2, :p3, ST_MakePoint(:p3,:p2)::GEOGRAPHY, :p4, 'active', :p5)
         RETURNING id
-    """, [body.type, lat, lon, severity_int, body.location])
+    """), {'p1': body.type, 'p2': lat, 'p3': lon, 'p4': severity_int, 'p5': body.location})).mappings().fetchone()
     await db.commit()
     
     from app.api.websocket import manager
@@ -144,11 +146,11 @@ async def get_sla_breaches(
     auth_check = Depends(verify_incident_auth)
 ):
     from app.db.connection import fetch_all
-    breaches = await fetch_all(db, """
+    breaches = (await db.execute(text("""
         SELECT id, crime_type, lat, lon, severity, timestamp
         FROM incidents
         WHERE status = 'active'
           AND timestamp < NOW() - INTERVAL '15 minutes'
         ORDER BY timestamp ASC
-    """, [])
+    """), {})).mappings().fetchall()
     return {"breaches": breaches}

@@ -1714,7 +1714,7 @@ function RealAhmedabadOpenStreetMap({
   const effectiveRoute = useMemo(() => {
     if (activeRoute) return activeRoute;
     if (selectedUnit) {
-      return [].find((r) => r.id === selectedUnit.route_id) || [][0] || null;
+      return ([] as any[]).find((r: any) => r.id === selectedUnit.route_id) || null;
     }
     return null;
   }, [activeRoute, selectedUnit]);

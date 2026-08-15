@@ -1,5 +1,7 @@
 # backend/app/api/cctns.py
 
+from sqlalchemy import text
+from sqlalchemy import text
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel
 import os
@@ -35,40 +37,32 @@ async def sync_to_cctns(
     cctns_id = f"CCTNS-GJ-{str(uuid.uuid4())[:8].upper()}"
     
     try:
-        existing_case = await fetch_one(db, "SELECT case_id FROM cases WHERE fir_no = $1", [body.fir_no])
+        existing_case = (await db.execute(text("SELECT case_id FROM cases WHERE fir_no = :p1"), {'p1': body.fir_no})).mappings().fetchone()
         
         if existing_case:
             case_id = str(existing_case["case_id"])
-            await execute(db, """
+            await db.execute(text("""
                 INSERT INTO case_diary (case_id, entry_type, description, auto_generated)
-                VALUES (CAST($1 AS UUID), 'fir', $2, true)
-            """, [case_id, f"Synced record for FIR {body.fir_no} to CCTNS BharatPol registry with ID {cctns_id}."])
-            await execute(db, "UPDATE cases SET updated_at = NOW() WHERE case_id = CAST($1 AS UUID)", [case_id])
+                VALUES (CAST(:p1 AS UUID), 'fir', :p2, true)
+            """), {'p1': case_id, 'p2': f"Synced record for FIR {body.fir_no} to CCTNS BharatPol registry with ID {cctns_id}."})
+            await db.execute(text("UPDATE cases SET updated_at = NOW() WHERE case_id = CAST(:p1 AS UUID)"), {'p1': case_id})
         else:
             case_id = str(uuid.uuid4())
             narrative = f"CCTNS Synced Case for FIR {body.fir_no} - {body.crime_type} ({body.district}, {body.state})"
             location = f"{body.district}, {body.state}"
-            await execute(db, """
+            await db.execute(text("""
                 INSERT INTO cases (
                     case_id, fir_no, crime_type, victim_name, accused_name,
                     crime_narrative, crime_date, crime_location, crime_lat, crime_lon, case_status
                 ) VALUES (
-                    CAST($1 AS UUID), $2, $3, $4, $5,
-                    $6, NOW(), $7, 23.0225, 72.5714, 'open'
+                    CAST(:p1 AS UUID), :p2, :p3, :p4, :p5,
+                    :p6, NOW(), :p7, 23.0225, 72.5714, 'open'
                 )
-            """, [
-                case_id,
-                body.fir_no,
-                body.crime_type,
-                body.victim_name or "Unknown",
-                body.accused_name or "Unknown",
-                narrative,
-                location
-            ])
-            await execute(db, """
+            """), {'p1': case_id, 'p2': body.fir_no, 'p3': body.crime_type, 'p4': body.victim_name or "Unknown", 'p5': body.accused_name or "Unknown", 'p6': narrative, 'p7': location})
+            await db.execute(text("""
                 INSERT INTO case_diary (case_id, entry_type, description, auto_generated)
-                VALUES (CAST($1 AS UUID), 'fir', $2, true)
-            """, [case_id, f"Created and synced FIR {body.fir_no} to CCTNS BharatPol registry with ID {cctns_id}."])
+                VALUES (CAST(:p1 AS UUID), 'fir', :p2, true)
+            """), {'p1': case_id, 'p2': f"Created and synced FIR {body.fir_no} to CCTNS BharatPol registry with ID {cctns_id}."})
         
         await db.commit()
     except Exception as e:
@@ -93,13 +87,13 @@ async def search_cctns(
     Search national CCTNS/BharatPol records by querying local database cases or external API fallback.
     """
     search_param = f"%{query}%"
-    rows = await fetch_all(db, """
+    rows = (await db.execute(text("""
         SELECT case_id, fir_no, crime_type, case_status, victim_name, accused_name, crime_location, created_at
         FROM cases
-        WHERE fir_no ILIKE $1 OR crime_type ILIKE $1 OR victim_name ILIKE $1 OR accused_name ILIKE $1 OR crime_narrative ILIKE $1
+        WHERE fir_no ILIKE :p1 OR crime_type ILIKE :p1 OR victim_name ILIKE :p1 OR accused_name ILIKE :p1 OR crime_narrative ILIKE :p1
         ORDER BY created_at DESC
         LIMIT 50
-    """, [search_param])
+    """), {'p1': search_param})).mappings().fetchall()
     
     results = []
     for row in rows:

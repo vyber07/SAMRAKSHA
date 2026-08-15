@@ -1,3 +1,5 @@
+from sqlalchemy import text
+from sqlalchemy import text
 from app.db.connection import get_db, fetch_one, fetch_all, execute
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -82,22 +84,19 @@ async def get_current_officer(
     except ValueError:
         raise HTTPException(401, "Invalid token")
 
-    officer = await fetch_one(db,
-        "SELECT id, badge_no, name, role, ps_id, is_active "
-        "FROM officers WHERE id = $1",
-        [officer_id]
-    )
+    officer = (await db.execute(text("SELECT id, badge_no, name, role, ps_id, is_active "
+        "FROM officers WHERE id = :p1"), {'p1': officer_id})).mappings().fetchone()
 
     if not officer or not officer['is_active']:
         raise HTTPException(401, "Officer account inactive")
 
     # FETCH PERMISSION OVERRIDES (NEW)
-    overrides = await fetch_all(db, """
+    overrides = (await db.execute(text("""
         SELECT permission_key, granted
         FROM officer_permission_overrides
-        WHERE officer_id = $1
+        WHERE officer_id = :p1
         AND (expires_at IS NULL OR expires_at > NOW())
-    """, [officer_id])
+    """), {'p1': officer_id})).mappings().fetchall()
     
     officer['permissions'] = {o['permission_key']: o['granted'] for o in overrides}
 
@@ -144,18 +143,15 @@ async def login(
     body: LoginRequest,
     db = Depends(get_db)
 ):
-    officer = await fetch_one(db,
-        "SELECT id, badge_no, name, role, ps_id, "
+    officer = (await db.execute(text("SELECT id, badge_no, name, role, ps_id, "
         "password_hash, is_active "
-        "FROM officers WHERE badge_no = $1",
-        [body.badge_no]
-    )
+        "FROM officers WHERE badge_no = :p1"), {'p1': body.badge_no})).mappings().fetchone()
 
     import bcrypt
     
     # Always verify hash even if officer not found
     # Prevents timing attack to enumerate valid badge numbers
-    dummy_hash = "$2b$12$00000000000000000000000000000000000000000000000000000"
+    dummy_hash = ":p2b:p12:p00000000000000000000000000000000000000000000000000000"
     stored_hash = officer['password_hash'] if officer else dummy_hash
 
     is_valid = False
@@ -178,10 +174,7 @@ async def login(
     # Update last login
     officer_id = officer['id'] if isinstance(officer['id'], uuid.UUID) else uuid.UUID(str(officer['id']))
     try:
-        await execute(db,
-            "UPDATE officers SET last_login = NOW() WHERE id = $1",
-            [officer_id]
-        )
+        await db.execute(text("UPDATE officers SET last_login = NOW() WHERE id = :p1"), {'p1': officer_id})
     except Exception as e:
         import structlog
         structlog.get_logger().warning("Failed to update last login", error=str(e))

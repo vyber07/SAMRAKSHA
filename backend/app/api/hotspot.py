@@ -1,3 +1,5 @@
+from sqlalchemy import text
+from sqlalchemy import text
 from app.db.connection import get_db, fetch_one, fetch_all, execute
 from app.api.auth import get_current_officer
 
@@ -15,20 +17,20 @@ async def get_heatmap(
     officer = Depends(get_current_officer)
 ):
     if crime_type:
-        incidents = await fetch_all(db, """
+        incidents = (await db.execute(text("""
             SELECT lat, lon, severity, crime_type, timestamp
             FROM incidents
-            WHERE timestamp > NOW() - (INTERVAL '1 day' * $1)
-            AND crime_type = $2
+            WHERE timestamp > NOW() - (INTERVAL '1 day' * :p1)
+            AND crime_type = :p2
             AND status = 'active'
-        """, [days, crime_type])
+        """), {'p1': days, 'p2': crime_type})).mappings().fetchall()
     else:
-        incidents = await fetch_all(db, """
+        incidents = (await db.execute(text("""
             SELECT lat, lon, severity, crime_type, timestamp
             FROM incidents
-            WHERE timestamp > NOW() - (INTERVAL '1 day' * $1)
+            WHERE timestamp > NOW() - (INTERVAL '1 day' * :p1)
             AND status = 'active'
-        """, [days])
+        """), {'p1': days})).mappings().fetchall()
 
     if not incidents:
         return {"heatmap": [], "clusters": [], "total": 0}
@@ -60,21 +62,18 @@ async def get_ward_risk(
     dow   = now.weekday()
     month = now.month
 
-    scores = await fetch_all(db, """
+    scores = (await db.execute(text("""
         SELECT ward, risk_score, festival_flag
         FROM zone_risk_scores
-        WHERE hour_slot = $1 AND day_of_week = $2
+        WHERE hour_slot = :p1 AND day_of_week = :p2
         ORDER BY risk_score DESC
-    """, [hour, dow])
+    """), {'p1': hour, 'p2': dow})).mappings().fetchall()
 
     if not scores:
         from app.services.prediction import RiskPredictor
         predictor = RiskPredictor()
 
-        wards = await fetch_all(db,
-            "SELECT DISTINCT ward FROM incidents WHERE ward IS NOT NULL",
-            []
-        )
+        wards = (await db.execute(text("SELECT DISTINCT ward FROM incidents WHERE ward IS NOT NULL"), {})).mappings().fetchall()
 
         scores = []
         for w in wards:
@@ -114,18 +113,18 @@ async def get_incidents(
     db = Depends(get_db),
     officer = Depends(get_current_officer)
 ):
-    incidents = await fetch_all(db, """
+    incidents = (await db.execute(text("""
         SELECT id, crime_type, crime_code, lat, lon,
                timestamp, severity, ward, source,
                case_id
         FROM incidents
-        WHERE lat BETWEEN $1 AND $2
-          AND lon BETWEEN $3 AND $4
-          AND timestamp > NOW() - (INTERVAL '1 hour' * $5)
+        WHERE lat BETWEEN :p1 AND :p2
+          AND lon BETWEEN :p3 AND :p4
+          AND timestamp > NOW() - (INTERVAL '1 hour' * :p5)
           AND status = 'active'
         ORDER BY timestamp DESC
         LIMIT 500
-    """, [lat_min, lat_max, lon_min, lon_max, hours])
+    """), {'p1': lat_min, 'p2': lat_max, 'p3': lon_min, 'p4': lon_max, 'p5': hours})).mappings().fetchall()
 
     return incidents
 
@@ -135,7 +134,7 @@ async def get_active_alerts(
     db = Depends(get_db),
     officer = Depends(get_current_officer)
 ):
-    alerts = await fetch_all(db, """
+    alerts = (await db.execute(text("""
         SELECT ca.id, ca.camera_id, ca.source, ca.alert_type,
                ca.confidence, ca.person_count, ca.lat, ca.lon,
                ca.plate_no, ca.ts,
@@ -144,8 +143,8 @@ async def get_active_alerts(
         LEFT JOIN cases c ON ca.matched_case = c.case_id
         WHERE ca.ts > NOW() - INTERVAL '24 hours'
         ORDER BY ca.ts DESC
-        LIMIT $1
-    """, [limit])
+        LIMIT :p1
+    """), {'p1': limit})).mappings().fetchall()
 
     return alerts
 
@@ -155,16 +154,16 @@ async def get_cybercrime_layer(
     db = Depends(get_db),
     officer = Depends(get_current_officer)
 ):
-    cyber = await fetch_all(db, """
+    cyber = (await db.execute(text("""
         SELECT lat, lon, ward, crime_type,
                COUNT(*) as count,
                MAX(timestamp) as latest
         FROM incidents
         WHERE source = 'cyber'
-          AND timestamp > NOW() - (INTERVAL '1 day' * $1)
+          AND timestamp > NOW() - (INTERVAL '1 day' * :p1)
         GROUP BY lat, lon, ward, crime_type
         HAVING COUNT(*) >= 2
         ORDER BY count DESC
-    """, [days])
+    """), {'p1': days})).mappings().fetchall()
 
     return cyber

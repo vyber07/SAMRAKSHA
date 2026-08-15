@@ -1,3 +1,5 @@
+from sqlalchemy import text
+from sqlalchemy import text
 from app.db.connection import get_db, fetch_one, fetch_all, execute
 from app.api.auth import get_current_officer
 from app.api.incidents import verify_incident_auth
@@ -22,51 +24,51 @@ async def get_patrol_routes(
     ps_id_raw = str(officer.get('ps_id', '') or '')
     try:
         ps_uuid = _uuid.UUID(ps_id_raw)
-        units = await fetch_all(db, """
+        units = (await db.execute(text("""
             SELECT id, unit_name, officer_name, vehicle, current_lat, current_lon, status, manual_waypoints
             FROM patrol_units
             WHERE status IN ('available','deployed','active','idle','responding')
-              AND (ps_id = $1 OR ps_id IS NULL)
-        """, [ps_uuid])
+              AND (ps_id = :p1 OR ps_id IS NULL)
+        """), {'p1': ps_uuid})).mappings().fetchall()
     except (ValueError, AttributeError, TypeError):
-        units = await fetch_all(db, """
+        units = (await db.execute(text("""
             SELECT id, unit_name, officer_name, vehicle, current_lat, current_lon, status, manual_waypoints
             FROM patrol_units
             WHERE status IN ('available','deployed','active','idle','responding')
-        """, [])
+        """), {})).mappings().fetchall()
 
     if not units:
-        units = await fetch_all(db, """
+        units = (await db.execute(text("""
             SELECT id, unit_name, officer_name, vehicle, current_lat, current_lon, status, manual_waypoints
             FROM patrol_units
             LIMIT 20
-        """, [])
+        """), {})).mappings().fetchall()
 
     if not units:
         return {"routes": [], "message": "No active patrol units"}
 
     # Fetch PS ward
-    ps_info = await fetch_one(db, "SELECT ward FROM police_stations WHERE id = $1", [officer['ps_id']])
+    ps_info = (await db.execute(text("SELECT ward FROM police_stations WHERE id = :p1"), {'p1': officer['ps_id']})).mappings().fetchone()
     ps_ward = ps_info['ward'] if ps_info else None
 
     # Fetch hotspots constrained by the police station's ward
     hotspots = []
     if ps_ward:
-        hotspots = await fetch_all(db, """
+        hotspots = (await db.execute(text("""
             SELECT i.ward, z.risk_score,
                    AVG(i.lat) as lat, AVG(i.lon) as lon
             FROM incidents i
             JOIN zone_risk_scores z ON i.ward = z.ward
             WHERE i.timestamp > NOW() - INTERVAL '7 days'
               AND z.hour_slot = EXTRACT(HOUR FROM NOW())::INTEGER
-              AND i.ward = $1
+              AND i.ward = :p1
             GROUP BY i.ward, z.risk_score
             ORDER BY z.risk_score DESC
             LIMIT 8
-        """, [ps_ward])
+        """), {'p1': ps_ward})).mappings().fetchall()
 
     if not hotspots:
-        hotspots = await fetch_all(db, """
+        hotspots = (await db.execute(text("""
             SELECT i.ward, z.risk_score,
                    AVG(i.lat) as lat, AVG(i.lon) as lon
             FROM incidents i
@@ -76,7 +78,7 @@ async def get_patrol_routes(
             GROUP BY i.ward, z.risk_score
             ORDER BY z.risk_score DESC
             LIMIT 8
-        """, [])
+        """), {})).mappings().fetchall()
 
     from app.services.routing import optimize_patrol_routes
     routes = await optimize_patrol_routes(
@@ -105,15 +107,15 @@ async def receive_pcr_incident(
     db = Depends(get_db),
     auth_check = Depends(verify_incident_auth)
 ):
-    incident_id = await fetch_one(db, """
+    incident_id = (await db.execute(text("""
         INSERT INTO incidents
         (source, crime_type, lat, lon,
          geoloc, severity, status)
-        VALUES ('pcr', $1, $2, $3,
-                ST_MakePoint($3,$2)::GEOGRAPHY,
-                $4, 'active')
+        VALUES ('pcr', :p1, :p2, :p3,
+                ST_MakePoint(:p3,:p2)::GEOGRAPHY,
+                :p4, 'active')
         RETURNING id
-    """, [body.incident_type, body.lat, body.lon, body.severity])
+    """), {'p1': body.incident_type, 'p2': body.lat, 'p3': body.lon, 'p4': body.severity})).mappings().fetchone()
 
     await db.commit()
     from app.api.websocket import manager
@@ -143,10 +145,10 @@ async def list_patrol_units(
     db = Depends(get_db),
     officer = Depends(auth.require_permission('patrol_view'))
 ):
-    units = await fetch_all(db, """
+    units = (await db.execute(text("""
         SELECT id, unit_name as name, officer_name, vehicle, current_lat as lat, current_lon as lon, status
         FROM patrol_units
-    """, [])
+    """), {})).mappings().fetchall()
     return units
 
 @router.post("/units")
@@ -157,12 +159,12 @@ async def create_patrol_unit(
 ):
     # Try basic geocoding from location string if needed, else fallback
     # The frontend will eventually send proper lat/lon if needed.
-    new_unit = await fetch_one(db, """
+    new_unit = (await db.execute(text("""
         INSERT INTO patrol_units 
         (unit_name, officer_name, vehicle, status, ps_id, current_lat, current_lon)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES (:p1, :p2, :p3, :p4, :p5, :p6, :p7)
         RETURNING *
-    """, [body.unit_no, body.officer_name, body.vehicle, body.status, str(officer['ps_id']), body.current_lat, body.current_lon])
+    """), {'p1': body.unit_no, 'p2': body.officer_name, 'p3': body.vehicle, 'p4': body.status, 'p5': str(officer['ps_id']), 'p6': body.current_lat, 'p7': body.current_lon})).mappings().fetchone()
     await db.commit()
     return {"status": "created", "unit": new_unit}
 
@@ -189,26 +191,26 @@ async def update_patrol_unit(
     for field in ['current_lat', 'current_lon', 'status', 'officer_name', 'vehicle']:
         val = getattr(body, field)
         if val is not None:
-            updates.append(f"{field} = ${idx}")
+            updates.append(f"{field} = :p{idx}")
             params.append(val)
             idx += 1
             
     if body.unit_no is not None:
-        updates.append(f"unit_name = ${idx}")
+        updates.append(f"unit_name = :p{idx}")
         params.append(body.unit_no)
         idx += 1
 
     import json
     if body.manual_waypoints is not None:
-        updates.append(f"manual_waypoints = ${idx}")
+        updates.append(f"manual_waypoints = :p{idx}")
         params.append(json.dumps(body.manual_waypoints))
         idx += 1
 
     if updates:
         updates.append("last_update = NOW()")
-        q = f"UPDATE patrol_units SET {', '.join(updates)} WHERE id = ${idx}"
+        q = f"UPDATE patrol_units SET {', '.join(updates)} WHERE id = :p{idx}"
         params.append(unit_id)
-        await execute(db, q, params)
+        await db.execute(text(q), {f'p{i+1}': v for i, v in enumerate(params)})
         await db.commit()
         
     return {"status": "updated"}
@@ -219,6 +221,6 @@ async def delete_patrol_unit(
     db = Depends(get_db),
     officer = Depends(auth.require_permission('patrol_dispatch'))
 ):
-    await execute(db, "DELETE FROM patrol_units WHERE id = $1", [unit_id])
+    await db.execute(text("DELETE FROM patrol_units WHERE id = :p1"), {'p1': unit_id})
     await db.commit()
     return {"status": "deleted"}

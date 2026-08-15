@@ -1,3 +1,5 @@
+from sqlalchemy import text
+from sqlalchemy import text
 from app.db.connection import get_db, fetch_one, fetch_all, execute, AsyncSessionLocal
 from app.api.auth import get_current_officer
 
@@ -57,13 +59,13 @@ async def list_alerts(
     officer = Depends(get_current_officer),
 ):
     """Returns recent CCTV alert records with full fields for the frontend."""
-    rows = await fetch_all(db, """
+    rows = (await db.execute(text("""
         SELECT id, camera_id, source, alert_type, confidence, person_count,
                lat, lon, ts, plate_no, matched_case AS matched_fir
         FROM cctv_alerts
         ORDER BY ts DESC
-        LIMIT $1
-    """, [limit])
+        LIMIT :p1
+    """), {'p1': limit})).mappings().fetchall()
     return rows
 
 @router.get("/cameras")
@@ -72,12 +74,12 @@ async def list_cameras(
     officer = Depends(get_current_officer),
 ):
     """Returns distinct cameras with their latest alert timestamp."""
-    rows = await fetch_all(db, """
+    rows = (await db.execute(text("""
         SELECT DISTINCT ON (camera_id)
             camera_id, source, lat, lon, ts AS last_alert_at
         FROM cctv_alerts
         ORDER BY camera_id, ts DESC
-    """, [])
+    """), {})).mappings().fetchall()
     return rows
 
 class CCTVAlertRequest(BaseModel):
@@ -112,21 +114,16 @@ async def ingest_alert(
             check_anpr_match, body.plate_no, body.camera_id
         )
 
-    result = await fetch_one(db, """
+    result = (await db.execute(text("""
         INSERT INTO cctv_alerts
         (camera_id, source, alert_type,
          confidence, person_count, lat, lon,
          geoloc, plate_no, matched_case)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,
-                ST_MakePoint($7,$6)::GEOGRAPHY,
-                $8,$9)
+        VALUES (:p1,:p2,:p3,:p4,:p5,:p6,:p7,
+                ST_MakePoint(:p7,:p6)::GEOGRAPHY,
+                :p8,:p9)
         RETURNING id
-    """, [
-        body.camera_id, body.source,
-        body.alert_type, body.confidence, body.person_count,
-        body.lat, body.lon,
-        body.plate_no, matched_case_id
-    ])
+    """), {'p1': body.camera_id, 'p2': body.source, 'p3': body.alert_type, 'p4': body.confidence, 'p5': body.person_count, 'p6': body.lat, 'p7': body.lon, 'p8': body.plate_no, 'p9': matched_case_id})).mappings().fetchone()
 
     await db.commit()
 
@@ -153,35 +150,32 @@ async def check_anpr_match(
 ):
     async with AsyncSessionLocal() as db:
         # Search cases table for plate in evidence_items JSON or crime_narrative
-        matched = await fetch_one(db, """
+        matched = (await db.execute(text("""
             SELECT c.case_id, c.fir_no, c.crime_type
             FROM cases c
             WHERE c.case_status IN ('open','arrested')
               AND (
-                  c.crime_narrative ILIKE $1
-                  OR c.accused_address ILIKE $1
-                  OR c.evidence_items::text ILIKE $1
+                  c.crime_narrative ILIKE :p1
+                  OR c.accused_address ILIKE :p1
+                  OR c.evidence_items::text ILIKE :p1
               )
             LIMIT 1
-        """, [f"%{plate_no}%"])
+        """), {'p1': f"%{plate_no}%"})).mappings().fetchone()
 
         if matched:
-            await execute(db, """
+            await db.execute(text("""
                 UPDATE cctv_alerts
-                SET matched_case = $1
-                WHERE plate_no = $2
+                SET matched_case = :p1
+                WHERE plate_no = :p2
                   AND matched_case IS NULL
-            """, [matched['case_id'], plate_no])
+            """), {'p1': matched['case_id'], 'p2': plate_no})
 
-            await execute(db, """
+            await db.execute(text("""
                 INSERT INTO case_diary
                 (case_id, entry_type, description, auto_generated)
-                VALUES ($1, 'cctv', $2, TRUE)
-            """, [
-                matched['case_id'],
-                f"Vehicle {plate_no} spotted by camera {camera_id} "
-                f"(ANPR match — auto-flagged)"
-            ])
+                VALUES (:p1, 'cctv', :p2, TRUE)
+            """), {'p1': matched['case_id'], 'p2': f"Vehicle {plate_no} spotted by camera {camera_id} "
+                f"(ANPR match — auto-flagged)"})
 
             await db.commit()
 
@@ -204,10 +198,10 @@ async def get_cctv_anomalies(
     officer = Depends(auth.require_permission('cctv_view'))
 ):
     from app.db.connection import fetch_all
-    anomalies = await fetch_all(db, """
+    anomalies = (await db.execute(text("""
         SELECT id, camera_id, source, alert_type, confidence, person_count, lat, lon, ts
         FROM cctv_alerts
         ORDER BY ts DESC
         LIMIT 4
-    """, [])
+    """), {})).mappings().fetchall()
     return {"anomalies": anomalies}

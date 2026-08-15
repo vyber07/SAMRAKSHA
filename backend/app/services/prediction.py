@@ -1,3 +1,5 @@
+from sqlalchemy import text
+from sqlalchemy import text
 import pandas as pd
 import numpy as np
 import structlog
@@ -136,7 +138,7 @@ class RiskPredictor:
                 FROM incidents
                 WHERE ward IS NOT NULL
             """
-            rows = await fetch_all(db, query)
+            rows = (await db.execute(text(query), {})).mappings().fetchall()
             if rows and len(rows) >= 10:
                 df = pd.DataFrame(rows)
                 X = df[['hour', 'dow', 'month']].values

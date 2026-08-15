@@ -1,3 +1,5 @@
+from sqlalchemy import text
+from sqlalchemy import text
 from app.db.connection import get_db, fetch_one, fetch_all, execute
 from app.api.auth import get_current_officer
 
@@ -36,23 +38,23 @@ async def query_assistant(
             raise HTTPException(400, "case_id required for this_case mode")
 
         if officer['role'] in ('io', 'sho'):
-            case = await fetch_one(db, """
+            case = (await db.execute(text("""
                 SELECT victim_name, accused_name, crime_type,
                        crime_narrative, bns_sections, bnss_sections,
                        evidence_items, witnesses, arrest_date,
                        case_status, crime_date, crime_location
                 FROM cases
-                WHERE case_id = $1 AND ps_id = $2
-            """, [body.case_id, str(officer['ps_id'])])
+                WHERE case_id = :p1 AND ps_id = :p2
+            """), {'p1': body.case_id, 'p2': str(officer['ps_id'])})).mappings().fetchone()
         else:
-            case = await fetch_one(db, """
+            case = (await db.execute(text("""
                 SELECT victim_name, accused_name, crime_type,
                        crime_narrative, bns_sections, bnss_sections,
                        evidence_items, witnesses, arrest_date,
                        case_status, crime_date, crime_location
                 FROM cases
-                WHERE case_id = $1
-            """, [body.case_id])
+                WHERE case_id = :p1
+            """), {'p1': body.case_id})).mappings().fetchone()
 
         if not case:
             return {
@@ -86,26 +88,26 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
 
     else:  # all_cases mode
         if officer['role'] == 'io':
-            cases = await fetch_all(db, """
+            cases = (await db.execute(text("""
                 SELECT fir_no, crime_type, crime_date, case_status,
                        ward, victim_name, accused_name, bns_sections
-                FROM cases WHERE ps_id = $1
+                FROM cases WHERE ps_id = :p1
                 ORDER BY crime_date DESC LIMIT 30
-            """, [str(officer['ps_id'])])
+            """), {'p1': str(officer['ps_id'])})).mappings().fetchall()
         elif officer['role'] == 'sho':
-            cases = await fetch_all(db, """
+            cases = (await db.execute(text("""
                 SELECT fir_no, crime_type, crime_date, case_status,
                        ward, victim_name, accused_name, bns_sections
-                FROM cases WHERE ps_id = $1
+                FROM cases WHERE ps_id = :p1
                 ORDER BY crime_date DESC LIMIT 50
-            """, [str(officer['ps_id'])])
+            """), {'p1': str(officer['ps_id'])})).mappings().fetchall()
         else:  # dcp, admin
-            cases = await fetch_all(db, """
+            cases = (await db.execute(text("""
                 SELECT fir_no, crime_type, crime_date, case_status,
                        ward, victim_name, accused_name, bns_sections
                 FROM cases
                 ORDER BY crime_date DESC LIMIT 100
-            """, [])
+            """), {})).mappings().fetchall()
 
         if not cases:
             return {

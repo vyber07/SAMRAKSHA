@@ -17,15 +17,15 @@ class CCTVPipeline:
     def extract_frame(self) -> np.ndarray:
         if not self.rtsp_url.startswith('rtsp://'):
             raise ValueError("Invalid RTSP URL scheme")
-        # 1 frame every 2 seconds = low CPU
-        cmd = [
-            'ffmpeg', '-i', self.rtsp_url,
-            '-vframes', '1', '-f', 'image2pipe',
-            '-vcodec', 'mjpeg', '-'
-        ]
-        result = subprocess.run(cmd, capture_output=True, timeout=10)
-        arr = np.frombuffer(result.stdout, np.uint8)
-        return cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        
+        cap = cv2.VideoCapture(self.rtsp_url)
+        try:
+            ret, frame = cap.read()
+            if not ret:
+                raise ValueError("Failed to read frame from RTSP stream")
+            return frame
+        finally:
+            cap.release()
     
     def detect_persons(self, frame) -> int:
         # MediaPipe runs on CPU, no GPU needed

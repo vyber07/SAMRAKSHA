@@ -1,109 +1,95 @@
-# SAMRAKSHA User Guide: From Beginner to Expert
+# 📘 SAMRAKSHA: Comprehensive User Guide
 
-Welcome to the **SAMRAKSHA Police Command & Control System**. This guide is designed to take you from your first login to mastering the platform's advanced features, including AI-assisted legal intelligence, dynamic document generation, and live incident mapping.
+Welcome to the SAMRAKSHA Operating Manual. This guide is designed to help law enforcement officers, dispatchers, and administrators navigate the system effectively.
 
 ---
 
 ## 📑 Table of Contents
-1. [Getting Started (Logging In)](#1-getting-started)
-2. [Navigating the Dashboard](#2-navigating-the-dashboard)
-3. [Case Management & FIRs](#3-case-management--firs)
-4. [Document Generation (14 Dynamic Types)](#4-document-generation)
-5. [Localization & Multilingual Translation](#5-localization--multilingual-translation)
-6. [Patrol & CCTV Monitoring](#6-patrol--cctv-monitoring)
-7. [Analytics & Reporting](#7-analytics--reporting)
-8. [Troubleshooting](#8-troubleshooting)
+1. [Getting Started (Login & Dashboard)](#1-getting-started)
+2. [Managing Cases & FIRs](#2-managing-cases--firs)
+3. [Dispatch & Patrol Routing](#3-dispatch--patrol-routing)
+4. [CCTV & Threat Monitoring](#4-cctv--threat-monitoring)
+5. [Using the AI Assistant](#5-using-the-ai-assistant)
+6. [Generating Documents](#6-generating-documents)
 
 ---
 
 ## 1. Getting Started
 
-### Accessing the Platform
-Open your secure web browser and navigate to the platform URL (default is `http://localhost`). 
-
 ### Logging In
-- **Badge No:** Your official police identifier (e.g., `ADMIN001`).
-- **Password:** Provided by your precinct administrator.
-- Once logged in, your session is secured using an encrypted, browser-managed token (HttpOnly cookie) that you don't need to worry about managing manually.
+1. Navigate to the SAMRAKSHA login portal.
+2. Enter your assigned **Badge Number** and **Password**.
+3. Upon successful login, you will be redirected to the **Main Dashboard**.
+
+### The Main Dashboard
+The dashboard provides a real-time, high-level overview of your jurisdiction:
+- **Active Hotspots**: A live map displaying areas with recent high incident frequencies.
+- **Recent Incidents**: A scrolling feed of the latest reported crimes.
+- **Unit Status**: Quick metrics showing available vs. deployed patrol units.
+
+![Dashboard Overview](/placeholder/dashboard_overview.png)
 
 ---
 
-## 2. Navigating the Dashboard
+## 2. Managing Cases & FIRs
 
-The Dashboard is your main command center.
-- **Top Navigation Bar:** Contains the **Global Search Bar** (search for FIR numbers, names, or crime types). To the far right, you'll find the **Language Switcher** and **Dark/Light Mode Toggle**.
-- **Sidebar (Left):** Gives you access to all core modules (Dashboard, Cases, Patrol, CCTV, Analytics).
-- **Live Event Feed:** A real-time WebSocket feed showing you active units and incoming CCTV alerts without needing to refresh the page.
+SAMRAKSHA digitizes the entire lifecycle of a case, fully integrated with CCTNS standards.
 
----
+### Creating a New FIR
+1. Click on **Cases** in the left navigation sidebar.
+2. Select **+ New FIR**.
+3. Fill out the narrative of the crime. 
+4. **Auto-Mapping**: Click **Analyze Narrative**. The Legal Intelligence module will automatically suggest the correct BNS, BNSS, and BSA sections based on your text.
+5. Review the suggestions, attach relevant suspect/victim information, and click **Submit FIR**.
 
-## 3. Case Management & FIRs
-
-To view ongoing investigations or register a new First Information Report (FIR), click on **Cases / FIR** in the sidebar.
-
-- **Creating a new FIR:** Click the `+ New FIR` button. You can manually enter details or use the **Voice Input Widget** (the microphone icon) to dictate the crime narrative.
-- **AI Legal Assistant (CrimeGPT):** As you type the narrative, SAMRAKSHA’s local AI will automatically suggest the correct legal sections based on the new **BNS, BNSS, and BSA 2024 standards**.
-- **Case Diary:** Every action taken on a case (including document generation) is automatically logged here with a cryptographic hash (SHA-256) to ensure court-admissible chain of custody.
-
----
-
-## 4. Document Generation 
-
-SAMRAKSHA completely automates official paperwork. You can generate 14 different court-ready documents directly from the platform.
-
-### Step-by-Step Guide:
-1. Open a specific case from the **Cases** menu.
-2. In the Case Detail view, locate the **Generate Document** button (or open the CrimeGPT Document Studio).
-3. A modal window will appear.
-4. **Document Type:** Select the document you need from the dropdown. Available options include:
-   - *First Information Report (FIR)*
-   - *Purvani Chargesheet (BNS/BNSS)*
-   - *Case Diary Record*
-   - *Remand Request Application*
-   - *Seizure Receipt / Seizure List*
-   - *Court Custody Order*
-   - *Accused Panchanama*
-   - *Witness Statement*
-   - *Face Identification Form*
-   - *Medical Treatment Letter*
-   - *Arrest Memo*
-   - *Search Warrant*
-   - *Bail Objection Application*
-5. **Language:** Choose English, Hindi, or Gujarati.
-6. Click **Download**. The system will process the data, perform AI translation if requested, and immediately trigger a secure `.docx` download to your computer.
+### Updating a Case Diary
+1. Open an existing case from the **Cases** list.
+2. Navigate to the **Case Diary** tab.
+3. Add new evidence, witness statements, or daily investigation updates.
 
 ---
 
-## 5. Localization & Multilingual Translation
+## 3. Dispatch & Patrol Routing
 
-The platform features a fully integrated translation pipeline designed for regional deployment.
+Ensure your officers are exactly where they need to be, when they need to be there.
 
-- **UI Language:** Change the interface language at any time using the dropdown at the top right of your screen (next to the sun/moon icon). The entire app will instantly translate to English, Hindi, or Gujarati without requiring a page reload.
-- **Document Translation:** When generating documents (as explained in Section 4), the backend AI model (`IndicTrans2`) will automatically translate English narratives into Gujarati or Hindi court formats while preserving exact legal terminology.
+1. Navigate to the **Patrol & Dispatch** module.
+2. **View Hotspots**: The system automatically clusters recent incidents to identify high-risk areas.
+3. **Optimize Routes**: Select available patrol units and click **Generate Patrol Route**.
+4. The system utilizes OSRM to calculate the fastest, most efficient paths connecting your units to the identified hotspots, minimizing travel time and maximizing visibility.
 
----
-
-## 6. Patrol & CCTV Monitoring
-
-- **Live Patrol Map:** Under the **Patrol** tab, you can view the live GPS locations of all active police units overlaid on an OpenStreetMap interface. The system uses OSRM (Open Source Routing Machine) to suggest optimized routes.
-- **CCTV Integration:** The **CCTV** tab connects to precinct cameras. The AI Vision model monitors these feeds and will generate an alert if it detects a weapon, accident, or unauthorized assembly.
+![Patrol Routing Map](/placeholder/patrol_map.png)
 
 ---
 
-## 7. Analytics & Reporting
+## 4. CCTV & Threat Monitoring
 
-Click on the **Analytics** tab to view your precinct's crime trends.
-- **Interactive Charts:** Data is broken down hourly, weekly, and monthly.
-- **Heatmaps:** Displays high-risk zones across Ahmedabad wards.
-- All charts can be hovered over for exact statistics and are dynamically generated from the live database.
+Monitor live feeds equipped with real-time AI anomaly detection.
+
+1. Navigate to the **CCTV & Vision** module.
+2. Select a camera feed from the grid.
+3. **Anomaly Alerts**: If the system detects suspicious loitering, extreme crowding, or specific threats, an alert will flash red on the screen.
+4. Click on an alert to view the system's detailed breakdown of the threat (powered by LLaVA vision models).
+
+---
+
+## 5. Using the AI Assistant
+
+Have a question about procedure or need a quick translation? The built-in AI assistant is ready to help.
+
+1. Click the **Chat Icon** in the bottom right corner of any screen.
+2. **Ask Questions**: Type queries like *"What is the standard procedure for securing a digital device at a crime scene?"*
+3. **Translation**: You can chat in your native language (e.g., Hindi, Gujarati). The assistant will instantly translate your request, process it, and reply in your preferred language.
 
 ---
 
-## 8. Troubleshooting
+## 6. Generating Documents
 
-- **"Generation Failed" on Documents:** Ensure that you have selected a valid case. If generating a *Medical Treatment Letter*, the victim injury flag must be marked as 'Yes' in the case file.
-- **Translation taking too long:** The first time a document is translated, the AI model loads into memory, which may take an extra 5–10 seconds. Subsequent translations are immediate.
-- **Logged out randomly:** For security purposes, idle sessions expire after 60 minutes. Simply log back in.
+Stop writing boilerplate forms. SAMRAKSHA generates legally compliant paperwork automatically.
 
----
-*SAMRAKSHA — Ahmedabad City Police. Authorized Personnel Only.*
+1. Open a specific **Case File**.
+2. Click the **Generate Document** button in the top right.
+3. Select the document type from the dropdown (e.g., *Chargesheet, Seizure Receipt, Arrest Memo*).
+4. The system will pull all the relevant data (names, dates, mapped BNS sections, evidence lists) and instantly generate a `.docx` file for you to download, print, and sign.
+
+![Document Generation](/placeholder/doc_gen.png)

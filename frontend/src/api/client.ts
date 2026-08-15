@@ -24,23 +24,3 @@ export async function api<T = unknown>(
   return res.json() as Promise<T>;
 }
 
-export async function apiVoid(
-  path: string,
-  init: RequestInit = {}
-): Promise<void> {
-  const res = await fetch(path, {
-    credentials: "include",
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(
-      (body as { detail?: string }).detail ||
-        `Request failed with status ${res.status}`
-    );
-  }
-}

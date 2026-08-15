@@ -1,3 +1,5 @@
+from sqlalchemy import text
+from sqlalchemy import text
 from app.db.connection import get_db, fetch_one, fetch_all, execute
 from app.api import auth
 from app.api.auth import get_current_officer
@@ -65,10 +67,7 @@ async def create_fir(
 ):
 
     year    = body.crime_date.year
-    fir_row = await fetch_one(db,
-        "SELECT next_fir_number(CAST($1 AS UUID), CAST($2 AS INTEGER)) as fir_no",
-        [str(officer['ps_id']), year]
-    )
+    fir_row = (await db.execute(text("SELECT next_fir_number(CAST(:p1 AS UUID), CAST(:p2 AS INTEGER)) as fir_no"), {'p1': str(officer['ps_id']), 'p2': year})).mappings().fetchone()
     fir_no = fir_row['fir_no'] if fir_row else None
     
     if not fir_no:
@@ -80,7 +79,7 @@ async def create_fir(
     case_id = str(uuid.uuid4())
 
     try:
-        await execute(db, """
+        await db.execute(text("""
             INSERT INTO cases (
                 case_id, fir_no, ps_id, io_id,
                 victim_name, victim_address, victim_phone,
@@ -93,69 +92,49 @@ async def create_fir(
                 bns_sections, bnss_sections, bsa_sections,
                 search_vector
             ) VALUES (
-                $1, CAST($2 AS text), $3, $4,
-                CAST($5 AS text), $6, $7,
-                $8, $9, $10,
-                CAST($11 AS text), $12, $13,
-                CAST($14 AS text), $15, CAST($16 AS text),
-                $17, $18,
-                $19, $20, $21,
-                ST_MakePoint($20,$19)::GEOGRAPHY,
-                $22, $23, $24,
-                setweight(to_tsvector('english', coalesce(CAST($2 AS text), '')), 'A') ||
-                setweight(to_tsvector('english', coalesce(CAST($14 AS text), '')), 'A') ||
-                setweight(to_tsvector('english', coalesce(CAST($5 AS text), '')), 'B') ||
-                setweight(to_tsvector('english', coalesce(CAST($11 AS text), '')), 'B') ||
-                setweight(to_tsvector('english', coalesce(CAST($16 AS text), '')), 'C')
+                :p1, CAST(:p2 AS text), :p3, :p4,
+                CAST(:p5 AS text), :p6, :p7,
+                :p8, :p9, :p10,
+                CAST(:p11 AS text), :p12, :p13,
+                CAST(:p14 AS text), :p15, CAST(:p16 AS text),
+                :p17, :p18,
+                :p19, :p20, :p21,
+                ST_MakePoint(:p20,:p19)::GEOGRAPHY,
+                :p22, :p23, :p24,
+                setweight(to_tsvector('english', coalesce(CAST(:p2 AS text), '')), 'A') ||
+                setweight(to_tsvector('english', coalesce(CAST(:p14 AS text), '')), 'A') ||
+                setweight(to_tsvector('english', coalesce(CAST(:p5 AS text), '')), 'B') ||
+                setweight(to_tsvector('english', coalesce(CAST(:p11 AS text), '')), 'B') ||
+                setweight(to_tsvector('english', coalesce(CAST(:p16 AS text), '')), 'C')
             )
-        """, [
-            case_id, fir_no, str(officer['ps_id']), str(officer['id']),
-            body.victim_name, body.victim_address, body.victim_phone,
-            body.victim_age, body.victim_gender, body.victim_injury,
-            body.accused_name, body.accused_address, body.accused_age,
-            body.crime_type, body.crime_code, body.crime_narrative,
-            body.crime_date, body.crime_location,
-            body.crime_lat, body.crime_lon, body.ward,
-            sections.get('bns', []),
-            sections.get('bnss', []),
-            sections.get('bsa', [])
-        ])
+        """), {'p1': case_id, 'p2': fir_no, 'p3': str(officer['ps_id']), 'p4': str(officer['id']), 'p5': body.victim_name, 'p6': body.victim_address, 'p7': body.victim_phone, 'p8': body.victim_age, 'p9': body.victim_gender, 'p10': body.victim_injury, 'p11': body.accused_name, 'p12': body.accused_address, 'p13': body.accused_age, 'p14': body.crime_type, 'p15': body.crime_code, 'p16': body.crime_narrative, 'p17': body.crime_date, 'p18': body.crime_location, 'p19': body.crime_lat, 'p20': body.crime_lon, 'p21': body.ward, 'p22': sections.get('bns', []), 'p23': sections.get('bnss', []), 'p24': sections.get('bsa', [])})
 
-        await execute(db, """
+        await db.execute(text("""
             INSERT INTO incidents (
                 case_id, source, crime_code, crime_type,
                 lat, lon, geoloc, timestamp, severity, ward
             ) VALUES (
-                $1,'fir',$2,$3,
-                $4,$5,ST_MakePoint($5,$4)::GEOGRAPHY,
-                $6,$7,$8
+                :p1,'fir',:p2,:p3,
+                :p4,:p5,ST_MakePoint(:p5,:p4)::GEOGRAPHY,
+                :p6,:p7,:p8
             )
-        """, [
-            case_id, body.crime_code, body.crime_type,
-            body.crime_lat, body.crime_lon,
-            body.crime_date, body.severity, body.ward
-        ])
+        """), {'p1': case_id, 'p2': body.crime_code, 'p3': body.crime_type, 'p4': body.crime_lat, 'p5': body.crime_lon, 'p6': body.crime_date, 'p7': body.severity, 'p8': body.ward})
 
-        ps_row = await fetch_one(db, "SELECT name FROM police_stations WHERE id = $1", [str(officer['ps_id'])])
+        ps_row = (await db.execute(text("SELECT name FROM police_stations WHERE id = :p1"), {'p1': str(officer['ps_id'])})).mappings().fetchone()
         ps_name = ps_row['name'] if ps_row else "Unknown PS"
 
-        await execute(db, """
+        await db.execute(text("""
             INSERT INTO case_diary (
                 case_id, entry_type, description,
                 officer_id, location, auto_generated
-            ) VALUES ($1,'fir',$2,$3,$4,TRUE)
-        """, [
-            case_id,
-            f"FIR registered at {ps_name}",
-            str(officer['id']),
-            body.crime_location
-        ])
+            ) VALUES (:p1,'fir',:p2,:p3,:p4,TRUE)
+        """), {'p1': case_id, 'p2': f"FIR registered at {ps_name}", 'p3': str(officer['id']), 'p4': body.crime_location})
 
-        await execute(db, """
+        await db.execute(text("""
             INSERT INTO case_audit (
                 case_id, officer_id, action, field_name, new_value
-            ) VALUES ($1,$2,'create','case','FIR registered')
-        """, [case_id, str(officer['id'])])
+            ) VALUES (:p1,:p2,'create','case','FIR registered')
+        """), {'p1': case_id, 'p2': str(officer['id'])})
 
         from app.services.audit import log_activity
         try:
@@ -203,26 +182,26 @@ async def list_cases(
     limit = min(limit, 100)
 
     if officer['role'] in ('io', 'sho'):
-        results = await fetch_all(db, """
+        results = (await db.execute(text("""
             SELECT case_id, fir_no, victim_name, accused_name,
                    crime_type, crime_date, case_status,
                    created_at, updated_at
             FROM cases
-            WHERE ps_id = $1
+            WHERE ps_id = :p1
             ORDER BY created_at DESC
-            LIMIT $2 OFFSET $3
-        """, [str(officer['ps_id']), limit, offset])
-        count_row = await fetch_one(db, "SELECT COUNT(*) as count FROM cases WHERE ps_id = $1", [str(officer['ps_id'])])
+            LIMIT :p2 OFFSET :p3
+        """), {'p1': str(officer['ps_id']), 'p2': limit, 'p3': offset})).mappings().fetchall()
+        count_row = (await db.execute(text("SELECT COUNT(*) as count FROM cases WHERE ps_id = :p1"), {'p1': str(officer['ps_id'])})).mappings().fetchone()
     else:
-        results = await fetch_all(db, """
+        results = (await db.execute(text("""
             SELECT case_id, fir_no, victim_name, accused_name,
                    crime_type, crime_date, case_status,
                    created_at, updated_at
             FROM cases
             ORDER BY created_at DESC
-            LIMIT $1 OFFSET $2
-        """, [limit, offset])
-        count_row = await fetch_one(db, "SELECT COUNT(*) as count FROM cases", [])
+            LIMIT :p1 OFFSET :p2
+        """), {'p1': limit, 'p2': offset})).mappings().fetchall()
+        count_row = (await db.execute(text("SELECT COUNT(*) as count FROM cases"), {})).mappings().fetchone()
 
     total_count = count_row['count'] if count_row else len(results)
     return {"items": results, "total": total_count, "page": page, "limit": limit}
@@ -237,22 +216,22 @@ async def search_cases(
         raise HTTPException(403, "Access denied")
 
     if officer['role'] in ('io', 'sho'):
-        where = "AND ps_id = CAST($2 AS UUID)"
+        where = "AND ps_id = CAST(:p2 AS UUID)"
         params = [q, str(officer['ps_id'])]
     else:
         where = ""
         params = [q]
 
-    results = await fetch_all(db, f"""
+    results = (await db.execute(text(f"""
         SELECT case_id, fir_no, victim_name, accused_name,
                crime_type, crime_date, case_status,
-               ts_rank(search_vector, plainto_tsquery('english', CAST($1 AS text))) AS rank
+               ts_rank(search_vector, plainto_tsquery('english', CAST(:p1 AS text))) AS rank
         FROM cases
-        WHERE search_vector @@ plainto_tsquery('english', CAST($1 AS text))
+        WHERE search_vector @@ plainto_tsquery('english', CAST(:p1 AS text))
         {where}
         ORDER BY rank DESC
         LIMIT 20
-    """, params)
+    """), {f'p{i+1}': v for i, v in enumerate(params)})).mappings().fetchall()
 
     return results
 
@@ -266,10 +245,7 @@ async def get_case(
     if officer['role'] == 'constable':
         raise HTTPException(403, "Access denied")
 
-    case = await fetch_one(db,
-        "SELECT * FROM cases WHERE case_id = $1",
-        [case_id]
-    )
+    case = (await db.execute(text("SELECT * FROM cases WHERE case_id = :p1"), {'p1': case_id})).mappings().fetchone()
 
     if not case:
         raise HTTPException(404, "Case not found")
@@ -278,11 +254,11 @@ async def get_case(
        str(case['ps_id']) != str(officer['ps_id']):
         raise HTTPException(403, "Access denied")
 
-    await execute(db, """
+    await db.execute(text("""
         INSERT INTO case_audit
         (case_id, officer_id, action)
-        VALUES ($1,$2,'view')
-    """, [case_id, str(officer['id'])])
+        VALUES (:p1,:p2,'view')
+    """), {'p1': case_id, 'p2': str(officer['id'])})
 
     from app.services.audit import log_activity
     try:
@@ -294,15 +270,12 @@ async def get_case(
 
     io = None
     if case.get('io_id'):
-        io = await fetch_one(db,
-            "SELECT name, badge_no FROM officers WHERE id = $1",
-            [str(case['io_id'])]
-        )
-    diary = await fetch_all(db, """
+        io = (await db.execute(text("SELECT name, badge_no FROM officers WHERE id = :p1"), {'p1': str(case['io_id'])})).mappings().fetchone()
+    diary = (await db.execute(text("""
         SELECT entry_type, description, ts, auto_generated
-        FROM case_diary WHERE case_id = $1
+        FROM case_diary WHERE case_id = :p1
         ORDER BY ts DESC LIMIT 20
-    """, [case_id])
+    """), {'p1': case_id})).mappings().fetchall()
 
     case['io_name'] = io['name'] if io else 'Unknown'
     case['io_badge'] = io['badge_no'] if io else ''
@@ -320,12 +293,12 @@ async def update_case_status(case_id: str, body: CaseStatusUpdate, db = Depends(
         raise HTTPException(403, "Access denied")
     if body.status not in ("open", "arrested", "chargesheeted", "closed"):
         raise HTTPException(422, "Invalid case status")
-    case = await fetch_one(db, "SELECT case_id, ps_id FROM cases WHERE case_id = $1", [case_id])
+    case = (await db.execute(text("SELECT case_id, ps_id FROM cases WHERE case_id = :p1"), {'p1': case_id})).mappings().fetchone()
     if not case:
         raise HTTPException(404, "Case not found")
     if officer["role"] == "io" and str(case["ps_id"]) != str(officer["ps_id"]):
         raise HTTPException(403, "Access denied")
-    updated = await fetch_one(db, "UPDATE cases SET case_status = $1, updated_at = NOW() WHERE case_id = $2 RETURNING case_id, fir_no, case_status, updated_at", [body.status, case_id])
+    updated = (await db.execute(text("UPDATE cases SET case_status = :p1, updated_at = NOW() WHERE case_id = :p2 RETURNING case_id, fir_no, case_status, updated_at"), {'p1': body.status, 'p2': case_id})).mappings().fetchone()
     await db.commit()
     return updated or {"case_id": case_id, "case_status": body.status}
 
@@ -345,19 +318,19 @@ async def add_case_diary_entry(
     if officer['role'] == 'constable':
         raise HTTPException(403, "Access denied")
 
-    case = await fetch_one(db, "SELECT case_id, ps_id FROM cases WHERE case_id = $1", [case_id])
+    case = (await db.execute(text("SELECT case_id, ps_id FROM cases WHERE case_id = :p1"), {'p1': case_id})).mappings().fetchone()
     if not case:
         raise HTTPException(404, "Case not found")
 
     if officer['role'] == 'io' and str(case['ps_id']) != str(officer['ps_id']):
         raise HTTPException(403, "Access denied")
 
-    entry = await fetch_one(db, """
+    entry = (await db.execute(text("""
         INSERT INTO case_diary (
             case_id, entry_type, description, officer_id, location, auto_generated
-        ) VALUES ($1, $2, $3, $4, $5, FALSE)
+        ) VALUES (:p1, :p2, :p3, :p4, :p5, FALSE)
         RETURNING id
-    """, [case_id, body.entry_type, body.description, str(officer['id']), body.location])
+    """), {'p1': case_id, 'p2': body.entry_type, 'p3': body.description, 'p4': str(officer['id']), 'p5': body.location})).mappings().fetchone()
     await db.commit()
 
     return {"id": entry['id'] if entry else None, "message": "Case diary entry added successfully", "case_id": case_id}

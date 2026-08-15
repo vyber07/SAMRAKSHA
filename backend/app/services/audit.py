@@ -1,3 +1,5 @@
+from sqlalchemy import text
+from sqlalchemy import text
 import logging
 from sqlalchemy import text
 from typing import Optional

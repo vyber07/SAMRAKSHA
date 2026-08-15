@@ -1,3 +1,5 @@
+from sqlalchemy import text
+from sqlalchemy import text
 from app.db.connection import get_db, fetch_one, fetch_all, execute
 from app.api.auth import get_current_officer
 
@@ -15,16 +17,16 @@ async def get_dashboard_summary(
     db = Depends(get_db),
     officer = Depends(auth.require_permission('analytics_view'))
 ):
-    firs_today = await fetch_one(db, """
+    firs_today = (await db.execute(text("""
         SELECT COUNT(*) as count FROM cases
         WHERE created_at >= CURRENT_DATE
-    """, [])
+    """), {})).mappings().fetchone()
 
-    firs_yesterday = await fetch_one(db, """
+    firs_yesterday = (await db.execute(text("""
         SELECT COUNT(*) as count FROM cases
         WHERE created_at >= NOW() - INTERVAL '2 days'
           AND created_at < NOW() - INTERVAL '1 day'
-    """, [])
+    """), {})).mappings().fetchone()
 
     today_count     = firs_today['count']
     yesterday_count = firs_yesterday['count']
@@ -34,22 +36,22 @@ async def get_dashboard_summary(
             (today_count - yesterday_count) / yesterday_count * 100
         )
 
-    active_alerts = await fetch_one(db, """
+    active_alerts = (await db.execute(text("""
         SELECT COUNT(*) as count FROM cctv_alerts
         WHERE ts > NOW() - INTERVAL '2 hours'
-    """, [])
+    """), {})).mappings().fetchone()
 
-    patrol_active = await fetch_one(db, """
+    patrol_active = (await db.execute(text("""
         SELECT COUNT(*) as count FROM patrol_units
         WHERE status IN ('available','deployed','responding')
-    """, [])
+    """), {})).mappings().fetchone()
 
-    high_risk = await fetch_one(db, """
+    high_risk = (await db.execute(text("""
         SELECT COUNT(DISTINCT ward) as count
         FROM zone_risk_scores
         WHERE risk_score >= 80
           AND hour_slot = EXTRACT(HOUR FROM NOW())::INTEGER
-    """, [])
+    """), {})).mappings().fetchone()
 
     return {
         "firs_today":         today_count,
@@ -65,15 +67,15 @@ async def get_trends(
     officer = Depends(auth.require_permission('analytics_view'))
 ):
 
-    hourly = await fetch_all(db, """
+    hourly = (await db.execute(text("""
         SELECT EXTRACT(HOUR FROM timestamp)::INTEGER as hour,
                COUNT(*) as count
         FROM incidents
         WHERE timestamp > NOW() - INTERVAL '90 days'
         GROUP BY hour ORDER BY hour
-    """, [])
+    """), {})).mappings().fetchall()
 
-    weekly = await fetch_all(db, """
+    weekly = (await db.execute(text("""
         SELECT
             CASE EXTRACT(DOW FROM timestamp)
                 WHEN 0 THEN 'Sun' WHEN 1 THEN 'Mon'
@@ -86,25 +88,25 @@ async def get_trends(
         WHERE timestamp > NOW() - INTERVAL '90 days'
         GROUP BY EXTRACT(DOW FROM timestamp), day
         ORDER BY EXTRACT(DOW FROM timestamp)
-    """, [])
+    """), {})).mappings().fetchall()
 
-    by_type = await fetch_all(db, """
+    by_type = (await db.execute(text("""
         SELECT crime_type as type, COUNT(*) as count
         FROM incidents
         WHERE timestamp > NOW() - INTERVAL '90 days'
         GROUP BY crime_type
         ORDER BY count DESC
         LIMIT 8
-    """, [])
+    """), {})).mappings().fetchall()
 
-    monthly = await fetch_all(db, """
+    monthly = (await db.execute(text("""
         SELECT TO_CHAR(DATE_TRUNC('month', timestamp), 'Mon YY') as month,
                COUNT(*) as count
         FROM incidents
         WHERE timestamp > NOW() - INTERVAL '12 months'
         GROUP BY DATE_TRUNC('month', timestamp)
         ORDER BY DATE_TRUNC('month', timestamp)
-    """, [])
+    """), {})).mappings().fetchall()
 
     return {
         "hourly":  hourly,
@@ -139,11 +141,11 @@ async def simulate_event(
     total_units = 0
 
     for ward in affected_wards:
-        base = await fetch_one(db, """
+        base = (await db.execute(text("""
             SELECT AVG(risk_score) as base_risk
             FROM zone_risk_scores
-            WHERE ward = $1
-        """, [ward])
+            WHERE ward = :p1
+        """), {'p1': ward})).mappings().fetchone()
 
         base_risk = float(base['base_risk'] or 30)
 
@@ -179,11 +181,11 @@ async def get_resource_status(
     db = Depends(get_db),
     officer = Depends(auth.require_permission('analytics_view'))
 ):
-    units = await fetch_all(db, """
+    units = (await db.execute(text("""
         SELECT status, COUNT(*) as count 
         FROM patrol_units 
         GROUP BY status
-    """, [])
+    """), {})).mappings().fetchall()
     
     total = sum([u['count'] for u in units if u['status'] != 'unavailable'])
     if total == 0:
@@ -203,7 +205,7 @@ async def get_hotspot_surge(
     db = Depends(get_db),
     officer = Depends(auth.require_permission('analytics_view'))
 ):
-    surges = await fetch_all(db, """
+    surges = (await db.execute(text("""
         SELECT ward, hour_slot, risk_score
         FROM zone_risk_scores
         WHERE hour_slot >= EXTRACT(HOUR FROM NOW())::INTEGER
@@ -211,7 +213,7 @@ async def get_hotspot_surge(
           AND risk_score >= 70
         ORDER BY risk_score DESC
         LIMIT 10
-    """, [])
+    """), {})).mappings().fetchall()
     return {"surges": surges}
 
 @router.get("/pattern_matches")
@@ -219,13 +221,13 @@ async def get_pattern_matches(
     db = Depends(get_db),
     officer = Depends(auth.require_permission('analytics_view'))
 ):
-    alerts = await fetch_all(db, """
+    alerts = (await db.execute(text("""
         SELECT id, alert_type as type, 
                'Confidence: ' || confidence || ' ' || source as description,
                confidence, ts as timestamp
         FROM cctv_alerts
         ORDER BY ts DESC
         LIMIT 5
-    """, [])
+    """), {})).mappings().fetchall()
     
     return {"patterns": alerts}

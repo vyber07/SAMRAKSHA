@@ -9,14 +9,7 @@ import os
 logger = structlog.get_logger()
 OSRM_URL = os.getenv("OSRM_URL", "http://osrm:5000")
 
-# Haversine distance for routing
-def haversine_distance(lat1, lon1, lat2, lon2):
-    R = 6371.0 # Earth radius in kilometers
-    dLat = np.radians(lat2 - lat1)
-    dLon = np.radians(lon2 - lon1)
-    a = np.sin(dLat/2)**2 + np.cos(np.radians(lat1)) * np.cos(np.radians(lat2)) * np.sin(dLon/2)**2
-    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1-a))
-    return R * c
+import geopy.distance
 
 async def optimize_patrol_routes(patrol_units: list, hotspots: list) -> list:
     """
@@ -103,10 +96,10 @@ async def optimize_patrol_routes(patrol_units: list, hotspots: list) -> list:
                     if i == j:
                         distance_matrix[i][j] = 0
                     else:
-                        dist = haversine_distance(
-                            locations[i][0], locations[i][1],
-                            locations[j][0], locations[j][1]
-                        ) * 1000
+                        dist = geopy.distance.distance(
+                            (locations[i][0], locations[i][1]),
+                            (locations[j][0], locations[j][1])
+                        ).km * 1000
                         distance_matrix[i][j] = int(dist)
                     
         data['distance_matrix'] = distance_matrix.tolist()

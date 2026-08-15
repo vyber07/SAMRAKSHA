@@ -2,11 +2,13 @@
 SAMRAKSHA Chatbot Service
 Conversational AI for police case queries and general assistance
 """
+from sqlalchemy import text
+from sqlalchemy import text
 
 import structlog
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-from app.services.llm_integration import get_llm, ask_chatbot
+from app.services.llm_integration import get_llm
 from app.db.connection import fetch_one, fetch_all, execute
 
 logger = structlog.get_logger()
@@ -172,16 +174,12 @@ class Chatbot:
         
         try:
             # Search for relevant cases
-            cases = await fetch_all(
-                db,
-                """SELECT fir_no, crime_type, crime_date, case_status, 
+            cases = (await db.execute(text("""SELECT fir_no, crime_type, crime_date, case_status, 
                           victim_name, accused_name, bns_sections
                    FROM cases
-                   WHERE ps_id = $1
+                   WHERE ps_id = :p1
                    ORDER BY crime_date DESC
-                   LIMIT 5""",
-                [ps_id]
-            )
+                   LIMIT 5"""), {'p1': ps_id})).mappings().fetchall()
             
             if cases:
                 context = "Recent cases in jurisdiction:\n"

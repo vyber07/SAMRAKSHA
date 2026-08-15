@@ -1,3 +1,5 @@
+from sqlalchemy import text
+from sqlalchemy import text
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
@@ -33,13 +35,13 @@ def verify_admin_role(officer = Depends(get_current_officer)):
 
 @router.get("/officers", dependencies=[Depends(verify_admin_role)])
 async def get_officers(db = Depends(get_db)):
-    return await fetch_all(db, "SELECT badge_no, name, role, ps_id, is_active FROM officers")
+    return (await db.execute(text("SELECT badge_no, name, role, ps_id, is_active FROM officers"), {})).mappings().fetchall()
 
 @router.post("/officers", dependencies=[Depends(verify_admin_role)])
 async def create_officer(officer: OfficerCreate, db = Depends(get_db)):
     # Validate ps_id
     try:
-        ps_records = await fetch_all(db, "SELECT id FROM police_stations WHERE id = $1", [officer.ps_id])
+        ps_records = (await db.execute(text("SELECT id FROM police_stations WHERE id = :p1"), {'p1': officer.ps_id})).mappings().fetchall()
         if not ps_records:
             raise HTTPException(status_code=400, detail=f"Invalid police station ID: {officer.ps_id}")
     except Exception as e:
@@ -57,10 +59,10 @@ async def create_officer(officer: OfficerCreate, db = Depends(get_db)):
 
     hashed_pw = bcrypt.hashpw(password_to_use.encode(), bcrypt.gensalt(rounds=12)).decode()
     officer_id = str(uuid.uuid4())
-    await execute(db, """
+    await db.execute(text("""
         INSERT INTO officers (id, badge_no, name, role, ps_id, password_hash)
-        VALUES ($1, $2, $3, $4, $5, $6)
-    """, [officer_id, officer.badge_no, officer.name, officer.role, officer.ps_id, hashed_pw])
+        VALUES (:p1, :p2, :p3, :p4, :p5, :p6)
+    """), {'p1': officer_id, 'p2': officer.badge_no, 'p3': officer.name, 'p4': officer.role, 'p5': officer.ps_id, 'p6': hashed_pw})
     
     from app.services.audit import log_activity
     try:
@@ -80,15 +82,15 @@ async def update_officer(badge_no: str, officer: OfficerUpdate, db = Depends(get
     params = [badge_no]
     idx = 2
     for field, value in officer.model_dump(exclude_unset=True).items():
-        updates.append(f"{field} = ${idx}")
+        updates.append(f"{field} = :p{idx}")
         params.append(value)
         idx += 1
     
     if not updates:
         return {"status": "no changes"}
         
-    query = f"UPDATE officers SET {', '.join(updates)} WHERE badge_no = $1"
-    await execute(db, query, params)
+    query = f"UPDATE officers SET {', '.join(updates)} WHERE badge_no = :p1"
+    await db.execute(text(query), {f'p{i+1}': v for i, v in enumerate(params)})
     
     from app.services.audit import log_activity
     try:
@@ -101,10 +103,10 @@ async def update_officer(badge_no: str, officer: OfficerUpdate, db = Depends(get
 
 @router.delete("/officers/{badge_no}", dependencies=[Depends(verify_admin_role)])
 async def delete_officer(badge_no: str, db = Depends(get_db)):
-    officer_records = await fetch_all(db, "SELECT id FROM officers WHERE badge_no = $1", [badge_no])
+    officer_records = (await db.execute(text("SELECT id FROM officers WHERE badge_no = :p1"), {'p1': badge_no})).mappings().fetchall()
     if not officer_records:
         raise HTTPException(404, "Officer not found")
-    await execute(db, "DELETE FROM officers WHERE badge_no = $1", [badge_no])
+    await db.execute(text("DELETE FROM officers WHERE badge_no = :p1"), {'p1': badge_no})
     await db.commit()
     from app.services.audit import log_activity
     try:
@@ -116,7 +118,7 @@ async def delete_officer(badge_no: str, db = Depends(get_db)):
 @router.get("/health", dependencies=[Depends(verify_admin_role)])
 async def system_health(db = Depends(get_db)):
     try:
-        await execute(db, "SELECT 1")
+        await db.execute(text("SELECT 1"), {})
         db_status = "ok"
     except Exception:
         db_status = "error"
@@ -133,19 +135,19 @@ async def get_audit_logs(officer: Optional[str] = None, type: Optional[str] = No
     params = []
     idx = 1
     if officer:
-        query += f" AND (o.badge_no ILIKE ${idx} OR o.name ILIKE ${idx})"
+        query += f" AND (o.badge_no ILIKE :p{idx} OR o.name ILIKE :p{idx})"
         params.append(f"%{officer.strip()}%")
         idx += 1
     if type:
-        query += f" AND a.action = ${idx}"
+        query += f" AND a.action = :p{idx}"
         params.append(type)
         idx += 1
     if q:
-        query += f" AND a.details ILIKE ${idx}"
+        query += f" AND a.details ILIKE :p{idx}"
         params.append(f"%{q}%")
         idx += 1
     query += f" ORDER BY a.created_at DESC LIMIT 100"
-    return await fetch_all(db, query, params)
+    return (await db.execute(text(query), {f'p{i+1}': v for i, v in enumerate(params)})).mappings().fetchall()
 
 class PermissionOverride(BaseModel):
     permission_key: str
@@ -154,34 +156,34 @@ class PermissionOverride(BaseModel):
 @router.get("/permissions", dependencies=[Depends(verify_admin_role)])
 async def get_all_permissions(db = Depends(get_db)):
     """Get all available permissions (the IAM policies)."""
-    return await fetch_all(db, "SELECT * FROM permissions ORDER BY module, action")
+    return (await db.execute(text("SELECT * FROM permissions ORDER BY module, action"), {})).mappings().fetchall()
 
 @router.get("/officers/{badge_no}/permissions", dependencies=[Depends(verify_admin_role)])
 async def get_officer_permissions(badge_no: str, db = Depends(get_db)):
     """Get specific IAM style overrides for an officer."""
-    officer_records = await fetch_all(db, "SELECT id FROM officers WHERE badge_no = $1", [badge_no])
+    officer_records = (await db.execute(text("SELECT id FROM officers WHERE badge_no = :p1"), {'p1': badge_no})).mappings().fetchall()
     if not officer_records:
         raise HTTPException(404, "Officer not found")
     officer_id = officer_records[0]['id']
-    return await fetch_all(db, "SELECT permission_key, granted FROM officer_permission_overrides WHERE officer_id = $1", [officer_id])
+    return (await db.execute(text("SELECT permission_key, granted FROM officer_permission_overrides WHERE officer_id = :p1"), {'p1': officer_id})).mappings().fetchall()
 
 @router.put("/officers/{badge_no}/permissions", dependencies=[Depends(verify_admin_role)])
 async def set_officer_permissions(badge_no: str, overrides: List[PermissionOverride], db = Depends(get_db)):
     """Set IAM style overrides for an officer."""
-    officer_records = await fetch_all(db, "SELECT id FROM officers WHERE badge_no = $1", [badge_no])
+    officer_records = (await db.execute(text("SELECT id FROM officers WHERE badge_no = :p1"), {'p1': badge_no})).mappings().fetchall()
     if not officer_records:
         raise HTTPException(404, "Officer not found")
     officer_id = officer_records[0]['id']
     
     # First delete all existing overrides for this officer
-    await execute(db, "DELETE FROM officer_permission_overrides WHERE officer_id = $1", [officer_id])
+    await db.execute(text("DELETE FROM officer_permission_overrides WHERE officer_id = :p1"), {'p1': officer_id})
     
     # Then insert the new ones
     for override in overrides:
-        await execute(db, """
+        await db.execute(text("""
             INSERT INTO officer_permission_overrides (officer_id, permission_key, granted)
-            VALUES ($1, $2, $3)
-        """, [officer_id, override.permission_key, override.granted])
+            VALUES (:p1, :p2, :p3)
+        """), {'p1': officer_id, 'p2': override.permission_key, 'p3': override.granted})
         
     from app.services.audit import log_activity
     try:
@@ -209,8 +211,8 @@ async def update_my_profile(
     updates_sql = []
     for col, val in allowed.items():
         params.append(val)
-        updates_sql.append(f"{col} = ${len(params)}")
+        updates_sql.append(f"{col} = :p{len(params)}")
     params.append(officer["id"])
-    await execute(db, f"UPDATE officers SET {', '.join(updates_sql)} WHERE id = ${len(params)}", params)
+    await db.execute(text(f"UPDATE officers SET {', '.join(updates_sql)} WHERE id = :p{len(params)}"), {f'p{i+1}': v for i, v in enumerate(params)})
     return {"message": "Profile updated"}
 

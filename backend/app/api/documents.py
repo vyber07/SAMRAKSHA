@@ -1,3 +1,5 @@
+from sqlalchemy import text
+from sqlalchemy import text
 from app.db.connection import get_db, fetch_one, fetch_all, execute
 from app.api import auth
 from app.api.auth import get_current_officer
@@ -32,10 +34,7 @@ async def generate_document(
     if body.doc_type not in DOC_TYPES:
         raise HTTPException(400, f"Invalid doc_type. Must be one of: {DOC_TYPES}")
 
-    case = await fetch_one(db,
-        "SELECT * FROM cases WHERE case_id = $1",
-        [body.case_id]
-    )
+    case = (await db.execute(text("SELECT * FROM cases WHERE case_id = :p1"), {'p1': body.case_id})).mappings().fetchone()
 
     if not case:
         raise HTTPException(404, "Case not found")
@@ -49,15 +48,9 @@ async def generate_document(
             "Medical letter requires victim_injury flag to be set"
         )
 
-    io_officer = await fetch_one(db,
-        "SELECT name, badge_no FROM officers WHERE id = $1",
-        [case['io_id']]
-    )
+    io_officer = (await db.execute(text("SELECT name, badge_no FROM officers WHERE id = :p1"), {'p1': case['io_id']})).mappings().fetchone()
 
-    ps = await fetch_one(db,
-        "SELECT name FROM police_stations WHERE id = $1",
-        [case['ps_id']]
-    )
+    ps = (await db.execute(text("SELECT name FROM police_stations WHERE id = :p1"), {'p1': case['ps_id']})).mappings().fetchone()
 
     try:
         from app.services.document_gen import generate_document
@@ -89,13 +82,12 @@ async def generate_document(
                      error=str(e))
         raise HTTPException(500, "Document generation failed")
 
-    await execute(db, """
+    await db.execute(text("""
         INSERT INTO doc_log
         (case_id, doc_type, sha256, generated_by, language)
-        VALUES ($1, $2, $3, $4, $5)
+        VALUES (:p1, :p2, :p3, :p4, :p5)
         RETURNING id
-    """, [body.case_id, body.doc_type, sha256,
-          str(officer['id']), body.language])
+    """), {'p1': body.case_id, 'p2': body.doc_type, 'p3': sha256, 'p4': str(officer['id']), 'p5': body.language})
 
     doc_labels = {
         'chargesheet':       'Purvani Chargesheet',
@@ -113,16 +105,12 @@ async def generate_document(
         'search_warrant':    'Search Warrant',
         'bail_objection':    'Bail Objection Application',
     }
-    await execute(db, """
+    await db.execute(text("""
         INSERT INTO case_diary
         (case_id, entry_type, description, officer_id, auto_generated)
-        VALUES ($1, 'document', $2, $3, TRUE)
-    """, [
-        body.case_id,
-        f"{doc_labels[body.doc_type]} generated "
-        f"(SHA-256: {sha256[:8]}...)",
-        str(officer['id'])
-    ])
+        VALUES (:p1, 'document', :p2, :p3, TRUE)
+    """), {'p1': body.case_id, 'p2': f"{doc_labels[body.doc_type]} generated "
+        f"(SHA-256: {sha256[:8]}...)", 'p3': str(officer['id'])})
 
     from app.services.audit import log_activity
     try:
@@ -164,10 +152,7 @@ async def list_documents(
     if officer['role'] == 'constable':
         raise HTTPException(403, "Access denied")
 
-    case = await fetch_one(db,
-        "SELECT ps_id FROM cases WHERE case_id = $1",
-        [case_id]
-    )
+    case = (await db.execute(text("SELECT ps_id FROM cases WHERE case_id = :p1"), {'p1': case_id})).mappings().fetchone()
     if not case:
         raise HTTPException(404, "Case not found")
 
@@ -175,14 +160,14 @@ async def list_documents(
        str(case['ps_id']) != str(officer['ps_id']):
         raise HTTPException(403, "Access denied")
 
-    docs = await fetch_all(db, """
+    docs = (await db.execute(text("""
         SELECT dl.id, dl.doc_type, dl.sha256,
                dl.language, dl.generated_at,
                o.name as generated_by_name
         FROM doc_log dl
         LEFT JOIN officers o ON dl.generated_by = o.id
-        WHERE dl.case_id = $1
+        WHERE dl.case_id = :p1
         ORDER BY dl.generated_at DESC
-    """, [case_id])
+    """), {'p1': case_id})).mappings().fetchall()
 
     return docs
