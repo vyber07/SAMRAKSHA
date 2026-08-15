@@ -4,6 +4,7 @@
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue) ![Python](https://img.shields.io/badge/Python-3.11-green) ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-teal) ![Docker](https://img.shields.io/badge/Docker-Compose-blue)
 
+📖 **[Read the Full User Guide (Beginner to Expert)](./USER_GUIDE.md)**
 ---
 
 ## Architecture
