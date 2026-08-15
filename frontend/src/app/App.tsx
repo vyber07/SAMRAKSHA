@@ -6399,7 +6399,7 @@ function AdminPage() {
     return matchesSearch && matchesRole;
   });
 
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBadge.trim() || !newName.trim()) return;
     const badgeFormatted = newBadge.trim().toUpperCase();
@@ -6407,52 +6407,90 @@ function AdminPage() {
       showToast(`Badge ${badgeFormatted} is already registered!`);
       return;
     }
-    const newUser: AdminUser = {
-      badge: badgeFormatted,
-      name: newName.trim(),
-      role: newRole,
-      status: "Active",
-      station: newStation.trim() || "City Police HQ",
-    };
-    const updatedUsers = [newUser, ...users];
-    setUsers(updatedUsers);
-    localStorage.setItem("samraksha_admin_users", JSON.stringify(updatedUsers));
-    setNewBadge("");
-    setNewName("");
-    setNewRole("io");
-    setNewStation("Satellite PS");
-    setShowAddUserModal(false);
-    showToast(`Officer ${newUser.name} (${newUser.badge}) added successfully!`);
-  };
-
-  const handleToggleUserStatus = (badge: string) => {
-    const updated = users.map((u) => {
-      if (u.badge === badge) {
-        const nextStatus = u.status === "Active" ? "Inactive" : "Active";
-        showToast(`Status for ${u.badge} changed to ${nextStatus}`);
-        return { ...u, status: nextStatus };
-      }
-      return u;
-    });
-    setUsers(updated);
-    localStorage.setItem("samraksha_admin_users", JSON.stringify(updated));
-  };
-
-  const handleDeleteUser = (badge: string) => {
-    if (confirm(`Are you sure you want to remove user ${badge}?`)) {
-      const updated = users.filter((u) => u.badge !== badge);
-      setUsers(updated);
-      localStorage.setItem("samraksha_admin_users", JSON.stringify(updated));
-      showToast(`User ${badge} removed`);
+    
+    try {
+      const res = await fetch("/api/v1/admin/officers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          badge_no: badgeFormatted,
+          name: newName.trim(),
+          role: newRole,
+          ps_id: newStation.trim() || "HQ",
+          password: "password123" // Default password
+        })
+      });
+      
+      if (!res.ok) throw new Error("Failed");
+      
+      const newUser: AdminUser = {
+        badge: badgeFormatted,
+        name: newName.trim(),
+        role: newRole,
+        status: "Active",
+        station: newStation.trim() || "HQ",
+      };
+      setUsers([newUser, ...users]);
+      setNewBadge("");
+      setNewName("");
+      setNewRole("io");
+      setNewStation("Satellite PS");
+      setShowAddUserModal(false);
+      showToast(`Officer ${newUser.name} added! (Pass: password123)`);
+    } catch (err) {
+      showToast("Failed to save officer to database.");
     }
   };
 
-  const handleUpdateUserRole = (badge: string, role: Role) => {
-    const updated = users.map((u) => (u.badge === badge ? { ...u, role } : u));
-    setUsers(updated);
-    localStorage.setItem("samraksha_admin_users", JSON.stringify(updated));
-    showToast(`Updated role for ${badge} to ${role.toUpperCase()}`);
-    setEditingUser(null);
+  const handleToggleUserStatus = async (badge: string) => {
+    const user = users.find(u => u.badge === badge);
+    if (!user) return;
+    
+    const nextStatus = user.status === "Active" ? "Inactive" : "Active";
+    try {
+      const res = await fetch(`/api/v1/admin/officers/${badge}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ is_active: nextStatus === "Active" })
+      });
+      if (!res.ok) throw new Error("Failed");
+      setUsers(users.map((u) => u.badge === badge ? { ...u, status: nextStatus } : u));
+      showToast(`Status for ${badge} changed to ${nextStatus}`);
+    } catch (err) {
+      showToast(`Failed to update status for ${badge}`);
+    }
+  };
+
+  const handleDeleteUser = async (badge: string) => {
+    if (confirm(`Are you sure you want to remove user ${badge}?`)) {
+      try {
+        const res = await fetch(`/api/v1/admin/officers/${badge}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Failed");
+        setUsers(users.filter((u) => u.badge !== badge));
+        showToast(`User ${badge} removed from database`);
+      } catch (err) {
+        showToast(`Failed to remove user ${badge}`);
+      }
+    }
+  };
+
+  const handleUpdateUserRole = async (badge: string, role: Role) => {
+    try {
+      const res = await fetch(`/api/v1/admin/officers/${badge}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ role })
+      });
+      if (!res.ok) throw new Error("Failed");
+      setUsers(users.map((u) => (u.badge === badge ? { ...u, role } : u)));
+      showToast(`Updated role for ${badge} to ${role.toUpperCase()} in database`);
+      setEditingUser(null);
+    } catch (err) {
+      showToast(`Failed to update role for ${badge}`);
+    }
   };
 
   const togglePermission = (permKey: string, role: Role) => {
