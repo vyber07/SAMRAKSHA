@@ -12,7 +12,7 @@ class OfficerCreate(BaseModel):
     name: str
     role: str
     ps_id: str
-    password: str
+    password: Optional[str] = None
 
 class OfficerUpdate(BaseModel):
     name: Optional[str] = None
@@ -23,6 +23,8 @@ class OfficerUpdate(BaseModel):
 from app.db.connection import get_db, fetch_all, execute
 from app.api.auth import get_current_officer
 import bcrypt
+import secrets
+import string
 
 def verify_admin_role(officer = Depends(get_current_officer)):
     if officer['role'].lower() != 'admin':
@@ -35,7 +37,25 @@ async def get_officers(db = Depends(get_db)):
 
 @router.post("/officers", dependencies=[Depends(verify_admin_role)])
 async def create_officer(officer: OfficerCreate, db = Depends(get_db)):
-    hashed_pw = bcrypt.hashpw(officer.password.encode(), bcrypt.gensalt(rounds=12)).decode()
+    # Validate ps_id
+    try:
+        ps_records = await fetch_all(db, "SELECT id FROM police_stations WHERE id = $1", [officer.ps_id])
+        if not ps_records:
+            raise HTTPException(status_code=400, detail=f"Invalid police station ID: {officer.ps_id}")
+    except Exception as e:
+        if isinstance(e, HTTPException): raise e
+        raise HTTPException(status_code=400, detail=f"Invalid police station ID format: {officer.ps_id}")
+
+    # Generate password if not supplied
+    generated_password = None
+    if not officer.password:
+        alphabet = string.ascii_letters + string.digits + string.punctuation
+        generated_password = ''.join(secrets.choice(alphabet) for i in range(12))
+        password_to_use = generated_password
+    else:
+        password_to_use = officer.password
+
+    hashed_pw = bcrypt.hashpw(password_to_use.encode(), bcrypt.gensalt(rounds=12)).decode()
     officer_id = str(uuid.uuid4())
     await execute(db, """
         INSERT INTO officers (id, badge_no, name, role, ps_id, password_hash)
@@ -49,7 +69,10 @@ async def create_officer(officer: OfficerCreate, db = Depends(get_db)):
         logger.error("Audit log failed", error=str(e))
         
     await db.commit()
-    return {"status": "created"}
+    response = {"status": "created"}
+    if generated_password:
+        response["generated_password"] = generated_password
+    return response
 
 @router.patch("/officers/{badge_no}", dependencies=[Depends(verify_admin_role)])
 async def update_officer(badge_no: str, officer: OfficerUpdate, db = Depends(get_db)):

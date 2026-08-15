@@ -11,7 +11,7 @@ import structlog
 from app.api import (
     auth, cases, incidents,
     patrol, hotspot, cctv, assistant,
-    legal, websocket, admin, analytics, translate, cctns, documents
+    legal, websocket, admin, analytics, translate, cctns, documents, voice
 )
 from app.db.connection import init_db, close_db
 
@@ -78,6 +78,8 @@ for prefix in ["/api/v1"]:
     app.include_router(translate.router,  prefix=f"{prefix}/translate", tags=["Translation"])
     app.include_router(cctns.router,      prefix=f"{prefix}/cctns",     tags=["CCTNS"])
     app.include_router(documents.router,  prefix=f"{prefix}/docs",      tags=["Documents"])
+    app.include_router(voice.router,      prefix=f"{prefix}/voice",     tags=["Voice"])
+
 
 
 
