@@ -1199,16 +1199,16 @@ function TopBar({ wsConnected }: { wsConnected: boolean }) {
                   {wardResults.length > 0 && (
                     <>
                       <div className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">Wards</div>
-                      {wardResults.map(([name, data]) => (
+                      {wardResults.map(([name, data]: [string, any]) => (
                         <button key={name} className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all hover:bg-slate-500/10 cursor-pointer">
-                          <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: RISK_CONFIG[data.level].bg }}>
-                            <MapPin size={12} color={RISK_CONFIG[data.level].color} />
+                          <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: RISK_CONFIG[data.level]?.bg || "#000" }}>
+                            <MapPin size={12} color={RISK_CONFIG[data.level]?.color || "#fff"} />
                           </div>
                           <div>
                             <p className="text-xs font-medium text-[var(--foreground)]">{name}</p>
                             <p className="text-[10px] text-[var(--muted-foreground)]">Risk: {data.risk_score}</p>
                           </div>
-                          <Badge color={RISK_CONFIG[data.level].color} bg={RISK_CONFIG[data.level].bg}>{data.level}</Badge>
+                          <Badge color={RISK_CONFIG[data.level]?.color || "#fff"} bg={RISK_CONFIG[data.level]?.bg || "#000"}>{data.level}</Badge>
                         </button>
                       ))}
                     </>
@@ -2343,11 +2343,11 @@ function DashboardPage() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard title="New Cases" value={142} change={12} icon={FileText} color="#004B87" tooltip="Total new cases registered today across all police stations" />
-        <StatCard title="Active Cases" value={cases.filter((c) => c.case_status === "registered" || c.case_status === "investigating").length} change={4} icon={Activity} color="#006B5E" tooltip="Cases currently under active investigation" />
+        <StatCard title="Active Cases" value={cases.filter((c) => c.case_status === "open").length} change={4} icon={Activity} color="#006B5E" tooltip="Cases currently under active investigation" />
         <StatCard title="Predictive Score" value="84/100" change={3} icon={Cpu} color="#8B5CF6" tooltip="AI predictive threat score index" />
-        <StatCard title="High Risk Zone" value={Object.values({}).filter((w) => w.level === "HIGH").length} icon={TriangleAlert} color="#EF4444" tooltip="Wards with high risk score — requiring immediate attention" />
-        <StatCard title="Open Cases" value={cases.filter((c) => c.case_status !== "closed" && c.case_status !== "chargesheeted").length} change={-5} icon={Clock} color="#D97300" tooltip="Cases awaiting final disposition" />
-        <StatCard title="Closed Cases" value={cases.filter((c) => c.case_status === "closed" || c.case_status === "chargesheeted").length} change={18} icon={CheckCircle} color="#006B5E" tooltip="Successfully resolved or chargesheeted cases" />
+        <StatCard title="High Risk Zone" value={Object.values({} as Record<string, any>).filter((w) => w.level === "HIGH").length} icon={TriangleAlert} color="#EF4444" tooltip="Wards with high risk score — requiring immediate attention" />
+        <StatCard title="Open Cases" value={cases.filter((c) => c.case_status === "open").length} change={-5} icon={Clock} color="#D97300" tooltip="Cases awaiting final disposition" />
+        <StatCard title="Closed Cases" value={cases.filter((c) => c.case_status === "closed").length} change={18} icon={CheckCircle} color="#006B5E" tooltip="Successfully resolved or chargesheeted cases" />
       </div>
 
       {/* Row 2: Separated Recent Notifications & Quick Actions Cards */}
@@ -3145,7 +3145,7 @@ function CasesPage() {
           {filtered.map((c) => {
             const sc = STATUS_CONFIG[c.case_status];
             return (
-              <Card
+              <div
                 key={c.case_id}
                 className="flex flex-col gap-3 cursor-pointer transition-all hover:border-blue-500/30"
                 style={{ borderRadius: 20 }}
@@ -3173,7 +3173,7 @@ function CasesPage() {
                     <ZoomIn size={12} />
                   </button>
                 </div>
-              </Card>
+              </div>
             );
           })}
           {filtered.length === 0 && (
@@ -3865,7 +3865,7 @@ function FIREntryPage() {
               <div className="p-3 rounded-lg" style={{ backgroundColor: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)" }}>
                 <p className="text-xs mb-2" style={{ color: "#A78BFA" }}>Suggested Legal Sections</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {suggestedSections.map((s) => <Chip key={s} style={{ color: "#C4B5FD", borderColor: "rgba(139,92,246,0.3)" }}>{s}</Chip>)}
+                  {suggestedSections.map((s) => <Chip key={s.section} style={{ color: "#C4B5FD", borderColor: "rgba(139,92,246,0.3)" }}>{s.section}</Chip>)}
                 </div>
               </div>
             )}
@@ -4456,7 +4456,8 @@ function CCTVPage() {
 
 // ─── CrimeGPT Document Studio ──────────────────────────────────────────────────
 
-function CrimeGPTDocumentStudio({ selectedCase, form }: { selectedCase?: Case | null; form?: any }) {
+export function CrimeGPTDocumentStudio({ selectedCase, form }: { selectedCase?: Case | null; form?: any }) {
+  const { token } = useApp();
   const [messages, setMessages] = useState<Array<{ role: "user" | "ai"; text: string }>>([
     {
       role: "ai",
@@ -4962,7 +4963,7 @@ function DocumentsPage() {
       />
 
       {/* Edit Document Modal */}
-      <Modal open={!!editDoc} onClose={() => setEditDoc(null)} title="Edit Document Content" width="600px">
+      <Modal open={!!editDoc} onClose={() => setEditDoc(null)} title="Edit Document Content" width={600}>
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-2 mb-2 text-sm text-[var(--muted-foreground)]">
             <span className="font-semibold text-[var(--foreground)]">{editDoc?.title}</span>
@@ -4975,7 +4976,7 @@ function DocumentsPage() {
             placeholder="Edit document content..."
           />
           <div className="flex items-center gap-2 justify-end mt-2">
-            <Button onClick={() => setEditDoc(null)} variant="outline">Cancel</Button>
+            <Button onClick={() => setEditDoc(null)} variant="outlined">Cancel</Button>
             <Button onClick={handleEditSave} variant="filled" className="bg-blue-600 hover:bg-blue-500 text-white border-blue-500">
               <Save size={16} /> Save Changes
             </Button>
@@ -4984,7 +4985,7 @@ function DocumentsPage() {
       </Modal>
 
       {/* Translate Document Modal */}
-      <Modal open={!!translateDoc} onClose={() => setTranslateDoc(null)} title="Translate & Download" width="400px">
+      <Modal open={!!translateDoc} onClose={() => setTranslateDoc(null)} title="Translate & Download" width={400}>
         <div className="flex flex-col gap-4">
           <p className="text-sm text-[var(--muted-foreground)]">
             Select a target language to translate <span className="font-semibold text-[var(--foreground)]">{translateDoc?.title}</span>.
@@ -5005,7 +5006,7 @@ function DocumentsPage() {
             </select>
           </div>
           <div className="flex items-center gap-2 justify-end mt-4">
-            <Button onClick={() => setTranslateDoc(null)} variant="outline">Cancel</Button>
+            <Button onClick={() => setTranslateDoc(null)} variant="outlined">Cancel</Button>
             <Button onClick={handleTranslateSubmit} variant="filled" className="bg-blue-600 hover:bg-blue-500 text-white border-blue-500">
               <Globe size={16} /> Translate
             </Button>
@@ -5036,7 +5037,7 @@ function AnalyticsPage() {
           setStats([
             { title: "FIRs Today", value: data.firs_today.toString(), icon: Activity, color: "#EF4444", change: data.firs_today_change },
             { title: "Active Alerts", value: data.active_alerts, icon: Zap, color: "#22C55E", change: 0 },
-            { title: "Patrol Active", value: data.patrol_active, icon: BadgeCheck, color: "#3B82F6" },
+            { title: "Patrol Active", value: data.patrol_active, icon: BadgeCheck, color: "#3B82F6", change: 0 },
             { title: "High Risk Zones", value: data.high_risk_zones, icon: CheckCircle, color: "#8B5CF6", change: 0 },
           ]);
         }
@@ -5466,7 +5467,7 @@ const []: PatrolRouteFull[] = [
 ];
 
 function PatrolPage() {
-  const { navigate, cases, patrols, cctvAlerts } = useApp();
+  const { token, navigate, cases, patrols, cctvAlerts } = useApp();
   const [units, setUnits] = useState<PatrolUnitFull[]>(patrols as any);
   const [routes] = useState<PatrolRouteFull[]>([]);
 
@@ -5506,49 +5507,92 @@ function PatrolPage() {
     ? units
     : units.filter((u) => u.ward === filterWard);
 
-  function handleStatusToggle(unitId: string, newStatus: "active" | "responding" | "idle") {
+  async function handleStatusToggle(unitId: string, newStatus: "active" | "responding" | "idle") {
     setUnits((prev) =>
       prev.map((u) => (u.id === unitId ? { ...u, status: newStatus } : u))
     );
+    try {
+      await fetch(`/api/v1/patrol/units/${unitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ status: newStatus })
+      });
+    } catch(e) {}
   }
 
-  function handleDeleteUnit(unitId: string) {
+  async function handleDeleteUnit(unitId: string) {
     if (confirm("Are you sure you want to unassign and delete this patrol unit?")) {
-      setUnits((prev) => prev.filter((u) => u.id !== unitId));
-      if (selectedUnitId === unitId) {
-        setSelectedUnitId("");
-      }
+      try {
+        await fetch(`/api/v1/patrol/units/${unitId}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        setUnits((prev) => prev.filter((u) => u.id !== unitId));
+        if (selectedUnitId === unitId) {
+          setSelectedUnitId("");
+        }
+      } catch (e) {}
     }
   }
 
-  function handleSaveEditUnit(e: React.FormEvent) {
+  async function handleSaveEditUnit(e: React.FormEvent) {
     e.preventDefault();
     if (!editingUnit) return;
-    setUnits((prev) => prev.map((u) => (u.id === editingUnit.id ? editingUnit : u)));
-    setEditingUnit(null);
+    try {
+      await fetch(`/api/v1/patrol/units/${editingUnit.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({
+          unit_no: editingUnit.name,
+          officer_name: editingUnit.officer_in_charge,
+          vehicle: editingUnit.vehicle_no,
+          status: editingUnit.status
+        })
+      });
+      setUnits((prev) => prev.map((u) => (u.id === editingUnit.id ? editingUnit : u)));
+      setEditingUnit(null);
+    } catch(e) {}
   }
 
-  function handleAddUnit(e: React.FormEvent) {
+  async function handleAddUnit(e: React.FormEvent) {
     e.preventDefault();
-    const created: PatrolUnitFull = {
-      id: `p_${Date.now()}`,
-      name: newUnitForm.name || "Unit 1",
-      officer_in_charge: newUnitForm.officer_in_charge || "officer vijay",
-      vehicle_no: newUnitForm.vehicle_no || "gj-08-bj-9876",
-      phone: "+91 98250 99999",
+    const payload = {
+      unit_no: newUnitForm.name || "Unit 1",
+      officer_name: newUnitForm.officer_in_charge || "officer vijay",
+      vehicle: newUnitForm.vehicle_no || "gj-08-bj-9876",
       status: newUnitForm.status,
-      ward: newUnitForm.ward,
-      lat: 23.0342 + (Math.random() - 0.5) * 0.05,
-      lon: 72.5168 + (Math.random() - 0.5) * 0.05,
-      speed_kmh: newUnitForm.status === "active" ? 40 : newUnitForm.status === "responding" ? 60 : 0,
-      fuel_percent: 92,
-      route_id: "r1",
-      type: newUnitForm.type,
-      last_ping: "Just now"
+      current_lat: 23.0342 + (Math.random() - 0.5) * 0.05,
+      current_lon: 72.5168 + (Math.random() - 0.5) * 0.05
     };
-    setUnits((prev) => [created, ...prev]);
-    setSelectedUnitId(created.id);
-    setShowAddModal(false);
+    try {
+      const res = await fetch("/api/v1/patrol/units", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const created: PatrolUnitFull = {
+          id: data.unit.id,
+          name: data.unit.unit_name,
+          officer_in_charge: data.unit.officer_name,
+          vehicle_no: data.unit.vehicle,
+          phone: "+91 98250 99999",
+          status: data.unit.status,
+          ward: newUnitForm.ward,
+          lat: data.unit.current_lat,
+          lon: data.unit.current_lon,
+          speed_kmh: data.unit.status === "active" ? 40 : data.unit.status === "responding" ? 60 : 0,
+          fuel_percent: 92,
+          route_id: "r1",
+          type: newUnitForm.type,
+          last_ping: "Just now"
+        };
+        setUnits((prev) => [created, ...prev]);
+        setSelectedUnitId(created.id);
+        setShowAddModal(false);
+      }
+    } catch(e) {}
   }
 
   function handleCalculateReroute() {
@@ -5556,9 +5600,14 @@ function PatrolPage() {
     setRerouteSuccessMsg("");
   }
 
-  function handleDispatchReroute() {
+  async function handleDispatchReroute() {
     setRerouteDispatching(true);
-    setTimeout(() => {
+    try {
+      await fetch(`/api/v1/patrol/units/${rerouteUnitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ status: "responding" })
+      });
       setUnits((prev) =>
         prev.map((u) => {
           if (u.id === rerouteUnitId) {
@@ -5573,9 +5622,9 @@ function PatrolPage() {
           return u;
         })
       );
-      setRerouteDispatching(false);
       setRerouteSuccessMsg(`PCR Unit ${units.find((u) => u.id === rerouteUnitId)?.name || rerouteUnitId} successfully rerouted to ${rerouteWard} (${rerouteLandmark}). Dispatch command broadcast via encrypted radio.`);
-    }, 1000);
+    } catch(e) {}
+    setRerouteDispatching(false);
   }
 
   return (
@@ -6006,7 +6055,7 @@ function PatrolPage() {
             {routes.map((r) => {
               const isSelected = (selectedRouteId || "r1") === r.id;
               return (
-                <Card
+                <div
                   key={r.id}
                   onClick={() => setSelectedRouteId(r.id)}
                   className={`flex flex-col gap-4 p-5 cursor-pointer transition-all border ${
@@ -6049,7 +6098,7 @@ function PatrolPage() {
                       ))}
                     </div>
                   </div>
-                </Card>
+                </div>
               );
             })}
           </div>
@@ -6381,7 +6430,9 @@ function AdminPage() {
   const [newBadge, setNewBadge] = useState("");
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<Role>("io");
-  const [newStation, setNewStation] = useState("Satellite PS");
+  const [newStation, setNewStation] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPsId, setNewPsId] = useState("");
 
   // Edit user state
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
@@ -6430,8 +6481,8 @@ function AdminPage() {
           badge_no: badgeFormatted,
           name: newName.trim(),
           role: newRole,
-          ps_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", // Must be a valid UUID
-          password: "password123" // Default password
+          ps_id: newPsId.trim() || null,
+          password: newPassword.trim() || undefined
         })
       });
       
@@ -6451,9 +6502,11 @@ function AdminPage() {
       setNewBadge("");
       setNewName("");
       setNewRole("io");
-      setNewStation("Satellite PS");
+      setNewStation("");
+      setNewPassword("");
+      setNewPsId("");
       setShowAddUserModal(false);
-      showToast(`Officer ${newUser.name} added! (Pass: password123)`);
+      showToast(`Officer ${newUser.name} added!`);
     } catch (err) {
       showToast("Failed to save officer to database.");
     }
@@ -7013,10 +7066,24 @@ function AdminPage() {
             ]}
           />
           <Input
-            label="Police Station / Unit"
+            label="Police Station / Unit Name"
             placeholder="e.g. Satellite PS or City Police HQ"
             value={newStation}
             onChange={(val) => setNewStation(val)}
+          />
+          <Input
+            label="Police Station UUID (ps_id)"
+            placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+            value={newPsId}
+            onChange={(val) => setNewPsId(val)}
+            required
+          />
+          <Input
+            label="Initial Password"
+            type="password"
+            placeholder="Leave blank for auto-generated password"
+            value={newPassword}
+            onChange={(val) => setNewPassword(val)}
           />
 
           <div className="flex justify-end gap-2 pt-3 border-t border-[var(--border)]">
@@ -7038,7 +7105,7 @@ function AdminPage() {
             <Select
               label="Select New Role"
               value={editingUser.role}
-              onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value as Role })}
+              onChange={(v) => setEditingUser({ ...editingUser, role: v as Role })}
               options={[
                 { value: "constable", label: "Constable" },
                 { value: "io", label: "IO - Investigating Officer" },
