@@ -133,7 +133,7 @@ async def ingest_alert(
     from app.api.websocket import manager
     await manager.broadcast({
         'type':         'CCTV_ALERT',
-        'alert': {
+        'payload': {
             'id':          result['id'],
             'camera_id':   body.camera_id,
             'source':      body.source,
@@ -188,9 +188,11 @@ async def check_anpr_match(
             from app.api.websocket import manager
             await manager.broadcast({
                 'type':    'ANPR_MATCH',
-                'fir_no':  matched['fir_no'],
-                'plate':   plate_no,
-                'camera':  camera_id,
+                'payload': {
+                    'fir_no':  matched['fir_no'],
+                    'plate':   plate_no,
+                    'camera':  camera_id,
+                }
             })
 
 

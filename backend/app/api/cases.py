@@ -173,12 +173,14 @@ async def create_fir(
     from app.api.websocket import manager
     await manager.broadcast({
         'type':      'NEW_FIR',
-        'case_id':   case_id,
-        'fir_no':    fir_no,
-        'ward':      body.ward,
-        'crime_type': body.crime_type,
-        'lat':        body.crime_lat,
-        'lon':        body.crime_lon,
+        'payload': {
+            'case_id':   case_id,
+            'fir_no':    fir_no,
+            'ward':      body.ward,
+            'crime_type': body.crime_type,
+            'lat':        body.crime_lat,
+            'lon':        body.crime_lon,
+        }
     })
 
     return {

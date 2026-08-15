@@ -37,17 +37,9 @@ class DashboardManager:
                 del self.connections[officer_id]
     
     async def broadcast(self, event: dict):
-        if 'type' in event and 'payload' not in event:
-            type_str = event.pop('type')
-            enveloped = {
-                'type': type_str,
-                'payload': event,
-                'ts': int(time.time() * 1000)
-            }
-        else:
-            enveloped = event
-            if 'ts' not in enveloped:
-                enveloped['ts'] = int(time.time() * 1000)
+        enveloped = event
+        if 'ts' not in enveloped:
+            enveloped['ts'] = int(time.time() * 1000)
 
         empty_officers = []
         for oid, ws_list in list(self.connections.items()):

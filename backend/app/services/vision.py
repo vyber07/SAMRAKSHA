@@ -15,6 +15,8 @@ class CCTVPipeline:
         self.scores_history = deque(maxlen=100)
         
     def extract_frame(self) -> np.ndarray:
+        if not self.rtsp_url.startswith('rtsp://'):
+            raise ValueError("Invalid RTSP URL scheme")
         # 1 frame every 2 seconds = low CPU
         cmd = [
             'ffmpeg', '-i', self.rtsp_url,

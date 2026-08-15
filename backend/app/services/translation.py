@@ -67,11 +67,9 @@ def _get_model_and_processor(direction: str):
         processor = IndicProcessor(inference=True)
         tokenizer = AutoTokenizer.from_pretrained(
             model_name,
-            trust_remote_code=True,
         )
         model = AutoModelForSeq2SeqLM.from_pretrained(
             model_name,
-            trust_remote_code=True,
         )
         device = "cuda" if torch.cuda.is_available() else "cpu"
         model = model.to(device)

@@ -72,7 +72,7 @@ async def receive_pcr_incident(
     from app.api.websocket import manager
     await manager.broadcast({
         'type':      'PCR_INCIDENT',
-        'incident': {
+        'payload': {
             'id':     incident_id['id'],
             'type':   body.incident_type,
             'lat':    body.lat,
@@ -121,7 +121,7 @@ async def report_incident(
     from app.api.websocket import manager
     await manager.broadcast({
         'type': 'NEW_INCIDENT',
-        'incident': {
+        'payload': {
             'id': incident_id['id'],
             'type': body.type,
             'lat': lat,
