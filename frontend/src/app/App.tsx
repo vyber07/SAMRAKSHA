@@ -6348,11 +6348,13 @@ function AdminPage() {
       if (Array.isArray(d)) {
         setAuditLogs(d.map((a: any) => ({
           id: a.id || Math.random().toString(),
-          officer: a.officer_name || a.badge_no,
-          action: a.action,
-          target: a.new_value || "",
-          time: a.changed_at,
-          ip: "",
+          ts: a.changed_at || new Date().toISOString(),
+          badge: a.badge_no || "",
+          name: a.officer_name || "",
+          action: a.action || "",
+          module: a.table_name || a.target || "System",
+          ip: a.ip_address || "127.0.0.1",
+          status: "Success",
         })));
       }
     })
