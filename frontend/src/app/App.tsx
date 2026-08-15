@@ -4297,6 +4297,7 @@ function LiveCameraGrid() {
 }
 
 function CCTVPage() {
+  const { cctvAlerts } = useApp();
   const [filter, setFilter] = useState("all");
   const [lastRefresh, setLastRefresh] = useState(new Date().toISOString());
   const [quickCase, setQuickCase] = useState<Case | null>(null);
@@ -6389,9 +6390,9 @@ function AdminPage() {
   // Filtered users
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
-      u.badge.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.station.toLowerCase().includes(userSearch.toLowerCase());
+      (u.badge || "").toLowerCase().includes(userSearch.toLowerCase()) ||
+      (u.name || "").toLowerCase().includes(userSearch.toLowerCase()) ||
+      (u.station || "").toLowerCase().includes(userSearch.toLowerCase());
     const matchesRole = roleFilter === "all" || u.role === roleFilter;
     return matchesSearch && matchesRole;
   });
@@ -7150,19 +7151,24 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Ensure the initial history entry has state so back-navigation works perfectly
+    if (typeof window !== "undefined" && (!window.history.state || !window.history.state.page)) {
+      window.history.replaceState({ page, params }, "", window.location.pathname + window.location.search);
+    }
+
     const handlePopState = (e: PopStateEvent) => {
       if (e.state && e.state.page) {
         setPage(e.state.page);
         setParams(e.state.params || {});
       } else {
-        const path = window.location.pathname.replace(/^\//, "");
+        const path = window.location.pathname.replace(/^\//, "").split("/")[0];
         setPage(path ? (path as Page) : "dashboard");
         setParams(Object.fromEntries(new URLSearchParams(window.location.search).entries()));
       }
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [page, params]);
 
   async function login(badge_no: string, password: string) {
     const res = await fetch("/api/v1/auth/login", {
