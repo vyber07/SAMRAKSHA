@@ -12,6 +12,8 @@ ALGORITHM = "HS256"  # pinned — no algorithm negotiation
 logger = structlog.get_logger()
 router = APIRouter()
 
+import time
+
 class DashboardManager:
     def __init__(self):
         self.connections: dict[str, list[WebSocket]] = defaultdict(list)
@@ -23,7 +25,8 @@ class DashboardManager:
         # Provide initial state on connect
         await ws.send_json({
             'type': 'INIT',
-            'message': 'Connected'
+            'payload': {'message': 'Connected'},
+            'ts': int(time.time() * 1000)
         })
 
     def disconnect(self, ws: WebSocket, officer_id: str):
@@ -34,12 +37,24 @@ class DashboardManager:
                 del self.connections[officer_id]
     
     async def broadcast(self, event: dict):
+        if 'type' in event and 'payload' not in event:
+            type_str = event.pop('type')
+            enveloped = {
+                'type': type_str,
+                'payload': event,
+                'ts': int(time.time() * 1000)
+            }
+        else:
+            enveloped = event
+            if 'ts' not in enveloped:
+                enveloped['ts'] = int(time.time() * 1000)
+
         empty_officers = []
         for oid, ws_list in list(self.connections.items()):
             dead_ws = []
             for ws in list(ws_list):
                 try:
-                    await ws.send_json(event)
+                    await ws.send_json(enveloped)
                 except Exception as e:
                     logger.debug(
                         "WebSocket send failed, removing dead connection",
@@ -88,7 +103,8 @@ async def websocket_endpoint(websocket: WebSocket):
     
     await websocket.send_json({
         'type': 'INIT',
-        'message': 'Connected'
+        'payload': {'message': 'Connected'},
+        'ts': int(time.time() * 1000)
     })
 
     try:
