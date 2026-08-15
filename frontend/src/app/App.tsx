@@ -3246,8 +3246,8 @@ function CasesPage() {
 // ─── Case Detail Page ─────────────────────────────────────────────────────────
 
 function CaseDetailPage() {
-  const { params, navigate, cases } = useApp();
-  const c = [].find((x) => x.case_id === params.case_id);
+  const { params, navigate, cases, officer } = useApp();
+  const c = cases.find((x: any) => x.case_id === params.case_id);
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiAnswer, setAiAnswer] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -7061,9 +7061,13 @@ export default function App() {
           fetch("/api/v1/patrol/units", { headers }).catch(() => null),
           fetch("/api/v1/cctv", { headers }).catch(() => null)
         ]);
+        if (casesRes?.status === 401 || patrolsRes?.status === 401 || cctvRes?.status === 401) {
+          logout();
+          return;
+        }
         if (casesRes?.ok) {
           const c = await casesRes.json();
-          setCases(Array.isArray(c) ? c : c.cases || []);
+          setCases(Array.isArray(c) ? c : (c.cases || c.items || []));
         }
         if (patrolsRes?.ok) {
           const p = await patrolsRes.json();
@@ -7104,14 +7108,36 @@ export default function App() {
     return TRANSLATIONS[language]?.[key] || key;
   }, [language]);
 
-  // Simulate WebSocket events
+  // Real WebSocket events
   useEffect(() => {
-    if (!officer) return;
-    setWsConnected(true);
+    if (!officer || !token) return;
+    setWsConnected(false);
+    
+    const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
+    // Remove token from query parameters per P1-02
+    const ws = new WebSocket(`${wsProto}//${window.location.host}/api/v1/ws/dashboard`);
+    
+    ws.onopen = () => {
+      // Send token immediately upon connection
+      ws.send(token);
+      setWsConnected(true);
+    };
+    
+    ws.onclose = () => setWsConnected(false);
+    
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "INIT") return;
+        setWsMessages(prev => [data, ...prev].slice(0, 10));
+      } catch (e) {}
+    };
+
     return () => {
+      ws.close();
       setWsConnected(false);
     };
-  }, [officer]);
+  }, [officer, token]);
 
   const navigate = useCallback((p: Page, newParams?: Record<string, string>) => {
     setPage(p);

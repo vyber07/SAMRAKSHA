@@ -61,7 +61,7 @@ class CCTVPipeline:
         z_score = (density - avg) / (std + 0.001)
         
         alert_type = None
-        confidence = min(z_score / 5, 1.0)
+        confidence = max(0.0, min(z_score / 5, 1.0))
         
         # Integrate LLaVA model for vision anomaly detection if frame is available
         llava_context = "Clear"
