@@ -1,6 +1,6 @@
 from app.db.connection import get_db, fetch_one, fetch_all, execute
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 import jwt as _jwt  # PyJWT — replaces python-jose (CVE-2024-33663, CVE-2024-33664)
@@ -45,10 +45,19 @@ def create_access_token(officer_id: str, role: str, ps_id: str) -> str:
     }
     return _jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
+from fastapi import Cookie
 async def get_current_officer(
-    token: str = Depends(oauth2),
+    request: Request,
+    samraksha_session: str = Cookie(default=None),
     db = Depends(get_db)
 ):
+    token = samraksha_session
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     try:
         payload = _jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])  # algorithm pinned, no negotiation
         officer_id_str = payload.get("sub")
@@ -187,7 +196,8 @@ async def login(
     except Exception as e:
         structlog.get_logger().error("Audit logging failed", error=str(e))
 
-    return {
+    from fastapi.responses import JSONResponse
+    response = JSONResponse({
         "access_token": token,
         "token_type":   "bearer",
         "officer": {
@@ -197,17 +207,36 @@ async def login(
             "role":     officer['role'],
             "ps_id":    str(officer['ps_id']),
         }
-    }
+    })
+    response.set_cookie(
+        key="samraksha_session",
+        value=token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=86400,
+        path="/",
+    )
+    return response
 
 @router.post("/logout")
 async def logout(
     request: Request,
-    token: str = Depends(oauth2),
+    response: Response,
     officer = Depends(get_current_officer),
     db = Depends(get_db)
 ):
+    token = request.cookies.get("samraksha_session")
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    
+    response.delete_cookie("samraksha_session")
+    
     try:
-        payload = _jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if token:
+            payload = _jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         jti = payload.get("jti")
         if jti:
             exp = payload.get("exp")
@@ -232,3 +261,15 @@ async def logout(
         structlog.get_logger().error("Logout audit logging failed", error=str(e))
 
     return {"message": "Logged out"}
+
+@router.get("/me")
+async def get_me(officer = Depends(get_current_officer)):
+    return {
+        "officer": {
+            "id":       str(officer['id']),
+            "badge_no": officer['badge_no'],
+            "name":     officer['name'],
+            "role":     officer['role'],
+            "ps_id":    str(officer['ps_id']),
+        }
+    }

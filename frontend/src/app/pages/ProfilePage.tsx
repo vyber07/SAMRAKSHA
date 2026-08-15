@@ -284,7 +284,19 @@ export default function ProfilePage() {
               Cancel
             </button>
             <button
-              onClick={() => setEditMode(false)}
+              onClick={async () => {
+                try {
+                  const { api } = await import('../../api/client');
+                  await api('/api/v1/admin/officers/me', {
+                    method: 'PATCH',
+                    body: JSON.stringify({ name: `${form.firstName} ${form.lastName}`.trim() })
+                  });
+                  setEditMode(false);
+                } catch (e) {
+                  console.error(e);
+                  alert("Failed to update profile");
+                }
+              }}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
               style={{
                 background: "linear-gradient(135deg, rgba(59,130,246,0.9) 0%, rgba(37,99,235,0.9) 100%)",

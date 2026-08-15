@@ -14,13 +14,13 @@ import {
   Maximize2, Signal, ZoomIn, Sun, Moon, ShieldCheck, Users, Key, ShieldAlert, FileCode, UserPlus
 } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart } from 'recharts';
-import { useApp, Officer, Case, CCTVAlert, PatrolUnit, CaseStatus, Role, DiaryEntry, Button, Card, Input, Select, Modal, Badge, Chip, QuickViewModal, CrimeGPTDocumentStudio, STATUS_CONFIG, RISK_CONFIG, ROLE_CONFIG, PREDICTIVE_HEATMAP_ZONES, downloadCasesCSV, AppCtx, cn, WS_COLOR, CreatedDocument, NAV_ITEMS, CAMERA_FEEDS, RolePermission, formatDateTime, SegmentedChartCard, HoverTooltip, CRIME_TYPE_DATA, WSMessage, GenerateDocumentModalProps, PageHeader, Page, createGoogleTeardropPin, ChatMsg, ALERT_COLOR, AdminUser, CCTV_LOCATIONS, LiveCameraGrid, ScenarioSimulationControlDeck, AHMEDABAD_WARD_LOCATIONS, StatCard, TRANSLATIONS, Ctx, Sidebar, WEEKLY_DATA, RealAhmedabadOpenStreetMap, TopBar, BottomNav, VoiceInputWidget, IAMPolicy, CHART_COLORS, PatrolUnitFull, AICoPilotWidget, NavItem, AHMEDABAD_WARDS, formatTime, formatDate, HOURLY_DATA, GenerateDocumentModal, MONTHLY_DATA, PatrolRouteFull, AppShell, INITIAL_ADMIN_USERS, INITIAL_AUDIT_LOGS, INITIAL_PERMISSIONS, INITIAL_IAM_POLICIES, AuditLog, timeAgo } from '../App';
+import { useApp, Officer, Case, CCTVAlert, PatrolUnit, CaseStatus, Role, DiaryEntry, Button, Card, Input, Select, Modal, Badge, Chip, QuickViewModal, CrimeGPTDocumentStudio, STATUS_CONFIG, RISK_CONFIG, ROLE_CONFIG, PREDICTIVE_HEATMAP_ZONES, downloadCasesCSV, AppCtx, cn, WS_COLOR, CreatedDocument, NAV_ITEMS, CAMERA_FEEDS, RolePermission, formatDateTime, SegmentedChartCard, HoverTooltip, CRIME_TYPE_DATA, WSMessage, GenerateDocumentModalProps, PageHeader, Page, createGoogleTeardropPin, ChatMsg, ALERT_COLOR, AdminUser, CCTV_LOCATIONS, LiveCameraGrid, ScenarioSimulationControlDeck, AHMEDABAD_WARD_LOCATIONS, StatCard, TRANSLATIONS, Ctx, Sidebar, WEEKLY_DATA, RealAhmedabadOpenStreetMap, TopBar, BottomNav, VoiceInputWidget, IAMPolicy, CHART_COLORS, PatrolUnitFull, AICoPilotWidget, NavItem, AHMEDABAD_WARDS, formatTime, formatDate, HOURLY_DATA, GenerateDocumentModal, MONTHLY_DATA, PatrolRouteFull, AppShell, AuditLog, timeAgo } from '../App';
 export default function AdminPage() {
   const { officer, cases, token } = useApp();
   const [activeTab, setActiveTab] = useState<"users" | "roles" | "iam" | "audit">("users");
 
   // Users state
-  const [users, setUsers] = useState<AdminUser[]>(INITIAL_ADMIN_USERS);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   
   useEffect(() => {
     fetch("/api/v1/admin/officers", {
@@ -57,7 +57,7 @@ export default function AdminPage() {
           ip: a.ip_address || "127.0.0.1",
           status: "Success" as const,
         }));
-        setAuditLogs(fetchedLogs.length > 0 ? fetchedLogs : INITIAL_AUDIT_LOGS);
+        setAuditLogs(fetchedLogs.length > 0 ? fetchedLogs : []);
       }
     })
     .catch(console.error);
@@ -77,13 +77,13 @@ export default function AdminPage() {
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
 
   // Roles state
-  const [permissions, setPermissions] = useState<RolePermission[]>(INITIAL_PERMISSIONS);
+  const [permissions, setPermissions] = useState<RolePermission[]>([]);
 
   // IAM state
-  const [iamPolicies, setIamPolicies] = useState<IAMPolicy[]>(INITIAL_IAM_POLICIES);
+  const [iamPolicies, setIamPolicies] = useState<IAMPolicy[]>([]);
 
   // Audit state
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditSearch, setAuditSearch] = useState("");
 
   // Notification toast

@@ -56,7 +56,7 @@ class FIRCreateRequest(BaseModel):
             raise ValueError('Longitude out of Ahmedabad range')
         return v
 
-@router.post("/create")
+@router.post("")
 async def create_fir(
     request: Request,
     body: FIRCreateRequest,

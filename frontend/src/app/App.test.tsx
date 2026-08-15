@@ -50,6 +50,6 @@ describe('App Component', () => {
 
   it('renders Badge No. input on login screen', () => {
     render(<App />);
-    expect(screen.getAllByPlaceholderText(/Enter your badge number/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByPlaceholderText(/e\.g\., ADMIN001/i).length).toBeGreaterThan(0);
   });
 });

@@ -191,3 +191,26 @@ async def set_officer_permissions(badge_no: str, overrides: List[PermissionOverr
         
     await db.commit()
     return {"status": "permissions updated"}
+
+@router.patch("/officers/me")
+async def update_my_profile(
+    updates: OfficerUpdate,
+    officer = Depends(get_current_officer),
+    db = Depends(get_db)
+):
+    fields = updates.model_dump(exclude_unset=True)
+    if not fields:
+        raise HTTPException(400, "No fields to update")
+    # Only allow name and phone
+    allowed = {k: v for k, v in fields.items() if k in ("name",)}
+    if not allowed:
+        raise HTTPException(400, "No permitted fields")
+    params = []
+    updates_sql = []
+    for col, val in allowed.items():
+        params.append(val)
+        updates_sql.append(f"{col} = ${len(params)}")
+    params.append(officer["id"])
+    await execute(db, f"UPDATE officers SET {', '.join(updates_sql)} WHERE id = ${len(params)}", params)
+    return {"message": "Profile updated"}
+
