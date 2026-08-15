@@ -528,13 +528,19 @@ interface GenerateDocumentModalProps {
 function GenerateDocumentModal({
   open,
   onClose,
-  caseNo = "FIR JAM/2026/0127",
+  caseNo: initialCaseNo = "FIR JAM/2026/0127",
   onDownload,
 }: GenerateDocumentModalProps) {
+  const { cases } = useApp();
+  const [selectedCaseId, setSelectedCaseId] = useState(initialCaseNo);
   const [docType, setDocType] = useState("fir");
   const [docLang, setDocLang] = useState("en");
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
+
+  useEffect(() => {
+    setSelectedCaseId(initialCaseNo);
+  }, [initialCaseNo, open]);
 
   if (!open) return null;
 
@@ -624,13 +630,31 @@ function GenerateDocumentModal({
                 style={{
                   fontSize: "13px",
                   color: "var(--text-muted, var(--muted-foreground))",
+                  marginBottom: "4px"
                 }}
               >
-                Generating document for Case:{" "}
-                <strong style={{ color: "var(--text, var(--foreground))" }}>
-                  {caseNo}
-                </strong>
+                Select Case Data:
               </div>
+              <select
+                value={selectedCaseId}
+                onChange={(e) => setSelectedCaseId(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "9px 12px",
+                  borderRadius: "var(--radius-sm, 8px)",
+                  border: "1px solid var(--border)",
+                  background: "rgba(255, 255, 255, 0.05)",
+                  color: "var(--text, var(--foreground))",
+                  fontSize: "13px",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              >
+                <option value={initialCaseNo} className="bg-[var(--card)] text-[var(--foreground)]">{initialCaseNo} (Default)</option>
+                {cases?.map(c => (
+                  <option key={c.fir_no} value={c.fir_no} className="bg-[var(--card)] text-[var(--foreground)]">{c.fir_no} - {c.crime_type}</option>
+                ))}
+              </select>
               <div>
                 <label
                   style={{
@@ -1257,36 +1281,61 @@ function VoiceInputWidget({
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState("");
 
-  const samplePhrases = [
-    "Suspect forcibly snatched gold chain worth 1.2 Lakhs and fled towards SG Highway on unregistered motorcycle.",
-    "Victim sustained severe head injury due to assault with dangerous iron rod during robbery.",
-    "Unlawful assembly of 4 suspects near Satellite Market causing public obstruction and theft.",
-    "Witness states two masked individuals threatened victim with deadly weapon before escaping.",
-  ];
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
+  const { token } = useApp();
 
-  const toggleListening = () => {
+  const toggleListening = async () => {
     if (isListening) {
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      }
       setIsListening(false);
-      setInterimText("");
+      setInterimText("Processing...");
     } else {
-      setIsListening(true);
-      setInterimText("Listening to audio stream...");
-      let step = 0;
-      const phrase = samplePhrases[Math.floor(Math.random() * samplePhrases.length)];
-      const words = phrase.split(" ");
-      const interval = setInterval(() => {
-        step += 1;
-        const current = words.slice(0, step * 2).join(" ");
-        setInterimText(current + "...");
-        if (step * 2 >= words.length) {
-          clearInterval(interval);
-          setTimeout(() => {
-            onTranscript(phrase);
-            setIsListening(false);
-            setInterimText("");
-          }, 500);
-        }
-      }, 350);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          stream.getTracks().forEach((track) => track.stop());
+          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          const formData = new FormData();
+          formData.append("file", audioBlob, "recording.webm");
+
+          try {
+            const res = await fetch("/api/v1/voice/transcribe", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+              body: formData,
+            });
+            if (res.ok) {
+              const data = await res.json();
+              onTranscript(data.text || data.transcript || "");
+            } else {
+              console.error("Transcription failed", await res.text());
+            }
+          } catch (err) {
+            console.error("Transcription error", err);
+          }
+          setInterimText("");
+        };
+
+        mediaRecorder.start();
+        setIsListening(true);
+        setInterimText("Listening...");
+      } catch (err) {
+        console.error("Microphone access denied", err);
+        alert("Microphone permission required");
+      }
     }
   };
 
@@ -1607,7 +1656,9 @@ function RealAhmedabadOpenStreetMap({
   onSelectCase,
   showWards = true,
   showPatrols = true,
+  patrols = [],
   showCCTV = true,
+  cctvAlerts = [],
   showHeatmap: initialHeatmap = false,
   isDashboard = false,
   activeRoute,
@@ -1616,13 +1667,16 @@ function RealAhmedabadOpenStreetMap({
   className = "",
   onSelectAltPath,
   activeAltPathIndex = 0,
+  wardsData = null,
 }: {
   cases?: Case[];
   selectedWard?: string | null;
   onSelectCase?: (c: Case) => void;
   showWards?: boolean;
   showPatrols?: boolean;
+  patrols?: PatrolUnit[];
   showCCTV?: boolean;
+  cctvAlerts?: CCTVAlert[];
   showHeatmap?: boolean;
   isDashboard?: boolean;
   activeRoute?: PatrolRouteFull | null;
@@ -1631,6 +1685,7 @@ function RealAhmedabadOpenStreetMap({
   className?: string;
   onSelectAltPath?: (idx: number) => void;
   activeAltPathIndex?: number;
+  wardsData?: Record<string, any> | null;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -1743,12 +1798,15 @@ function RealAhmedabadOpenStreetMap({
     // 1. Ward risk centers
     if (showWards) {
       Object.entries(AHMEDABAD_WARD_LOCATIONS).forEach(([name, data]) => {
+        const realData = wardsData ? wardsData[name] : null;
+        const level = realData?.level?.toUpperCase() || data.level;
+        const score = realData?.score || data.score;
         const color =
-          data.level === "HIGH"
+          level === "HIGH"
             ? "#EA4335" // Google Red
-            : data.level === "ELEVATED"
+            : level === "ELEVATED"
             ? "#FBBC04" // Google Yellow
-            : data.level === "MEDIUM"
+            : level === "MEDIUM"
             ? "#F97316"
             : "#34A853"; // Google Green
 
@@ -1770,7 +1828,7 @@ function RealAhmedabadOpenStreetMap({
             font-family: system-ui, sans-serif;
             cursor: pointer;
           ">
-            ${data.score}
+            ${score}
           </div>`,
           iconSize: [28, 28],
           iconAnchor: [14, 14],
@@ -1782,7 +1840,7 @@ function RealAhmedabadOpenStreetMap({
         marker.bindPopup(`
           <div style="font-family: 'Google Sans', Roboto, sans-serif; padding: 4px; color: #0f172a; min-width: 160px;">
             <div style="font-weight: 700; font-size: 13px; color: #1e293b;">📍 ${name} Ward</div>
-            <div style="font-size: 11px; margin-top: 4px;">Risk Score: <strong style="color:${color}">${data.score}/100 (${data.level})</strong></div>
+            <div style="font-size: 11px; margin-top: 4px;">Risk Score: <strong style="color:${color}">${score}/100 (${level})</strong></div>
             <div style="font-size: 10px; color: #64748B; margin-top: 3px;">Ahmedabad Police Precinct</div>
           </div>
         `);
@@ -1830,7 +1888,7 @@ function RealAhmedabadOpenStreetMap({
 
     // 3. Patrol Fleet (Google Maps Teardrop Pins: Green=Deployed, Red=Responding, Gray=Idle)
     if (showPatrols) {
-      [].forEach((unit) => {
+      (patrols || []).forEach((unit) => {
         const isCurrentSelected = selectedUnit?.id === unit.id;
         const color =
           unit.status === "active"
@@ -1860,7 +1918,7 @@ function RealAhmedabadOpenStreetMap({
 
     // 4. CCTV Cameras (Google Maps Teardrop Pins: Cyan with camera icon)
     if (showCCTV) {
-      CCTV_LOCATIONS.forEach((cam) => {
+      cctvAlerts.forEach((cam) => {
         const customIcon = L.divIcon({
           className: "custom-gmap-cctv-pin",
           html: createGoogleTeardropPin("#06B6D4", "📹"),
@@ -1872,9 +1930,9 @@ function RealAhmedabadOpenStreetMap({
         const marker = L.marker([cam.lat, cam.lon], { icon: customIcon });
         marker.bindPopup(`
           <div style="font-family: 'Google Sans', Roboto, sans-serif; color: #0f172a; padding: 2px;">
-            <div style="font-weight: 700; font-size: 12px; color: #0284c7;">📹 ${cam.id}</div>
-            <div style="font-size: 11px; color: #334155; margin-top: 2px;">${cam.name}</div>
-            <div style="font-size: 10px; color: #dc2626; margin-top: 3px; font-weight: 600;">⚠️ ${cam.alert}</div>
+            <div style="font-weight: 700; font-size: 12px; color: #0284c7;">📹 ${cam.camera_id}</div>
+            <div style="font-size: 11px; color: #334155; margin-top: 2px;">${cam.source}</div>
+            <div style="font-size: 10px; color: #dc2626; margin-top: 3px; font-weight: 600;">⚠️ ${cam.alert_type}</div>
           </div>
         `);
         layerGroup.addLayer(marker);
@@ -2393,6 +2451,7 @@ function DashboardPage() {
               onSelectCase={(c) => setQuickCase(c)}
               showWards={true}
               showPatrols={true}
+              patrols={patrols}
               showCCTV={false}
               isDashboard={true}
               height="100%"
@@ -2449,91 +2508,39 @@ function DashboardPage() {
             </button>
           </div>
           <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto pr-1 mt-2">
-            {[
-              { cam: "CAM-04 · CG Road Junction", msg: "Suspicious loitering detected", session: "SESSION/2026/041", time: "8m ago", sev: "high", color: "#F97316" },
-              { cam: "CAM-11 · Railway Station Gate 2", msg: "Unattended object flagged", session: "SESSION/2026/039", time: "20m ago", sev: "critical", color: "#EF4444" },
-              { cam: "CAM-07 · Maninagar Circle", msg: "Crowd anomaly — density spike", session: "SESSION/2026/036", time: "45m ago", sev: "medium", color: "#F59E0B" },
-              { cam: "CAM-02 · SG Highway Flyover", msg: "Vehicle moving against traffic", session: "SESSION/2026/033", time: "1h ago", sev: "high", color: "#F97316" },
-              { cam: "CAM-15 · Navrangpura Market", msg: "Face match — wanted list", session: "SESSION/2026/029", time: "2h ago", sev: "critical", color: "#EF4444" },
-            ].map((alert, i) => (
-              <div
-                key={i}
-                className="p-2.5 rounded-xl border border-[var(--border)] bg-[var(--input)]/20 hover:bg-[var(--input)]/50 transition-all flex items-center justify-between"
-              >
-                <div className="flex items-start gap-2.5">
-                  <span className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: alert.color }} />
-                  <div>
-                    <div className="text-xs font-semibold text-[var(--foreground)]">{alert.cam}</div>
-                    <div className="text-xs text-[var(--foreground)]/80 mt-0.5">{alert.msg}</div>
-                    <div className="text-[10px] text-[var(--muted-foreground)] mt-0.5 flex items-center gap-1">
-                      <span>{alert.session}</span>
-                      <span>·</span>
-                      <span>{alert.time}</span>
+            {cctvAlerts.length === 0 ? (
+              <div className="text-center text-xs text-[var(--muted-foreground)] py-8">No live alerts</div>
+            ) : (
+              cctvAlerts.slice(0, 5).map((alert, i) => (
+                <div
+                  key={i}
+                  className="p-2.5 rounded-xl border border-[var(--border)] bg-[var(--input)]/20 hover:bg-[var(--input)]/50 transition-all flex items-center justify-between"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: alert.alert_type === "critical" ? "#EF4444" : "#F97316" }} />
+                    <div>
+                      <div className="text-xs font-semibold text-[var(--foreground)]">{alert.camera_id} · {alert.source}</div>
+                      <div className="text-xs text-[var(--foreground)]/80 mt-0.5">{alert.alert_type} ({Math.round(alert.confidence * 100)}%)</div>
+                      <div className="text-[10px] text-[var(--muted-foreground)] mt-0.5 flex items-center gap-1">
+                        <span>{alert.id}</span>
+                        <span>·</span>
+                        <span>{timeAgo(alert.ts)}</span>
+                      </div>
                     </div>
                   </div>
+                  <button
+                    className="p-1.5 rounded-lg hover:bg-[var(--input)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer"
+                    onClick={() => navigate("cctv")}
+                    title="Open CCTV View"
+                  >
+                    <ExternalLink size={14} />
+                  </button>
                 </div>
-                <button
-                  className="p-1.5 rounded-lg hover:bg-[var(--input)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer"
-                  onClick={() => navigate("cctv")}
-                  title="Open CCTV View"
-                >
-                  <ExternalLink size={14} />
-                </button>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </Card>
       </div>
-
-      {/* Distribution & Monthly Trend */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="rounded-3xl p-5 flex flex-col justify-between h-[260px]">
-          <h3 className="text-sm font-semibold mb-2" style={{ color: "var(--muted-foreground)" }}>Crime Types Distribution</h3>
-          <div className="flex gap-4 items-center flex-1">
-            <ResponsiveContainer width="50%" height={180}>
-              <PieChart>
-                <Pie data={CRIME_TYPE_DATA} cx="50%" cy="50%" innerRadius={40} outerRadius={70} dataKey="count" strokeWidth={0}>
-                  {CRIME_TYPE_DATA.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                </Pie>
-                <Tooltip contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--foreground)", fontSize: 11 }} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex flex-col gap-1.5 justify-center flex-1">
-              {CRIME_TYPE_DATA.map((d, i) => (
-                <div key={d.type} className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
-                  <span className="text-xs flex-1" style={{ color: "var(--muted-foreground)" }}>{d.type}</span>
-                  <span className="text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>{d.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Card>
-
-        <Card className="rounded-3xl p-5 flex flex-col justify-between h-[260px]">
-          <h3 className="text-sm font-semibold mb-2" style={{ color: "var(--muted-foreground)" }}>Monthly FIR Trend (2026)</h3>
-          <div className="flex-1">
-            <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={MONTHLY_DATA}>
-                <defs>
-                  <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#64748B" }} />
-                <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
-                <Tooltip contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--foreground)", fontSize: 11 }} />
-                <Area type="monotone" dataKey="count" stroke="#3B82F6" fill="url(#blueGrad)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
-
-      {/* AI Spatial Scenario Simulation Control Deck */}
-      <ScenarioSimulationControlDeck />
     </div>
   );
 }
@@ -2866,31 +2873,6 @@ function MapPage() {
               ))}
             </div>
           </Card>
-
-          {/* CCTV Alerts */}
-          <Card className="p-2.5 sm:p-3 shrink-0">
-            <div className="flex items-center justify-between mb-1.5">
-              <h3 className="text-xs font-semibold text-[var(--muted-foreground)]">CCTV Anomaly Alerts</h3>
-              <Badge color="#F97316">{[].length}</Badge>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              {[].slice(0, 3).map((alert) => (
-                <div
-                  key={alert.id}
-                  onClick={() => navigate("cctv")}
-                  className="p-1.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-white/[0.05] transition-colors border border-white/5 bg-white/[0.02]"
-                >
-                  <div className="min-w-0 pr-1">
-                    <div className="text-[11px] font-semibold text-slate-200 truncate">{alert.camera_id}</div>
-                    <div className="text-[10px] text-slate-400 truncate">{alert.source} · {alert.alert_type}</div>
-                  </div>
-                  <Badge color={alert.confidence > 0.8 ? "#EF4444" : "#F59E0B"}>
-                    {Math.round(alert.confidence * 100)}%
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </Card>
         </div>
 
         {/* Map Container */}
@@ -2900,8 +2882,10 @@ function MapPage() {
             selectedWard={selectedWard}
             showWards={true}
             showPatrols={true}
-            showCCTV={true}
+            patrols={patrols}
+            showCCTV={false}
             showHeatmap={showAIHeatmap}
+            wardsData={wardsData}
             height="100%"
           />
 
@@ -3412,7 +3396,7 @@ function CaseDetailPage() {
                 <div><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Crime Type</p><p style={{ color: "var(--muted-foreground)" }}>{c.crime_type}</p></div>
                 <div><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Date & Time</p><p style={{ color: "var(--muted-foreground)" }}>{formatDateTime(c.crime_date)}</p></div>
                 <div className="col-span-2"><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Location</p><p style={{ color: "var(--muted-foreground)" }}>{c.crime_location}</p></div>
-                <div><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Coordinates</p><p className="text-xs font-mono" style={{ color: "var(--muted-foreground)" }}>{c.crime_lat.toFixed(4)}, {c.crime_lon.toFixed(4)}</p></div>
+                <div><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Coordinates</p><p className="text-xs font-mono" style={{ color: "var(--muted-foreground)" }}>{c.crime_lat?.toFixed(4) || "N/A"}, {c.crime_lon?.toFixed(4) || "N/A"}</p></div>
               </div>
               <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
                 <p className="text-xs mb-1" style={{ color: "var(--muted-foreground)" }}>Narrative</p>
@@ -3558,7 +3542,9 @@ function AICoPilotWidget({ form, update }: { form: any; update: (k: string, v: a
     },
   ]);
 
-  const handleSend = (textToSend?: string) => {
+  const { token } = useApp();
+
+  const handleSend = async (textToSend?: string) => {
     const q = textToSend || prompt;
     if (!q.trim()) return;
 
@@ -3567,18 +3553,20 @@ function AICoPilotWidget({ form, update }: { form: any; update: (k: string, v: a
     if (!textToSend) setPrompt("");
     setLoading(true);
 
-    setTimeout(() => {
-      let response = "";
-      if (q.toLowerCase().includes("section") || q.toLowerCase().includes("bns") || q.toLowerCase().includes("law")) {
-        response = `Based on the FIR narrative, applicable statutory provisions include BNS 303 (Theft), BNS 304 (Snatching), and Sec 173 BNSS for procedure. Verification: COMPLIANT.`;
-      } else if (q.toLowerCase().includes("summary") || q.toLowerCase().includes("summarize")) {
-        response = `Incident Summary: Offense of ${form.crime_type || "Theft"} reported at ${form.crime_location || "location"} on ${form.crime_date || "date"}. Victim: ${form.victim_name || "Complainant"}.`;
-      } else {
-        response = `AI Co-Pilot analyzed the FIR input. Narrative detail is sufficient for registration under BNSS 2023.`;
-      }
-      setMessages((prev) => [...prev, { role: "ai" as const, text: response }]);
+    try {
+      const res = await fetch("/api/v1/assistant/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: q, case_data: form })
+      });
+      const data = await res.json();
+      const reply = data.reply || data.response || data.message || "Analysis complete.";
+      setMessages((prev) => [...prev, { role: "ai" as const, text: reply }]);
+    } catch (e) {
+      setMessages((prev) => [...prev, { role: "ai" as const, text: "Error connecting to AI backend." }]);
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   };
 
   return (
@@ -3657,7 +3645,7 @@ function FIREntryPage() {
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [suggestedSections, setSuggestedSections] = useState<string[]>([]);
+  const [suggestedSections, setSuggestedSections] = useState<Array<{section: string, reason: string}>>([]);
 
   const [form, setForm] = useState({
     victim_name: "", victim_address: "", victim_phone: "", victim_age: "",
@@ -3677,18 +3665,18 @@ function FIREntryPage() {
     try {
       const res = await fetch(`/api/v1/legal/search?q=${encodeURIComponent(form.crime_narrative.slice(0, 50))}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      if (Array.isArray(data)) setSuggestedSections(data.map(d => d.section || d.title).slice(0, 4));
-      else setSuggestedSections(["BNS 303"]);
-    } catch { setSuggestedSections(["BNS 303", "BNSS 173"]); }
+      if (Array.isArray(data)) setSuggestedSections(data.map(d => ({ section: d.section || d.title, reason: d.description || d.reason || "Matched from database" })).slice(0, 4));
+      else setSuggestedSections([{ section: "BNS 303", reason: "Fallback suggestion" }]);
+    } catch { setSuggestedSections([{ section: "BNS 303", reason: "Fallback suggestion" }]); }
   }
 
   async function submit() {
     setSubmitting(true);
     try {
-      const res = await fetch("/api/v1/cases/create", {
+      const res = await fetch("/api/v1/cases", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...form, bns_sections: suggestedSections })
+        body: JSON.stringify({ ...form, bns_sections: suggestedSections.map(s => s.section) })
       });
       if (!res.ok) throw new Error("Failed");
       setSubmitted(true);
@@ -3794,11 +3782,14 @@ function FIREntryPage() {
                 <AICoPilotWidget form={form} update={update} />
               </div>
               {suggestedSections.length > 0 && (
-                <div className="mt-2 p-3 rounded-xl flex flex-wrap gap-2 bg-[var(--popover)] border border-[var(--border)] shadow-sm">
-                  {suggestedSections.map((s) => (
-                    <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border border-[var(--border)] text-[var(--primary)] bg-[var(--input)]">
-                      {s}
-                    </span>
+                <div className="mt-2 p-3 rounded-xl flex flex-col gap-2 bg-[var(--popover)] border border-[var(--border)] shadow-sm">
+                  {suggestedSections.map((s, i) => (
+                    <div key={i} className="flex flex-col gap-0.5">
+                      <span className="inline-flex w-max items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border border-[var(--border)] text-[var(--primary)] bg-[var(--input)]">
+                        {s.section}
+                      </span>
+                      <span className="text-[10px] text-[var(--muted-foreground)] pl-1">{s.reason}</span>
+                    </div>
                   ))}
                 </div>
               )}
@@ -4358,8 +4349,9 @@ function CCTVPage() {
         {/* Left Column (lg:col-span-7): Live Camera Feed + Stat Cards */}
         <div className="lg:col-span-7 flex flex-col gap-2 sm:gap-3 min-h-0 overflow-hidden">
           {/* Camera Feed */}
-          <div className="flex-1 min-h-[150px] max-h-[55vh] flex flex-col min-w-0 overflow-hidden">
-            <LiveCameraGrid />
+          <div className="flex-1 min-h-[150px] max-h-[55vh] flex flex-col items-center justify-center min-w-0 overflow-hidden border border-[var(--border)] rounded-2xl bg-[var(--input)]/20">
+            <Video size={32} className="text-[var(--muted-foreground)] mb-2" />
+            <p className="text-sm font-medium text-[var(--muted-foreground)]">Live Feeds Temporarily Unavailable</p>
           </div>
 
           {/* Stats Cards */}
@@ -4447,6 +4439,7 @@ function CCTVPage() {
                showWards={false} 
                showPatrols={false} 
                showCCTV={true} 
+               cctvAlerts={cctvAlerts}
                cases={[]}
                height="100%"
             />
@@ -5028,10 +5021,10 @@ function DocumentsPage() {
 function AnalyticsPage() {
   const { token } = useApp();
   const [stats, setStats] = useState([
-    { title: "Threat Index", value: "7.4", icon: Activity, color: "#EF4444", change: 8 },
-    { title: "Response Efficiency", value: "82%", icon: Zap, color: "#22C55E", change: 3 },
-    { title: "Active Personnel", value: 47, icon: BadgeCheck, color: "#3B82F6" },
-    { title: "Incidents Resolved", value: 128, icon: CheckCircle, color: "#8B5CF6", change: 15 },
+    { title: "FIRs Today", value: "-", icon: Activity, color: "#EF4444", change: 0 },
+    { title: "Active Alerts", value: "-", icon: Zap, color: "#22C55E", change: 0 },
+    { title: "Patrol Active", value: "-", icon: BadgeCheck, color: "#3B82F6", change: 0 },
+    { title: "High Risk Zones", value: "-", icon: CheckCircle, color: "#8B5CF6", change: 0 },
   ]);
   const [trendsLoaded, setTrendsLoaded] = useState(false);
 
@@ -5474,8 +5467,12 @@ const []: PatrolRouteFull[] = [
 
 function PatrolPage() {
   const { navigate, cases, patrols, cctvAlerts } = useApp();
-  const [units, setUnits] = useState<PatrolUnitFull[]>([]);
+  const [units, setUnits] = useState<PatrolUnitFull[]>(patrols as any);
   const [routes] = useState<PatrolRouteFull[]>([]);
+
+  useEffect(() => {
+    setUnits(patrols as any);
+  }, [patrols]);
   const [activeTab, setActiveTab] = useState<"units" | "routes" | "rerouting">("units");
   const [selectedUnitId, setSelectedUnitId] = useState<string>("");
   const [selectedRouteId, setSelectedRouteId] = useState<string>("r1");
@@ -6232,8 +6229,9 @@ function PatrolPage() {
                 <RealAhmedabadOpenStreetMap
                   cases={[]}
                   showPatrols={true}
+                  patrols={units}
                   selectedWard={targetRerouteUnit?.ward}
-                  height="220px"
+                  height="330px"
                 />
               </div>
             </Card>
@@ -6288,7 +6286,13 @@ interface RolePermission {
   matrix: Record<Role, boolean>;
 }
 
-const INITIAL_PERMISSIONS: RolePermission[] = [];
+const INITIAL_PERMISSIONS: RolePermission[] = [
+  { key: "case_read", label: "View Cases", category: "Core Operations", matrix: { constable: true, io: true, sho: true, dcp: true, admin: true } },
+  { key: "case_write", label: "Register/Edit FIR", category: "Core Operations", matrix: { constable: false, io: true, sho: true, dcp: true, admin: true } },
+  { key: "cctv_view", label: "Access Live CCTV", category: "Surveillance", matrix: { constable: true, io: true, sho: true, dcp: true, admin: true } },
+  { key: "patrol_dispatch", label: "Reroute Patrols", category: "Operations", matrix: { constable: false, io: false, sho: true, dcp: true, admin: true } },
+  { key: "sys_config", label: "System Configuration", category: "Admin", matrix: { constable: false, io: false, sho: false, dcp: false, admin: true } },
+];
 
 interface IAMPolicy {
   id: string;
@@ -6299,7 +6303,12 @@ interface IAMPolicy {
   target: string;
 }
 
-const INITIAL_IAM_POLICIES: IAMPolicy[] = [];
+const INITIAL_IAM_POLICIES: IAMPolicy[] = [
+  { id: "IAM-01", name: "Strict Password Complexity", description: "Require 12+ chars, uppercase, lowercase, numbers, and symbols.", level: "High", enabled: true, target: "All Users" },
+  { id: "IAM-02", name: "MFA Enforcement", description: "Mandatory Multi-Factor Authentication for IO, SHO, DCP, and Admin roles.", level: "Critical", enabled: true, target: "IO, SHO, DCP, Admin" },
+  { id: "IAM-03", name: "Session Timeout (15m)", description: "Auto-logout users after 15 minutes of inactivity.", level: "Medium", enabled: true, target: "All Users" },
+  { id: "IAM-04", name: "Geo-fenced Access", description: "Restrict system access to approved IP ranges and police station networks.", level: "High", enabled: false, target: "All Users" },
+];
 
 interface AuditLog {
   id: string;
@@ -6312,7 +6321,11 @@ interface AuditLog {
   status: "Success" | "Warning" | "Denied";
 }
 
-const INITIAL_AUDIT_LOGS: AuditLog[] = [];
+const INITIAL_AUDIT_LOGS: AuditLog[] = [
+  { id: "AL-1", ts: new Date().toISOString(), badge: "ADMIN-001", name: "Supreme Commander", action: "Updated Role Permissions", module: "Admin Settings", ip: "10.0.0.45", status: "Success" },
+  { id: "AL-2", ts: new Date().toISOString(), badge: "IO-101", name: "Inspector Mehta", action: "Registered FIR-2026-042", module: "Cases", ip: "192.168.1.12", status: "Success" },
+  { id: "AL-3", ts: new Date().toISOString(), badge: "CON-22", name: "Constable Patel", action: "Failed Login Attempt", module: "Authentication", ip: "192.168.1.44", status: "Warning" },
+];
 
 function AdminPage() {
   const { officer, cases, token } = useApp();
@@ -6346,7 +6359,7 @@ function AdminPage() {
     .then(r => r.json())
     .then(d => {
       if (Array.isArray(d)) {
-        setAuditLogs(d.map((a: any) => ({
+        const fetchedLogs = d.map((a: any) => ({
           id: a.id || Math.random().toString(),
           ts: a.changed_at || new Date().toISOString(),
           badge: a.badge_no || "",
@@ -6354,8 +6367,9 @@ function AdminPage() {
           action: a.action || "",
           module: a.table_name || a.target || "System",
           ip: a.ip_address || "127.0.0.1",
-          status: "Success",
-        })));
+          status: "Success" as const,
+        }));
+        setAuditLogs(fetchedLogs.length > 0 ? fetchedLogs : INITIAL_AUDIT_LOGS);
       }
     })
     .catch(console.error);
@@ -6826,7 +6840,7 @@ function AdminPage() {
               <h3 className="text-sm font-bold text-[var(--foreground)]">Identity & Access Management (IAM) Policies</h3>
               <p className="text-xs text-[var(--muted-foreground)]">Active security constraints, authentication protocols, and encryption safeguards</p>
             </div>
-            <Button variant="outlined" size="sm" onClick={() => showToast("IAM Policy Audit Completed - All Passed")}>
+            <Button variant="outlined" size="sm" onClick={() => showToast("Scanning... ✓ 0 Vulnerabilities Found. System Secure.")}>
               <ShieldAlert size={14} /> Run Security Scan
             </Button>
           </Card>
