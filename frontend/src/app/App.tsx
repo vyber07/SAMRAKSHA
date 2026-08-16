@@ -199,15 +199,6 @@ const useApp = () => useContext(Ctx);
 
 
 
-
-const HOURLY_DATA: any[] = [];
-
-const WEEKLY_DATA: any[] = [];
-
-const CRIME_TYPE_DATA: any[] = [];
-
-const MONTHLY_DATA: any[] = [];
-
 const CHART_COLORS = ["#3B82F6", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", "#F97316", "#EC4899"];
 
 
@@ -1428,6 +1419,21 @@ function VoiceInputWidget({
 function SegmentedChartCard({ title = "Incident Frequency Dynamics" }: { title?: string }) {
   const [timeSeg, setTimeSeg] = useState<"hourly" | "weekly" | "monthly">("hourly");
   const [chartType, setChartType] = useState<"bar" | "area" | "line">("bar");
+  const [trends, setTrends] = useState({ hourly: [], weekly: [], monthly: [] });
+
+  useEffect(() => {
+    const token = localStorage.getItem("samraksha_token");
+    fetch("/api/v1/analytics/trends", { 
+      headers: token ? { Authorization: `Bearer ${token}` } : {} 
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.hourly) {
+        setTrends(data);
+      }
+    })
+    .catch(console.error);
+  }, []);
 
   const timeSegments: { key: "hourly" | "weekly" | "monthly"; label: string }[] = [
     { key: "hourly", label: "Hourly" },
@@ -1441,9 +1447,8 @@ function SegmentedChartCard({ title = "Incident Frequency Dynamics" }: { title?:
     { key: "line", label: "Line" },
   ];
 
-  const dataMap = { hourly: HOURLY_DATA, weekly: WEEKLY_DATA, monthly: MONTHLY_DATA };
   const keyMap = { hourly: "hour", weekly: "day", monthly: "month" };
-  const data = dataMap[timeSeg];
+  const data = trends[timeSeg] || [];
   const xKey = keyMap[timeSeg];
 
   return (
@@ -4147,6 +4152,6 @@ export default function App() {
 }
 
 export {
-  timeAgo, MapPage, cn, WS_COLOR, Chip, QuickViewModal, Select, NAV_ITEMS, LoginPage, CAMERA_FEEDS, Modal, formatDateTime, SegmentedChartCard, HoverTooltip, AnalyticsPage, CRIME_TYPE_DATA, Button, PageHeader, AssistantPage, createGoogleTeardropPin, ALERT_COLOR, Card, CCTV_LOCATIONS, ROLE_CONFIG, LiveCameraGrid, DocumentsPage, ScenarioSimulationControlDeck, AHMEDABAD_WARD_LOCATIONS, FIREntryPage, StatCard, Badge, Ctx, Sidebar, WEEKLY_DATA, RealAhmedabadOpenStreetMap, CaseDetailPage, STATUS_CONFIG, TopBar, BottomNav, VoiceInputWidget, CHART_COLORS, AICoPilotWidget, AHMEDABAD_WARDS, formatTime, formatDate, HOURLY_DATA, GenerateDocumentModal, MONTHLY_DATA, Input, RISK_CONFIG, AppShell, INITIAL_ADMIN_USERS, useApp, downloadCasesCSV, INITIAL_AUDIT_LOGS, INITIAL_PERMISSIONS, INITIAL_IAM_POLICIES
+  timeAgo, MapPage, cn, WS_COLOR, Chip, QuickViewModal, Select, NAV_ITEMS, LoginPage, CAMERA_FEEDS, Modal, formatDateTime, SegmentedChartCard, HoverTooltip, AnalyticsPage, Button, PageHeader, AssistantPage, createGoogleTeardropPin, ALERT_COLOR, Card, CCTV_LOCATIONS, ROLE_CONFIG, LiveCameraGrid, DocumentsPage, ScenarioSimulationControlDeck, AHMEDABAD_WARD_LOCATIONS, FIREntryPage, StatCard, Badge, Ctx, Sidebar, RealAhmedabadOpenStreetMap, CaseDetailPage, STATUS_CONFIG, TopBar, BottomNav, VoiceInputWidget, CHART_COLORS, AICoPilotWidget, AHMEDABAD_WARDS, formatTime, formatDate, GenerateDocumentModal, Input, RISK_CONFIG, AppShell, INITIAL_ADMIN_USERS, useApp, downloadCasesCSV, INITIAL_AUDIT_LOGS, INITIAL_PERMISSIONS, INITIAL_IAM_POLICIES
 };
 export type { DiaryEntry, AuditLog, AppCtx, CreatedDocument, RolePermission, Officer, WSMessage, GenerateDocumentModalProps, Page, ChatMsg, AdminUser, CCTVAlert, Case, IAMPolicy, Role, PatrolUnitFull, NavItem, PatrolRouteFull, PatrolUnit, CaseStatus };
