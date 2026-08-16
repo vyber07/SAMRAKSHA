@@ -961,11 +961,11 @@ interface NavItem { id: Page; label: string; icon: React.ElementType; roles: Rol
 
 const NAV_ITEMS: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["sho", "dcp", "admin"] },
+  { id: "assistant", label: "AI Assistant", icon: Bot, roles: ["constable", "io", "sho", "dcp", "admin"] },
   { id: "map", label: "Crime Map", icon: Map, roles: ["constable", "io", "sho", "dcp", "admin"] },
   { id: "patrol", label: "Patrolling Units", icon: Siren, roles: ["constable", "io", "sho", "dcp", "admin"] },
   { id: "cases", label: "Cases", icon: FolderOpen, roles: ["io", "sho", "dcp", "admin"] },
   { id: "fir-entry", label: "New FIR", icon: Plus, roles: ["io", "sho", "admin"] },
-  { id: "assistant", label: "AI Assistant", icon: Bot, roles: ["constable", "io", "sho", "dcp", "admin"] },
   { id: "cctv", label: "CCTV", icon: Video, roles: ["sho", "dcp", "admin"] },
   
   { id: "analytics", label: "Analytics", icon: BarChart2, roles: ["dcp", "admin"] },
@@ -1099,7 +1099,7 @@ function Sidebar({ wsConnected }: { wsConnected: boolean }) {
 function BottomNav() {
   const { officer, page, navigate } = useApp();
   if (!officer) return null;
-  const allowed = NAV_ITEMS.filter((i) => i.roles.includes(officer.role)).slice(0, 5);
+  const allowed = NAV_ITEMS.filter((i) => i.roles.includes(officer.role)).slice(0, 6);
 
   return (
     <div
@@ -1429,7 +1429,11 @@ function SegmentedChartCard({ title = "Incident Frequency Dynamics" }: { title?:
     .then(r => r.json())
     .then(data => {
       if (data && data.hourly) {
-        setTrends(data);
+        setTrends({
+          hourly: data.hourly.map((d: any) => ({ ...d, count: Number(d.count) })),
+          weekly: data.weekly.map((d: any) => ({ ...d, count: Number(d.count) })),
+          monthly: data.monthly.map((d: any) => ({ ...d, count: Number(d.count) })),
+        });
       }
     })
     .catch(console.error);
@@ -1894,7 +1898,7 @@ function RealAhmedabadOpenStreetMap({
         ? [selectedUnit.lat, selectedUnit.lon]
         : [checkpoints[0].lat, checkpoints[0].lon];
 
-      const primaryCoords: [number, number][] = [
+      const primaryCoords: [number, number][] = effectiveRoute.road_path || [
         startPoint,
         ...checkpoints.map((cp) => [cp.lat, cp.lon] as [number, number]),
       ];
@@ -2775,11 +2779,13 @@ function AssistantPage() {
 
   const { token } = useApp();
 
-  async function sendMessage() {
-    if (!input.trim()) return;
-    const userMsg: ChatMsg = { role: "user", content: input, ts: new Date().toISOString() };
+  async function sendMessage(textOverride?: string) {
+    const textToUse = textOverride || input;
+    if (!textToUse.trim()) return;
+    
+    const userMsg: ChatMsg = { role: "user", content: textToUse, ts: new Date().toISOString() };
     setMessages((m) => [...m, userMsg]);
-    setInput("");
+    if (!textOverride) setInput("");
     setLoading(true);
 
     try {
@@ -2789,59 +2795,64 @@ function AssistantPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ query: input })
+        body: JSON.stringify({ query: textToUse })
       });
       const data = await res.json();
       const aiMsg: ChatMsg = {
         role: "assistant",
         content: data.response || "No response.",
-        source: "LLM",
+        source: "CrimeGPT",
         ts: new Date().toISOString(),
       };
       setMessages((m) => [...m, aiMsg]);
     } catch (e) {
-      setMessages((m) => [...m, { role: "assistant", content: "Error connecting to assistant.", ts: new Date().toISOString() }]);
+      setMessages((m) => [...m, { role: "assistant", content: "Error connecting to CrimeGPT assistant.", ts: new Date().toISOString() }]);
     }
     setLoading(false);
   }
 
   return (
-    <div className="flex gap-4" style={{ height: "calc(100vh - 5rem)" }}>
+    <div className="flex gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ height: "calc(100vh - 5rem)" }}>
       {/* Chat panel */}
-      <div className="flex-1 flex flex-col rounded-xl overflow-hidden border bg-[var(--card)] border-[var(--border)] shadow-md">
+      <div className="flex-1 flex flex-col rounded-xl overflow-hidden border bg-[var(--card)] border-[var(--border)] shadow-2xl relative z-10">
         {/* Header */}
-        <div className="px-4 py-3 border-b flex items-center gap-3 border-[var(--border)] bg-[var(--card)]">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-500/15">
-            <Bot size={16} className="text-blue-600 font-bold" />
+        <div className="px-6 py-4 border-b flex items-center gap-4 border-[var(--border)] bg-gradient-to-r from-blue-900/40 to-[var(--card)] backdrop-blur-xl">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+            <Bot size={20} className="text-white" />
           </div>
           <div>
-            <p className="text-sm font-bold text-[var(--foreground)]">SAMRAKSHA AI</p>
-            <p className="text-xs font-bold text-[var(--muted-foreground)]">Case Intelligence Assistant</p>
+            <p className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-200">CrimeGPT Assistant</p>
+            <p className="text-xs font-medium text-blue-200/60">Advanced Legal & Case Intelligence</p>
           </div>
-          <div className="ml-auto">
-            <Badge color="#22C55E">Active</Badge>
+          <div className="ml-auto flex items-center gap-2">
+             <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+               <span className="text-xs font-bold text-emerald-400">Online</span>
+             </div>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 font-bold text-[var(--foreground)]">
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 text-[var(--foreground)] scroll-smooth">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-blue-500/15">
-                <Bot size={28} className="text-blue-600" />
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-center mt-10">
+              <div className="w-20 h-20 rounded-3xl flex items-center justify-center bg-blue-500/10 border border-blue-500/20 shadow-2xl">
+                <Bot size={40} className="text-blue-500" />
               </div>
-              <p className="text-base font-bold text-[var(--foreground)]">AI Case Assistant</p>
-              <p className="text-xs font-bold max-w-xs text-[var(--muted-foreground)]">
-                Ask about case evidence, applicable legal sections, crime patterns, or investigation progress.
+              <p className="text-2xl font-bold text-[var(--foreground)]">How can I assist your investigation?</p>
+              <p className="text-sm max-w-md text-[var(--muted-foreground)] leading-relaxed">
+                CrimeGPT has access to BNS sections, past FIRs, and cross-district criminal records. 
+                Use voice or text to query evidence.
               </p>
-              <div className="flex flex-col gap-2 mt-2 w-full max-w-sm">
-                {["What sections apply to this case?", "Summarize the crime narrative", "List all open cases by type"].map((q) => (
+              <div className="grid grid-cols-2 gap-3 mt-6 w-full max-w-2xl">
+                {["Suggest applicable BNS sections for robbery with injury", "Summarize the recent SG Highway accident", "List modus operandi for chain snatching in West Zone", "Draft a legal notice for absconding suspect"].map((q) => (
                   <button
                     key={q}
-                    onClick={() => setInput(q)}
-                    className="px-3.5 py-2 rounded-xl text-xs text-left font-bold transition-all bg-blue-500/10 hover:bg-blue-500/20 text-blue-900 dark:text-blue-200 border border-blue-500/30 cursor-pointer shadow-sm"
+                    onClick={() => { setInput(q); sendMessage(q); }}
+                    className="p-4 rounded-xl text-sm text-left font-medium transition-all bg-[var(--input)] hover:bg-blue-500/10 hover:border-blue-500/50 text-[var(--foreground)] border border-[var(--border)] shadow-sm hover:shadow-md flex items-start gap-3 group"
                   >
-                    {q}
+                    <Search size={16} className="text-blue-500 mt-0.5 group-hover:scale-110 transition-transform" />
+                    <span>{q}</span>
                   </button>
                 ))}
               </div>
@@ -2849,62 +2860,83 @@ function AssistantPage() {
           )}
 
           {messages.map((msg, i) => (
-            <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
-              <div
-                className={cn(
-                  "max-w-[75%] p-3.5 rounded-2xl text-xs leading-relaxed font-bold shadow-sm border",
-                  msg.role === "user"
-                    ? "bg-blue-600/20 dark:bg-blue-600/30 border-blue-500/40 text-[var(--foreground)]"
-                    : "bg-[var(--card)] border-[var(--border)] text-slate-950 dark:text-slate-100"
-                )}
-              >
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className={cn("text-xs font-bold", msg.role === "user" ? "text-blue-700 dark:text-blue-400" : "text-emerald-700 dark:text-emerald-400")}>
-                    {msg.role === "user" ? "You" : "SAMRAKSHA AI"}
-                  </span>
-                  {msg.source && (
-                    <Badge color={msg.source === "LLM" ? "#22C55E" : "#F59E0B"}>{msg.source}</Badge>
-                  )}
+            <div key={i} className={cn("flex w-full", msg.role === "user" ? "justify-end" : "justify-start")}>
+              <div className={cn("flex gap-3 max-w-[85%]", msg.role === "user" ? "flex-row-reverse" : "flex-row")}>
+                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-auto", msg.role === "user" ? "bg-slate-700" : "bg-blue-600 shadow-[0_0_10px_rgba(59,130,246,0.5)]")}>
+                  {msg.role === "user" ? <User size={14} className="text-white" /> : <Bot size={14} className="text-white" />}
                 </div>
-                {msg.content}
+                <div
+                  className={cn(
+                    "p-4 rounded-2xl text-sm leading-relaxed shadow-sm border",
+                    msg.role === "user"
+                      ? "bg-blue-600 text-white border-blue-500 rounded-br-sm"
+                      : "bg-[var(--card)] border-[var(--border)] text-[var(--foreground)] rounded-bl-sm"
+                  )}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={cn("text-xs font-bold", msg.role === "user" ? "text-blue-100" : "text-blue-400")}>
+                      {msg.role === "user" ? "Officer" : "CrimeGPT"}
+                    </span>
+                    {msg.source && (
+                      <Badge color={msg.source === "CrimeGPT" ? "#3B82F6" : "#F59E0B"}>{msg.source}</Badge>
+                    )}
+                  </div>
+                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                </div>
               </div>
             </div>
           ))}
 
           {loading && (
-            <div className="flex justify-start">
-              <div className="p-3 rounded-xl bg-[var(--input)] border border-[var(--border)]">
-                <div className="flex gap-1 items-center">
-                  {[0, 1, 2].map((d) => (
-                    <div key={d} className="w-2 h-2 rounded-full animate-bounce bg-blue-600" style={{ animationDelay: `${d * 0.15}s` }} />
-                  ))}
-                </div>
+            <div className="flex justify-start w-full">
+              <div className="flex gap-3 max-w-[85%]">
+                 <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-auto bg-blue-600 shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+                    <Bot size={14} className="text-white" />
+                 </div>
+                 <div className="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)] rounded-bl-sm flex items-center h-[52px]">
+                   <div className="flex gap-1.5 items-center">
+                     {[0, 1, 2].map((d) => (
+                       <div key={d} className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: `${d * 0.15}s` }} />
+                     ))}
+                   </div>
+                 </div>
               </div>
             </div>
           )}
           <div ref={msgEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="px-4 py-3 border-t flex flex-col gap-1.5 border-[var(--border)] bg-[var(--card)]">
-          <div className="flex gap-2">
-            <input
+        {/* Input Area */}
+        <div className="p-4 border-t border-[var(--border)] bg-[var(--card)] z-20">
+          <div className="relative flex items-end gap-2 bg-[var(--input)] border border-[var(--border)] rounded-2xl p-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all shadow-inner">
+            <div className="pb-1.5 pl-1">
+              <VoiceInputWidget compact onTranscript={(t) => setInput(prev => prev + " " + t)} />
+            </div>
+            <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-              placeholder="Ask about cases, sections, patterns..."
-              className="flex-1 rounded-xl px-4 py-2.5 text-xs font-bold outline-none bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder:font-bold placeholder:text-[var(--muted-foreground)] focus:border-blue-500"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder="Ask CrimeGPT about cases, laws, or patterns... (Press Enter to send)"
+              className="flex-1 max-h-32 min-h-[44px] bg-transparent resize-none py-3 px-2 text-sm outline-none text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
+              rows={1}
             />
-            <button
-              onClick={sendMessage}
-              disabled={!input.trim() || loading}
-              className="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-blue-600 hover:bg-blue-500 text-white cursor-pointer shadow-md disabled:opacity-50"
-            >
-              <Send size={16} />
-            </button>
+            <div className="pb-1 pr-1 flex gap-2">
+              <button
+                onClick={() => sendMessage()}
+                disabled={!input.trim() || loading}
+                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-blue-600 hover:bg-blue-500 text-white cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send size={18} className={loading ? "animate-pulse" : ""} />
+              </button>
+            </div>
           </div>
-          <p className="text-[10px] text-center text-[var(--muted-foreground)] truncate">
-            AI answers are for officer review only. Always verify with official court records before legal action.
+          <p className="text-[10px] text-center text-[var(--muted-foreground)] mt-3 font-medium">
+            AI generated responses are for investigative reference only and must be verified with official legal documents.
           </p>
         </div>
       </div>
@@ -3758,6 +3790,7 @@ interface PatrolRouteFull {
   risk_level: "HIGH" | "ELEVATED" | "MEDIUM" | "LOW";
   color: string;
   checkpoints: { name: string; lat: number; lon: number; done: boolean; time?: string }[];
+  road_path?: [number, number][];
 }
 
 const []: PatrolUnitFull[] = [
@@ -3816,6 +3849,98 @@ const []: PatrolRouteFull[] = [
 
 // ─── App Shell ────────────────────────────────────────────────────────────────
 
+
+function FloatingChatbot() {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [input, setInput] = React.useState("");
+  const [messages, setMessages] = React.useState<ChatMsg[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const { token } = useApp();
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isOpen]);
+
+  async function sendMessage() {
+    if (!input.trim()) return;
+    const userMsg: ChatMsg = { role: "user", content: input, ts: new Date().toISOString() };
+    setMessages(m => [...m, userMsg]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/v1/assistant/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ query: input })
+      });
+      const data = await res.json();
+      setMessages(m => [...m, { role: "assistant", content: data.response || "No response.", source: "CrimeGPT", ts: new Date().toISOString() }]);
+    } catch (e) {
+      setMessages(m => [...m, { role: "assistant", content: "Error connecting to CrimeGPT.", ts: new Date().toISOString() }]);
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div className="fixed bottom-24 right-6 md:bottom-10 md:right-10 z-[100] flex flex-col items-end pointer-events-none">
+      {isOpen && (
+        <div className="w-[340px] h-[480px] max-h-[70vh] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] mb-4 flex flex-col overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-200 pointer-events-auto">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-700 to-blue-600 p-3.5 text-white flex justify-between items-center shadow-md">
+            <span className="font-bold flex items-center gap-2 text-sm tracking-wide">
+               <Bot size={18}/> CrimeGPT Copilot
+            </span>
+            <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded-md transition-colors"><X size={18}/></button>
+          </div>
+          
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 text-sm bg-[var(--background)]">
+            {messages.length === 0 && (
+              <div className="text-center text-[var(--muted-foreground)] mt-10 text-xs font-medium">
+                I'm your AI Copilot. Ask me anything about ongoing cases, suspect records, or legal codes.
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} className={cn("p-3 rounded-2xl max-w-[85%] shadow-sm", m.role === 'user' ? 'bg-blue-600 text-white ml-auto rounded-br-sm' : 'bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] mr-auto rounded-bl-sm')}>
+                <div className="whitespace-pre-wrap text-xs leading-relaxed">{m.content}</div>
+              </div>
+            ))}
+            {loading && (
+               <div className="bg-[var(--card)] border border-[var(--border)] p-3 rounded-2xl rounded-bl-sm mr-auto max-w-[85%] flex gap-1">
+                 {[0, 1, 2].map((d) => (
+                   <div key={d} className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: `${d * 0.15}s` }} />
+                 ))}
+               </div>
+            )}
+            <div ref={endRef} />
+          </div>
+
+          {/* Input */}
+          <div className="p-3 border-t border-[var(--border)] bg-[var(--card)] flex gap-2 items-center">
+            <input 
+              value={input} onChange={e => setInput(e.target.value)} 
+              onKeyDown={e => e.key === 'Enter' && sendMessage()}
+              className="flex-1 bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] px-3 py-2.5 rounded-xl text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-[var(--muted-foreground)]" 
+              placeholder="Message CrimeGPT..." 
+            />
+            <button onClick={sendMessage} disabled={!input.trim() || loading} className="bg-blue-600 text-white h-9 w-9 flex items-center justify-center rounded-xl hover:bg-blue-500 transition-colors shadow-md disabled:opacity-50"><Send size={14}/></button>
+          </div>
+        </div>
+      )}
+      
+      {/* Floating Button */}
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-14 h-14 bg-gradient-to-tr from-blue-700 to-blue-500 text-white rounded-full flex items-center justify-center shadow-[0_8px_30px_rgb(59,130,246,0.5)] hover:shadow-[0_8px_30px_rgb(59,130,246,0.8)] hover:scale-105 transition-all pointer-events-auto border-2 border-white/10 group"
+      >
+        <Bot size={28} className="group-hover:animate-pulse" />
+      </button>
+    </div>
+  );
+}
+
 function AppShell({ children }: { children: React.ReactNode }) {
   const { wsConnected, page } = useApp();
   const isCCTV = page === "cctv";
@@ -3836,6 +3961,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <BottomNav />
+      <FloatingChatbot />
     </div>
   );
 }
