@@ -44,13 +44,24 @@ git clone https://github.com/your-org/samraksha.git
 cd samraksha
 ```
 
-### 2. Backend Setup
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-pip install -r requirements.txt
-```
+### 2. Use Python 3.10+ and install dependencies:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+3. **Database Seeding (New in Phase 7)**:
+   To populate the system with realistic Ahmedabad City Police data (Officers, Cases, Hotspots, CCTV Alerts), run the dedicated seeding script before starting the server:
+   ```bash
+   # From the backend directory:
+   python -m app.db.seed
+   ```
+
+4. Run the FastAPI server:
+   ```bash
+   uvicorn app.main:app --host 0.0.0.0 --port 8000
+   ```
 
 Set up your `.env` file in the `backend/` directory:
 ```env
