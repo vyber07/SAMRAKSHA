@@ -974,7 +974,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "patrol", label: "Patrolling Units", icon: Siren, roles: ["constable", "io", "sho", "dcp", "admin"] },
   { id: "cases", label: "Cases", icon: FolderOpen, roles: ["io", "sho", "dcp", "admin"] },
   { id: "fir-entry", label: "New FIR", icon: Plus, roles: ["io", "sho", "admin"] },
-  
+  { id: "assistant", label: "AI Assistant", icon: Bot, roles: ["constable", "io", "sho", "dcp", "admin"] },
   { id: "cctv", label: "CCTV", icon: Video, roles: ["sho", "dcp", "admin"] },
   
   { id: "analytics", label: "Analytics", icon: BarChart2, roles: ["dcp", "admin"] },
