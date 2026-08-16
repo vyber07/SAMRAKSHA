@@ -197,7 +197,7 @@ async def get_cctv_anomalies(
     db = Depends(get_db),
     officer = Depends(auth.require_permission('cctv_view'))
 ):
-    from app.db.connection import fetch_all
+    
     anomalies = (await db.execute(text("""
         SELECT id, camera_id, source, alert_type, confidence, person_count, lat, lon, ts
         FROM cctv_alerts

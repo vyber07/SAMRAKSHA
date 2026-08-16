@@ -79,6 +79,19 @@ export default function AdminPage() {
   // Roles state
   const [permissions, setPermissions] = useState<RolePermission[]>([]);
 
+  useEffect(() => {
+    fetch("/api/v1/admin/permissions/matrix", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (Array.isArray(d)) {
+        setPermissions(d);
+      }
+    })
+    .catch(console.error);
+  }, [token]);
+
   // IAM state
   const [iamPolicies, setIamPolicies] = useState<IAMPolicy[]>([]);
 

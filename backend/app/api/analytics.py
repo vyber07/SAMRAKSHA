@@ -53,12 +53,20 @@ async def get_dashboard_summary(
           AND hour_slot = EXTRACT(HOUR FROM NOW())::INTEGER
     """), {})).mappings().fetchone()
 
+    avg_risk = (await db.execute(text("""
+        SELECT AVG(risk_score) as avg_score
+        FROM zone_risk_scores
+        WHERE hour_slot = EXTRACT(HOUR FROM NOW())::INTEGER
+    """), {})).mappings().fetchone()
+    predictive_score = int(avg_risk['avg_score']) if avg_risk['avg_score'] else 0
+
     return {
         "firs_today":         today_count,
         "firs_today_change":  change_pct,
         "active_alerts":      active_alerts['count'],
         "patrol_active":      patrol_active['count'],
         "high_risk_zones":    high_risk['count'],
+        "predictive_score":   predictive_score,
     }
 
 @router.get("/trends")

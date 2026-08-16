@@ -62,6 +62,49 @@ app.add_middleware(
     allowed_hosts=["localhost", "127.0.0.1", "*.samraksha.local", "backend", "*"]
 )
 
+import asyncio
+from fastapi import Request
+@app.middleware("http")
+async def audit_log_middleware(request: Request, call_next):
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        response = await call_next(request)
+        
+        async def save_audit():
+            try:
+                from app.db.connection import engine
+                from sqlalchemy import text
+                async with engine.begin() as conn:
+                    await conn.execute(text("""
+                        CREATE TABLE IF NOT EXISTS audit_logs (
+                            id SERIAL PRIMARY KEY,
+                            changed_at TIMESTAMPTZ DEFAULT NOW(),
+                            action VARCHAR(50),
+                            target VARCHAR(100),
+                            badge_no VARCHAR(50),
+                            officer_name VARCHAR(200),
+                            ip_address VARCHAR(50),
+                            details TEXT
+                        )
+                    """))
+                    await conn.execute(text("""
+                        INSERT INTO audit_logs (action, target, ip_address, details, badge_no, officer_name)
+                        VALUES (:action, :target, :ip, :details, :badge, :name)
+                    """), {
+                        "action": request.method,
+                        "target": request.url.path,
+                        "ip": request.client.host if request.client else "127.0.0.1",
+                        "details": f"Status: {response.status_code}",
+                        "badge": "System",
+                        "name": "System"
+                    })
+            except Exception as e:
+                logger.error(f"Audit middleware failed: {e}")
+                
+        asyncio.create_task(save_audit())
+        return response
+    return await call_next(request)
+
+
 # Routers (mounted under /api/v1 prefixes)
 for prefix in ["/api/v1"]:
     app.include_router(auth.router,       prefix=f"{prefix}/auth",      tags=["Auth"])

@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional
 import os
-from app.db.connection import get_db, fetch_one, execute
+from app.db.connection import get_db
 from app.api.auth import get_current_officer
 
 router = APIRouter()
@@ -145,7 +145,6 @@ async def get_sla_breaches(
     db = Depends(get_db),
     auth_check = Depends(verify_incident_auth)
 ):
-    from app.db.connection import fetch_all
     breaches = (await db.execute(text("""
         SELECT id, crime_type, lat, lon, severity, timestamp
         FROM incidents

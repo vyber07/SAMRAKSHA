@@ -22,7 +22,7 @@ class OfficerUpdate(BaseModel):
     ps_id: Optional[str] = None
     is_active: Optional[bool] = None
 
-from app.db.connection import get_db, fetch_all, execute
+from app.db.connection import get_db
 from app.api.auth import get_current_officer
 import bcrypt
 import secrets
@@ -126,28 +126,69 @@ async def system_health(db = Depends(get_db)):
 
 @router.get("/audit", dependencies=[Depends(verify_admin_role)])
 async def get_audit_logs(officer: Optional[str] = None, type: Optional[str] = None, q: Optional[str] = None, db = Depends(get_db)):
+    # Create the table just in case it doesn't exist yet
+    await db.execute(text("""
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id SERIAL PRIMARY KEY,
+            changed_at TIMESTAMPTZ DEFAULT NOW(),
+            action VARCHAR(50),
+            target VARCHAR(100),
+            badge_no VARCHAR(50),
+            officer_name VARCHAR(200),
+            ip_address VARCHAR(50),
+            details TEXT
+        )
+    """))
+    await db.commit()
+
     query = """
-        SELECT a.created_at as changed_at, o.name as officer_name, o.badge_no, a.action, a.details as new_value
-        FROM system_logs a
-        LEFT JOIN officers o ON a.officer_id = o.id
+        SELECT changed_at, officer_name, badge_no, action, target, ip_address, details
+        FROM audit_logs
         WHERE 1=1
     """
     params = []
     idx = 1
     if officer:
-        query += f" AND (o.badge_no ILIKE :p{idx} OR o.name ILIKE :p{idx})"
+        query += f" AND (badge_no ILIKE :p{idx} OR officer_name ILIKE :p{idx})"
         params.append(f"%{officer.strip()}%")
         idx += 1
     if type:
-        query += f" AND a.action = :p{idx}"
+        query += f" AND action = :p{idx}"
         params.append(type)
         idx += 1
     if q:
-        query += f" AND a.details ILIKE :p{idx}"
+        query += f" AND details ILIKE :p{idx}"
         params.append(f"%{q}%")
         idx += 1
-    query += f" ORDER BY a.created_at DESC LIMIT 100"
+    query += f" ORDER BY changed_at DESC LIMIT 100"
     return (await db.execute(text(query), {f'p{i+1}': v for i, v in enumerate(params)})).mappings().fetchall()
+
+@router.get("/permissions/matrix", dependencies=[Depends(verify_admin_role)])
+async def get_permissions_matrix(db = Depends(get_db)):
+    rows = (await db.execute(text("SELECT * FROM permissions ORDER BY module, action"), {})).mappings().fetchall()
+    roles = ["constable", "io", "sho", "dcp", "admin"]
+    role_levels = {"constable": 1, "io": 2, "sho": 3, "dcp": 4, "admin": 5}
+    
+    matrix_data = []
+    for r in rows:
+        def_role = r['default_for_role'] or 'admin'
+        def_level = role_levels.get(def_role, 5)
+        
+        matrix = {}
+        for role in roles:
+            if def_role == 'admin':
+                matrix[role] = (role == 'admin')
+            else:
+                matrix[role] = (role_levels.get(role, 0) >= def_level)
+                
+        matrix_data.append({
+            "key": r["permission_key"],
+            "label": r["description"],
+            "category": r["module"],
+            "matrix": matrix
+        })
+    return matrix_data
+
 
 class PermissionOverride(BaseModel):
     permission_key: str

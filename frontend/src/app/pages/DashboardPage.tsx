@@ -19,6 +19,17 @@ export default function DashboardPage() {
   const { wsMessages, navigate, cases, patrols, cctvAlerts } = useApp();
   const [quickCase, setQuickCase] = useState<Case | null>(null);
   const [mapRefreshKey, setMapRefreshKey] = useState(0);
+  const [summary, setSummary] = useState<any>({});
+
+  useEffect(() => {
+    const token = localStorage.getItem("samraksha_token");
+    fetch("/api/v1/analytics/summary", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then(res => res.json())
+      .then(data => setSummary(data))
+      .catch(console.error);
+  }, []);
 
   return (
     <div className="flex flex-col gap-6">
@@ -32,10 +43,10 @@ export default function DashboardPage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard title="New Cases" value={142} change={12} icon={FileText} color="#004B87" tooltip="Total new cases registered today across all police stations" />
+        <StatCard title="New Cases" value={summary.firs_today || 0} change={summary.firs_today_change || 0} icon={FileText} color="#004B87" tooltip="Total new cases registered today across all police stations" />
         <StatCard title="Active Cases" value={cases.filter((c) => c.case_status === "open").length} change={4} icon={Activity} color="#006B5E" tooltip="Cases currently under active investigation" />
-        <StatCard title="Predictive Score" value="84/100" change={3} icon={Cpu} color="#8B5CF6" tooltip="AI predictive threat score index" />
-        <StatCard title="High Risk Zone" value={Object.values({} as Record<string, any>).filter((w) => w.level === "HIGH").length} icon={TriangleAlert} color="#EF4444" tooltip="Wards with high risk score — requiring immediate attention" />
+        <StatCard title="Predictive Score" value={`${summary.predictive_score || 0}/100`} change={3} icon={Cpu} color="#8B5CF6" tooltip="AI predictive threat score index" />
+        <StatCard title="High Risk Zone" value={summary.high_risk_zones || 0} icon={TriangleAlert} color="#EF4444" tooltip="Wards with high risk score — requiring immediate attention" />
         <StatCard title="Open Cases" value={cases.filter((c) => c.case_status === "open").length} change={-5} icon={Clock} color="#D97300" tooltip="Cases awaiting final disposition" />
         <StatCard title="Closed Cases" value={cases.filter((c) => c.case_status === "closed").length} change={18} icon={CheckCircle} color="#006B5E" tooltip="Successfully resolved or chargesheeted cases" />
       </div>
@@ -137,7 +148,7 @@ export default function DashboardPage() {
           <div className="flex-1 relative mt-2 overflow-hidden rounded-xl border border-[var(--border)]">
             <RealAhmedabadOpenStreetMap
               key={mapRefreshKey}
-              cases={[]}
+              cases={cases}
               onSelectCase={(c) => setQuickCase(c)}
               showWards={true}
               showPatrols={true}

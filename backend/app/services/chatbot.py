@@ -9,7 +9,7 @@ import structlog
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 from app.services.llm_integration import get_llm
-from app.db.connection import fetch_one, fetch_all, execute
+
 
 logger = structlog.get_logger()
 

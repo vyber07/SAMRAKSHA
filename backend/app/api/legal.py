@@ -56,12 +56,13 @@ async def search_legal_endpoint(
     officer = Depends(get_current_officer)
 ):
     from app.services.legal_intel import SECTION_MAP, BNS_IPC_MAPPING, search_case_law
+    import re
     db_results = await search_case_law(q)
     # Also do keyword search on SECTION_MAP
     keyword_results = []
     q_lower = q.lower()
     for pattern, values in SECTION_MAP.items():
-        if q_lower and q_lower not in pattern.lower():
+        if q_lower and not re.search(pattern, q_lower):
             continue
         for code in values.get("bns", [])[:2]:
             keyword_results.append({

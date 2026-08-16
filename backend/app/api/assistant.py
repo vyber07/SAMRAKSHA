@@ -134,34 +134,19 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
     source = "llm"
     answer = ""
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(
-                f"{LLM_URL}/completion",
-                json={
-                    "prompt": (
-                         f"{system_prompt}\n\n"
-                         f"{context}\n\n"
-                         f"Question: {body.get_question()}"
-                    ),
-                    "temperature": 0.1,
-                    "n_predict": 500,
-                    "stream": False
-                }
-            )
-        if resp.status_code == 200:
-            res_json = resp.json()
-            if isinstance(res_json, dict):
-                answer = res_json.get("content") or ""
-                if not answer and "choices" in res_json and isinstance(res_json["choices"], list) and len(res_json["choices"]) > 0:
-                    choice = res_json["choices"][0]
-                    if isinstance(choice, dict):
-                        message = choice.get("message")
-                        if isinstance(message, dict):
-                            answer = message.get("content") or ""
-                        if not answer:
-                            answer = choice.get("text") or ""
-        if not answer or not str(answer).strip():
-            raise ValueError(f"LLM response empty or HTTP status {resp.status_code}")
+        from app.services.llm_integration import get_llm
+        llm = get_llm()
+        messages = [
+            {"role": "user", "content": f"{context}\n\nQuestion: {body.get_question()}"}
+        ]
+        answer = await llm.chat_completion(
+            messages=messages,
+            system=system_prompt,
+            temperature=0.1,
+            max_tokens=500
+        )
+        if not answer or answer == "I'm having trouble processing your request. Please try again.":
+            raise ValueError("LLM response empty or fallback triggered")
         answer = str(answer).strip()
     except Exception as e:
         logger.warning("LLM unavailable, using fallback", error=str(e))

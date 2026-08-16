@@ -36,10 +36,13 @@ function FIREntryPage() {
   async function submit() {
     setSubmitting(true);
     try {
+      const payload = { ...form, bns_sections: suggestedSections.map(s => s.section) };
+      if (payload.crime_code === "") delete payload.crime_code;
+
       const res = await fetch("/api/v1/cases", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...form, bns_sections: suggestedSections.map(s => s.section) })
+        body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error("Failed");
       setSubmitted(true);

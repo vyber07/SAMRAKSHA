@@ -31,7 +31,7 @@ function AnalyticsPage() {
     fetch("/api/v1/analytics/trends", { credentials: "include", headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then(r => r.json())
       .then(data => {
-        if (Array.isArray(data.weekly)) setWeeklyData(data.weekly);
+        if (Array.isArray(data.weekly)) setWeeklyData(data.weekly.map((d: any) => ({ ...d, count: Number(d.count) })));
       })
       .catch(console.error);
   }, [token]);

@@ -18,11 +18,53 @@ import { useApp, Officer, Case, CCTVAlert, PatrolUnit, CaseStatus, Role, DiaryEn
 export default function PatrolPage() {
   const { token, navigate, cases, patrols, cctvAlerts } = useApp();
   const [units, setUnits] = useState<PatrolUnitFull[]>(patrols as any);
-  const [routes] = useState<PatrolRouteFull[]>([]);
+  const [routes, setRoutes] = useState<PatrolRouteFull[]>([]);
+  const [resourceStatus, setResourceStatus] = useState<any>({ available_pct: 98.2 });
 
   useEffect(() => {
     setUnits(patrols as any);
   }, [patrols]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("samraksha_token");
+    fetch("/api/v1/analytics/resource_status", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then(res => res.json())
+      .then(data => setResourceStatus(data))
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    async function fetchRoutes() {
+      try {
+        const res = await fetch("/api/v1/patrol/routes", { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          const data = await res.json();
+          // Transform backend route format to frontend format
+          const formattedRoutes = data.routes.map((r: any, i: number) => ({
+            id: `r${i+1}`,
+            name: `Route ${r.unit.unit_name || r.unit.id}`,
+            ward: r.unit.ward || 'General',
+            distance_km: (r.distance_meters / 1000).toFixed(1),
+            est_time_mins: Math.round(r.distance_meters / 1000 * 2), // rough estimate
+            risk_level: "ELEVATED",
+            color: "#3B82F6",
+            checkpoints: r.route.map((wp: any, idx: number) => ({
+              name: `Waypoint ${idx + 1}`,
+              lat: wp.lat,
+              lon: wp.lon,
+              done: idx === 0,
+              time: "Just now"
+            })),
+            road_path: r.road_path
+          }));
+          setRoutes(formattedRoutes);
+        }
+      } catch (e) {}
+    }
+    fetchRoutes();
+  }, [token]);
   const [activeTab, setActiveTab] = useState<"units" | "routes" | "rerouting">("units");
   const [selectedUnitId, setSelectedUnitId] = useState<string>("");
   const [selectedRouteId, setSelectedRouteId] = useState<string>("r1");
@@ -152,10 +194,14 @@ export default function PatrolPage() {
   async function handleDispatchReroute() {
     setRerouteDispatching(true);
     try {
+      const loc = AHMEDABAD_WARD_LOCATIONS[rerouteWard];
       await fetch(`/api/v1/patrol/units/${rerouteUnitId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ status: "responding" })
+        body: JSON.stringify({ 
+          status: "responding",
+          manual_waypoints: [{ lat: loc?.lat || 23.0225, lon: loc?.lon || 72.5714, name: rerouteLandmark }]
+        })
       });
       setUnits((prev) =>
         prev.map((u) => {
@@ -198,7 +244,7 @@ export default function PatrolPage() {
         <StatCard title="Active PCR Units" value={`${units.filter((u) => u.status === "active").length} Units`} icon={Car} color="#3B82F6" tooltip="Units currently patrolling assigned corridors" />
         <StatCard title="Responding Units" value={`${units.filter((u) => u.status === "responding").length} Units`} icon={Siren} color="#EF4444" tooltip="Units en route to active alerts or emergency calls" />
         <StatCard title="Active Patrol Routes" value={`${routes.length} Corridors`} icon={Navigation} color="#10B981" tooltip="Monitored high-density and high-threat precinct loops" />
-        <StatCard title="Fleet Readiness" value="98.2%" icon={Shield} color="#8B5CF6" tooltip="GPS signal strength, fuel availability, and comms uptime" />
+        <StatCard title="Fleet Readiness" value={`${resourceStatus?.available_pct || 0}%`} icon={Shield} color="#8B5CF6" tooltip="GPS signal strength, fuel availability, and comms uptime" />
       </div>
 
       {/* Navigation Tabs */}
@@ -324,7 +370,7 @@ export default function PatrolPage() {
                 {/* Left: OpenStreetMap */}
                 <div className="flex-1 relative border-b lg:border-b-0 lg:border-r border-[var(--border)] min-h-[260px] sm:min-h-[300px]">
                   <RealAhmedabadOpenStreetMap
-                    cases={[]}
+                    cases={cases}
                     showWards={true}
                     showPatrols={true}
                     showCCTV={false}
@@ -664,7 +710,7 @@ export default function PatrolPage() {
                 </div>
               </div>
               <RealAhmedabadOpenStreetMap
-                cases={[]}
+                cases={cases}
                 showWards={true}
                 showPatrols={true}
                 showCCTV={false}
@@ -825,7 +871,7 @@ export default function PatrolPage() {
               {/* Map Preview */}
               <div className="rounded-2xl overflow-hidden border border-white/10">
                 <RealAhmedabadOpenStreetMap
-                  cases={[]}
+                  cases={cases}
                   showPatrols={true}
                   patrols={units}
                   selectedWard={targetRerouteUnit?.ward}

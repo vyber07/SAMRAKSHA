@@ -98,9 +98,10 @@ async def get_current_officer(
         AND (expires_at IS NULL OR expires_at > NOW())
     """), {'p1': officer_id})).mappings().fetchall()
     
-    officer['permissions'] = {o['permission_key']: o['granted'] for o in overrides}
+    officer_dict = dict(officer)
+    officer_dict['permissions'] = {o['permission_key']: o['granted'] for o in overrides}
 
-    return officer
+    return officer_dict
 
 def require_permission(permission_key: str):
     """Dependency: check if officer has permission"""
@@ -154,10 +155,12 @@ async def login(
     dummy_hash = ":p2b:p12:p00000000000000000000000000000000000000000000000000000"
     stored_hash = officer['password_hash'] if officer else dummy_hash
 
+    import structlog
     is_valid = False
     try:
         is_valid = bcrypt.checkpw(body.password.encode('utf-8'), stored_hash.encode('utf-8'))
-    except Exception:
+    except Exception as e:
+        structlog.get_logger().error("Debug login exception", exc=str(e))
         pass
         
     if not is_valid or not officer:

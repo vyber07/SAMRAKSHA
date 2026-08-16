@@ -129,7 +129,7 @@ class RiskPredictor:
         
     async def train_if_needed(self, db):
         if not self._is_trained:
-            from app.db.connection import fetch_all
+
             query = """
                 SELECT EXTRACT(HOUR FROM timestamp) as hour,
                        EXTRACT(DOW FROM timestamp) as dow,
