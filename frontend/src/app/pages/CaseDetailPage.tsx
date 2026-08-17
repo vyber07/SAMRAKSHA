@@ -7,7 +7,7 @@ function CaseDetailPage() {
   const { params, navigate, cases, officer } = useApp();
   const c = cases.find((x: any) => x.case_id === params.case_id);
   const [aiQuestion, setAiQuestion] = useState("");
-  const [aiAnswer, setAiAnswer] = useState("");
+  const [chatHistory, setChatHistory] = useState<{role: 'user'|'ai', text: string}[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [docType, setDocType] = useState("chargesheet");
   const [docLang, setDocLang] = useState("en");
@@ -18,19 +18,44 @@ function CaseDetailPage() {
   const [newEntryType, setNewEntryType] = useState("note");
   const [newNote, setNewNote] = useState("");
   const [evidenceTag, setEvidenceTag] = useState("");
-  const [localEntries, setLocalEntries] = useState<any[]>([]);
+  const [localEntries, setLocalEntries] = useState<any[]>(() => {
+    return c?.diary_entries?.map((e: any, i: number) => ({
+      step: (c.diary_entries?.length || 0) - i,
+      status: "completed",
+      title: (e.entry_type || "NOTE").toUpperCase(),
+      ts: e.ts,
+      description: e.description,
+      officer: e.officer_name || "Investigating Officer",
+      attachments: e.location ? [e.location] : []
+    })) || [];
+  });
 
   if (!c) return <div className="text-center py-20" style={{ color: "var(--muted-foreground)" }}>Case not found</div>;
 
   const sc = STATUS_CONFIG[c.case_status];
 
-  function askAI() {
-    if (!aiQuestion) return;
+  async function askAI() {
+    if (!aiQuestion.trim()) return;
+    const q = aiQuestion;
+    setAiQuestion("");
+    setChatHistory((prev) => [...prev, { role: 'user', text: q }]);
     setAiLoading(true);
-    setTimeout(() => {
-      setAiAnswer(`Based on the case FIR ${c.fir_no}: The crime was reported at ${c.crime_location} on ${formatDate(c.crime_date)}. The applicable sections are ${[...(c.bns_sections || []), ...(c.bnss_sections || [])].join(", ")}. The investigation is ongoing with ${c.diary_entries?.length || 0} diary entries recorded.`);
+    
+    try {
+      const res = await fetch("/api/v1/assistant/query", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
+        body: JSON.stringify({ mode: "this_case", query: q, case_id: c.case_id, language: "en" })
+      });
+      if (!res.ok) throw new Error("Assistant request failed");
+      const data = await res.json();
+      setChatHistory((prev) => [...prev, { role: 'ai', text: data.response }]);
+    } catch (e: any) {
+      setChatHistory((prev) => [...prev, { role: 'ai', text: `Error: ${e.message}` }]);
+    } finally {
       setAiLoading(false);
-    }, 1200);
+    }
   }
 
   const handleAddDiaryEntry = async () => {
@@ -40,11 +65,20 @@ function CaseDetailPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
-        body: JSON.stringify({ entry_type: "note", description: newNote }),
+        body: JSON.stringify({ entry_type: newEntryType, description: newNote, location: evidenceTag }),
       });
       if (!res.ok) throw new Error("Unable to save diary entry");
       const created = await res.json();
-      setLocalEntries((prev) => [created, ...prev]);
+      const newLocal = {
+        step: localEntries.length + 1,
+        status: "completed",
+        title: (created.entry_type || newEntryType || "NOTE").toUpperCase(),
+        ts: created.ts || new Date().toISOString(),
+        description: created.description || newNote,
+        officer: "Investigating Officer",
+        attachments: created.location ? [created.location] : evidenceTag ? [evidenceTag] : []
+      };
+      setLocalEntries((prev) => [newLocal, ...prev]);
       setNewNote("");
       setEvidenceTag("");
       setIsDrawerOpen(false);
@@ -126,35 +160,72 @@ function CaseDetailPage() {
           {/* Right */}
           <div className="flex flex-col h-full">
             {/* Chat With Me */}
-            <Card className="flex-1 flex flex-col h-full min-h-[220px]">
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 shrink-0" style={{ color: "var(--muted-foreground)" }}>
-                <Bot size={14} color="#3B82F6" /> Chat With Me
-              </h3>
+            <Card className="flex-1 flex flex-col h-full min-h-[300px] !p-0 overflow-hidden bg-slate-900 border border-white/5">
+              <div className="px-4 py-3 border-b border-white/5 bg-slate-800/50 flex items-center justify-between shadow-sm shrink-0">
+                <h3 className="text-sm font-semibold flex items-center gap-2 text-slate-200">
+                  <Bot size={16} className="text-blue-500" /> Case AI Assistant
+                </h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-medium">Online</span>
+              </div>
               
-              <div className="flex-1 overflow-y-auto mb-3 flex flex-col justify-end">
-                {aiAnswer && (
-                  <div className="p-3 rounded-lg text-xs leading-relaxed" style={{ backgroundColor: "rgba(59,130,246,0.08)", color: "var(--muted-foreground)" }}>
-                    {aiAnswer}
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar">
+                {chatHistory.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-full text-center opacity-50">
+                    <Bot size={32} className="text-slate-500 mb-2" />
+                    <p className="text-xs text-slate-400 max-w-[200px]">Ask me to summarize the incident, extract suspect details, or cross-reference evidence.</p>
                   </div>
                 )}
-                {aiLoading && <div className="mt-2 h-3 w-full rounded animate-pulse" style={{ backgroundColor: "rgba(255,255,255,0.08)" }} />}
+                {chatHistory.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-[13px] leading-relaxed shadow-sm ${
+                      msg.role === 'user' 
+                        ? 'bg-blue-600 text-white rounded-tr-sm' 
+                        : 'bg-slate-800 text-slate-200 border border-white/5 rounded-tl-sm'
+                    }`}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {aiLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-slate-800 border border-white/5 rounded-2xl rounded-tl-sm px-4 py-2.5 flex items-center gap-1.5 shadow-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="flex flex-col gap-2 shrink-0 mt-auto">
-                <div className="flex gap-2">
-                  <input
+              <div className="p-3 bg-slate-900 border-t border-white/5 shrink-0">
+                <div className="flex items-end gap-2 bg-slate-800 rounded-2xl border border-white/10 p-1.5 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50 transition-all shadow-inner">
+                  <textarea
                     value={aiQuestion}
                     onChange={(e) => setAiQuestion(e.target.value)}
-                    placeholder="Ask about this case..."
-                    className="flex-1 rounded-lg px-3 py-2 text-sm outline-none"
-                    style={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", color: "var(--foreground)" }}
-                    onKeyDown={(e) => e.key === "Enter" && askAI()}
+                    placeholder="Message AI Assistant..."
+                    className="flex-1 max-h-24 min-h-[36px] bg-transparent resize-none px-2 py-1.5 text-[13px] text-slate-200 placeholder:text-slate-500 outline-none"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        askAI();
+                      }
+                    }}
                   />
-                  <button onClick={askAI} className="p-2 rounded-lg cursor-pointer" style={{ backgroundColor: "var(--color-primary)" }}>
-                    <Send size={14} color="#fff" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0 pb-0.5">
+                    <VoiceInputWidget 
+                      onTranscript={(txt) => setAiQuestion((prev) => prev + (prev ? " " : "") + txt)} 
+                      compact={true} 
+                    />
+                    <button 
+                      onClick={askAI}
+                      disabled={!aiQuestion.trim() || aiLoading}
+                      className="p-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white transition-colors cursor-pointer"
+                    >
+                      <Send size={16} />
+                    </button>
+                  </div>
                 </div>
-                <div className="text-[10px] text-center text-[var(--muted-foreground)]">
+                <div className="text-[9px] text-center text-slate-500 mt-2">
                   AI answers are for review only. Verify with official records.
                 </div>
               </div>

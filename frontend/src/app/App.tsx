@@ -47,6 +47,16 @@ function SamrakshaLogo({ size = 32 }: { size?: number }) {
   return <img src="/logo.svg" alt="Samraksha Logo" width={size} height={size} style={{ userSelect: 'none' }} />;
 }
 
+function escapeHTML(str: any): string {
+  if (typeof str !== 'string') return String(str || '');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type Role = "constable" | "io" | "sho" | "dcp" | "admin";
@@ -1183,7 +1193,20 @@ function VoiceInputWidget({
       setInterimText("Processing...");
     } else {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        let stream: MediaStream;
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } else {
+          // Fallback for older browsers or HTTP contexts
+          const getUserMedia = (navigator as any).getUserMedia || (navigator as any).webkitGetUserMedia || (navigator as any).mozGetUserMedia;
+          if (!getUserMedia) {
+            throw new Error("Microphone API not supported in this browser (or requires HTTPS)");
+          }
+          stream = await new Promise<MediaStream>((resolve, reject) => {
+            getUserMedia.call(navigator, { audio: true }, resolve, reject);
+          });
+        }
+
         const mediaRecorder = new MediaRecorder(stream);
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
@@ -1222,9 +1245,9 @@ function VoiceInputWidget({
         mediaRecorder.start();
         setIsListening(true);
         setInterimText("Listening...");
-      } catch (err) {
-        console.error("Microphone access denied", err);
-        alert("Microphone permission required");
+      } catch (err: any) {
+        console.error("Microphone access denied or error:", err);
+        alert(`Microphone permission required or API unavailable.\nError: ${err.message || err}\nNote: Microphone access typically requires a secure HTTPS connection or localhost.`);
       }
     }
   };
@@ -1433,6 +1456,7 @@ function RealAhmedabadOpenStreetMap({
   showCCTV?: boolean;
   cctvAlerts?: CCTVAlert[];
   showHeatmap?: boolean;
+  heatmapData?: any[];
   isDashboard?: boolean;
   activeRoute?: PatrolRouteFull | null;
   selectedUnit?: PatrolUnitFull | null;
@@ -1557,7 +1581,7 @@ function RealAhmedabadOpenStreetMap({
       Object.entries(AHMEDABAD_WARD_LOCATIONS).forEach(([name, data]) => {
         const realData = wardsData ? wardsData[name] : null;
         const level = realData?.level?.toUpperCase() || data.level;
-        const score = realData?.score || data.score;
+        const score = realData?.risk_score || data.score;
         const color =
           level === "HIGH"
             ? "#EA4335" // Google Red
@@ -1595,7 +1619,7 @@ function RealAhmedabadOpenStreetMap({
         const marker = L.marker([data.lat, data.lon], { icon: customIcon });
 
         marker.bindPopup(`
-          <div style="font-family: 'Google Sans', Roboto, sans-serif; padding: 4px; color: #0f172a; min-width: 160px;">   <div style="font-weight: 700; font-size: 13px; color: #1e293b;">📍 ${name} Ward</div>   <div style="font-size: 11px; margin-top: 4px;">{t("Risk Score: ", true)}<strong style="color:${color}">${score}/100 (${level})</strong></div>   <div style="font-size: 10px; color: #64748B; margin-top: 3px;">{t("Ahmedabad Police Precinct", true)}</div>   </div>
+          <div style="font-family: 'Google Sans', Roboto, sans-serif; padding: 4px; color: #0f172a; min-width: 160px;">   <div style="font-weight: 700; font-size: 13px; color: #1e293b;">📍 ${escapeHTML(name)} Ward</div>   <div style="font-size: 11px; margin-top: 4px;">{t("Risk Score: ", true)}<strong style="color:${color}">${score}/100 (${escapeHTML(level)})</strong></div>   <div style="font-size: 10px; color: #64748B; margin-top: 3px;">{t("Ahmedabad Police Precinct", true)}</div>   </div>
         `);
 
         layerGroup.addLayer(marker);
@@ -1624,7 +1648,7 @@ function RealAhmedabadOpenStreetMap({
       const marker = L.marker([c.crime_lat, c.crime_lon], { icon: pinIcon });
 
       marker.bindPopup(`
-        <div style="font-family: 'Google Sans', Roboto, sans-serif; min-width: 180px; color: #0f172a; padding: 2px;">   <div style="font-weight: 700; font-size: 13px; color: #1a73e8;">${c.fir_no}</div>   <div style="font-size: 12px; font-weight: 600; margin-top: 2px; color: ${pinColor};">${c.crime_type}</div>   <div style="font-size: 11px; color: #334155; margin-top: 3px;">📍 ${c.crime_location}</div>   <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Victim: ${c.victim_name}</div>   </div>
+        <div style="font-family: 'Google Sans', Roboto, sans-serif; min-width: 180px; color: #0f172a; padding: 2px;">   <div style="font-weight: 700; font-size: 13px; color: #1a73e8;">${escapeHTML(c.fir_no)}</div>   <div style="font-size: 12px; font-weight: 600; margin-top: 2px; color: ${pinColor};">${escapeHTML(c.crime_type)}</div>   <div style="font-size: 11px; color: #334155; margin-top: 3px;">📍 ${escapeHTML(c.crime_location)}</div>   <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Victim: ${escapeHTML(c.victim_name)}</div>   </div>
       `);
 
       if (onSelectCase) {
@@ -1655,7 +1679,7 @@ function RealAhmedabadOpenStreetMap({
 
         const marker = L.marker([unit.lat, unit.lon], { icon: customIcon });
         marker.bindPopup(`
-          <div style="font-family: 'Google Sans', Roboto, sans-serif; color: #0f172a; padding: 2px;">   <div style="font-weight: 700; font-size: 12px; color: #1a73e8;">🚓 ${unit.name} Patrol Unit</div>   <div style="font-size: 11px; color: ${color}; font-weight: bold; text-transform: uppercase; margin-top: 3px;">Status: ${unit.status}</div>   </div>
+          <div style="font-family: 'Google Sans', Roboto, sans-serif; color: #0f172a; padding: 2px;">   <div style="font-weight: 700; font-size: 12px; color: #1a73e8;">🚓 ${escapeHTML(unit.name)} Patrol Unit</div>   <div style="font-size: 11px; color: ${color}; font-weight: bold; text-transform: uppercase; margin-top: 3px;">Status: ${escapeHTML(unit.status)}</div>   </div>
         `);
         layerGroup.addLayer(marker);
       });
@@ -1674,7 +1698,7 @@ function RealAhmedabadOpenStreetMap({
 
         const marker = L.marker([cam.lat, cam.lon], { icon: customIcon });
         marker.bindPopup(`
-          <div style="font-family: 'Google Sans', Roboto, sans-serif; color: #0f172a; padding: 2px;">   <div style="font-weight: 700; font-size: 12px; color: #0284c7;">📹 ${cam.camera_id}</div>   <div style="font-size: 11px; color: #334155; margin-top: 2px;">${cam.source}</div>   <div style="font-size: 10px; color: #dc2626; margin-top: 3px; font-weight: 600;">⚠️ ${cam.alert_type}</div>   </div>
+          <div style="font-family: 'Google Sans', Roboto, sans-serif; color: #0f172a; padding: 2px;">   <div style="font-weight: 700; font-size: 12px; color: #0284c7;">📹 ${escapeHTML(cam.camera_id)}</div>   <div style="font-size: 11px; color: #334155; margin-top: 2px;">${escapeHTML(cam.source)}</div>   <div style="font-size: 10px; color: #dc2626; margin-top: 3px; font-weight: 600;">⚠️ ${escapeHTML(cam.alert_type)}</div>   </div>
         `);
         layerGroup.addLayer(marker);
       });
@@ -1726,8 +1750,8 @@ function RealAhmedabadOpenStreetMap({
         cpMarker.bindPopup(`
           <div style="font-family: 'Google Sans', Roboto, sans-serif; color: #0f172a; padding: 3px;">   <div style="font-weight: 800; font-size: 12px; color: ${pinColor};">
               ${isFinal ? "🏁 FINAL DESTINATION" : `📍 CHECKPOINT #${idx + 1}`}
-            </div>   <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-top: 2px;">${cp.name}</div>   <div style="font-size: 11px; color: ${isDone ? "#16a34a" : "#2563eb"}; margin-top: 3px;">
-              ${isDone ? `Cleared at ${cp.time}` : "Status: Patrol En Route"}
+            </div>   <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-top: 2px;">${escapeHTML(cp.name)}</div>   <div style="font-size: 11px; color: ${isDone ? "#16a34a" : "#2563eb"}; margin-top: 3px;">
+              ${isDone ? `Cleared at ${escapeHTML(cp.time)}` : "Status: Patrol En Route"}
             </div>   </div>
         `);
         layerGroup.addLayer(cpMarker);

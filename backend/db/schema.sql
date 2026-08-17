@@ -291,3 +291,10 @@ CREATE TABLE system_logs (
 );
 CREATE RULE no_update_system_logs AS ON UPDATE TO system_logs DO INSTEAD NOTHING;
 CREATE RULE no_delete_system_logs AS ON DELETE TO system_logs DO INSTEAD NOTHING;
+
+-- Missing FK Indexes for Performance
+CREATE INDEX IF NOT EXISTS ix_cctv_alerts_matched_case ON cctv_alerts(matched_case);
+CREATE INDEX IF NOT EXISTS ix_case_audit_case_id ON case_audit(case_id);
+CREATE INDEX IF NOT EXISTS ix_doc_log_case_id ON doc_log(case_id);
+CREATE INDEX IF NOT EXISTS ix_case_diary_case_id ON case_diary(case_id);
+CREATE INDEX IF NOT EXISTS ix_incidents_case_id ON incidents(case_id);

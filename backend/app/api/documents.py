@@ -86,7 +86,7 @@ async def generate_document(
         from app.services.document_gen import generate_document
         from fastapi.concurrency import run_in_threadpool
 
-        doc_bytes, sha256 = await run_in_threadpool(
+        doc_bytes_original, _ = await run_in_threadpool(
             generate_document,
             doc_type=actual_doc_type,
             case={
@@ -99,6 +99,24 @@ async def generate_document(
             },
             lang=body.language
         )
+
+        def convert_to_pdf(docx_bytes):
+            import tempfile, subprocess, os, hashlib
+            with tempfile.TemporaryDirectory() as tmpdir:
+                docx_path = os.path.join(tmpdir, "doc.docx")
+                with open(docx_path, "wb") as f:
+                    f.write(docx_bytes)
+                subprocess.run([
+                    "libreoffice", "--headless", "--nologo", "--nofirststartwizard",
+                    "--convert-to", "pdf", docx_path, "--outdir", tmpdir
+                ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                pdf_path = os.path.join(tmpdir, "doc.pdf")
+                with open(pdf_path, "rb") as f:
+                    pdf_bytes = f.read()
+                return pdf_bytes, hashlib.sha256(pdf_bytes).hexdigest()
+
+        doc_bytes, sha256 = await run_in_threadpool(convert_to_pdf, doc_bytes_original)
+
 
     except FileNotFoundError:
         raise HTTPException(500,
@@ -156,12 +174,11 @@ async def generate_document(
 
     filename = (
         f"{actual_doc_type}_{case['fir_no'].replace('/','_')}"
-        f"_{body.language}.docx"
+        f"_{body.language}.pdf"
     )
     return Response(
         content=doc_bytes,
-        media_type="application/vnd.openxmlformats-"
-                   "officedocument.wordprocessingml.document",
+        media_type="application/pdf",
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
             "X-Document-SHA256":   sha256,

@@ -251,7 +251,7 @@ async def get_case(
     if not case:
         raise HTTPException(404, "Case not found")
 
-    if officer['role'] == 'io' and \
+    if officer['role'] in ('io', 'sho') and \
        str(case['ps_id']) != str(officer['ps_id']):
         raise HTTPException(403, "Access denied")
 
@@ -297,7 +297,7 @@ async def update_case_status(case_id: str, body: CaseStatusUpdate, db = Depends(
     case = (await db.execute(text("SELECT case_id, ps_id FROM cases WHERE case_id = :p1"), {'p1': case_id})).mappings().fetchone()
     if not case:
         raise HTTPException(404, "Case not found")
-    if officer["role"] == "io" and str(case["ps_id"]) != str(officer["ps_id"]):
+    if officer["role"] in ("io", "sho") and str(case["ps_id"]) != str(officer["ps_id"]):
         raise HTTPException(403, "Access denied")
     updated = (await db.execute(text("UPDATE cases SET case_status = :p1, updated_at = NOW() WHERE case_id = :p2 RETURNING case_id, fir_no, case_status, updated_at"), {'p1': body.status, 'p2': case_id})).mappings().fetchone()
     await db.commit()
@@ -323,15 +323,17 @@ async def add_case_diary_entry(
     if not case:
         raise HTTPException(404, "Case not found")
 
-    if officer['role'] == 'io' and str(case['ps_id']) != str(officer['ps_id']):
+    if officer['role'] in ('io', 'sho') and str(case['ps_id']) != str(officer['ps_id']):
         raise HTTPException(403, "Access denied")
 
     entry = (await db.execute(text("""
         INSERT INTO case_diary (
             case_id, entry_type, description, officer_id, location, auto_generated
         ) VALUES (:p1, :p2, :p3, :p4, :p5, FALSE)
-        RETURNING id
+        RETURNING id, case_id, entry_type, description, location, ts, auto_generated
     """), {'p1': case_id, 'p2': body.entry_type, 'p3': body.description, 'p4': str(officer['id']), 'p5': body.location})).mappings().fetchone()
     await db.commit()
 
-    return {"id": entry['id'] if entry else None, "message": "Case diary entry added successfully", "case_id": case_id}
+    if entry:
+        return dict(entry)
+    return {"id": None, "message": "Case diary entry failed", "case_id": case_id}

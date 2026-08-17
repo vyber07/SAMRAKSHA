@@ -22,9 +22,8 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<any>({});
 
   useEffect(() => {
-    const token = localStorage.getItem("samraksha_token");
     fetch("/api/v1/analytics/summary", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
+      credentials: 'include'
     })
       .then(res => res.json())
       .then(data => setSummary(data))

@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import (
     create_async_engine, AsyncSession, async_sessionmaker
 )
-from sqlalchemy.pool import NullPool
 from sqlalchemy import text
 import os
 import re
@@ -13,7 +12,8 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://samraksha_user:ch
 
 engine = create_async_engine(
     DATABASE_URL,
-    poolclass=NullPool,
+    pool_size=20,
+    max_overflow=10,
     echo=False,
 )
 
