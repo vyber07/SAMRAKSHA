@@ -2907,7 +2907,7 @@ export function CrimeGPTDocumentStudio({ selectedCase, form }: { selectedCase?: 
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), "Authorization": `Bearer ${token}` },
-                body: JSON.stringify({ case_id: c.case_id, doc_type: activeDocType === "chargesheet" ? "chargesheet" : (activeDocType === "remand" ? "remand_request" : "panchanama"), language: "en" })
+                body: JSON.stringify({ case_id: c.case_id, doc_type: activeDocType, language: "en" })
               });
               if (docRes.ok) {
                 const blob = await docRes.blob();

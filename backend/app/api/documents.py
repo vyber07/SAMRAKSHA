@@ -45,6 +45,7 @@ async def generate_document(
     doc_type_mapping = {
         'chargesheet': 'chargesheet_bns2024',
         'remand_request': 'remand_request_bnss',
+        'remand': 'remand_request_bnss',
         'panchanama': 'accused_panchanama',
         'medical_letter': 'medical_letter',
         'court_custody': 'court_custody_bnss',
@@ -58,7 +59,12 @@ async def generate_document(
     if actual_doc_type not in available_templates:
         raise HTTPException(400, f"Invalid doc_type. Must be one of: {available_templates}")
 
-    case = (await db.execute(text("SELECT * FROM cases WHERE fir_no = :p1"), {'p1': body.case_id})).mappings().fetchone()
+    # body.case_id might be a UUID (case_id) or a string (fir_no)
+    case_query = """
+        SELECT * FROM cases 
+        WHERE case_id::text = :p1 OR fir_no = :p1
+    """
+    case = (await db.execute(text(case_query), {'p1': str(body.case_id)})).mappings().fetchone()
 
     if not case:
         raise HTTPException(404, "Case not found")
@@ -106,12 +112,16 @@ async def generate_document(
                      error=str(e))
         raise HTTPException(500, "Document generation failed")
 
+    # Reverse mapping for database constraints
+    reverse_doc_type_mapping = {v: k for k, v in doc_type_mapping.items() if k != 'remand'}
+    db_doc_type = reverse_doc_type_mapping.get(actual_doc_type, body.doc_type)
+
     await db.execute(text("""
         INSERT INTO doc_log
         (case_id, doc_type, sha256, generated_by, language)
         VALUES (:p1, :p2, :p3, :p4, :p5)
         RETURNING id
-    """), {'p1': str(case['case_id']), 'p2': body.doc_type, 'p3': sha256, 'p4': str(officer['id']), 'p5': body.language})
+    """), {'p1': str(case['case_id']), 'p2': db_doc_type, 'p3': sha256, 'p4': str(officer['id']), 'p5': body.language})
 
     doc_labels = {
         'chargesheet':       'Purvani Chargesheet',
@@ -133,7 +143,7 @@ async def generate_document(
         INSERT INTO case_diary
         (case_id, entry_type, description, officer_id, auto_generated)
         VALUES (:p1, 'document', :p2, :p3, TRUE)
-    """), {'p1': str(case['case_id']), 'p2': f"{doc_labels.get(body.doc_type, body.doc_type)} generated "
+    """), {'p1': str(case['case_id']), 'p2': f"{doc_labels.get(db_doc_type, db_doc_type)} generated "
         f"(SHA-256: {sha256[:8]}...)", 'p3': str(officer['id'])})
 
     from app.services.audit import log_activity
@@ -177,7 +187,8 @@ async def list_documents(
     if officer['role'] == 'constable':
         raise HTTPException(403, "Access denied")
 
-    case = (await db.execute(text("SELECT ps_id, case_id FROM cases WHERE fir_no = :p1"), {'p1': case_id})).mappings().fetchone()
+    case_query = "SELECT ps_id, case_id FROM cases WHERE case_id::text = :p1 OR fir_no = :p1"
+    case = (await db.execute(text(case_query), {'p1': str(case_id)})).mappings().fetchone()
     if not case:
         raise HTTPException(404, "Case not found")
 
