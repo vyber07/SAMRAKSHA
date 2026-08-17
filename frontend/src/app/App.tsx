@@ -527,28 +527,25 @@ function GenerateDocumentModal({
 
   const { cases, token } = useApp();
   const [selectedCaseId, setSelectedCaseId] = useState(initialCaseNo);
-  const [docType, setDocType] = useState("fir");
+  const [docType, setDocType] = useState("chargesheet_bns2024");
   const [docLang, setDocLang] = useState("en");
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
-  const [docTypes, setDocTypes] = useState<{id: string, name: string}[]>([]);
+  
+  const docTypes = [
+    { id: "chargesheet_bns2024", name: "chargesheet_bns2024" },
+    { id: "remand_request_bnss", name: "remand_request_bnss" },
+    { id: "accused_panchanama", name: "accused_panchanama" },
+    { id: "seizure_receipt", name: "seizure_receipt" },
+    { id: "witness_statement", name: "witness_statement" },
+    { id: "face_identification", name: "face_identification" },
+    { id: "court_custody_bnss", name: "court_custody_bnss" },
+    { id: "medical_letter", name: "medical_letter" }
+  ];
 
   useEffect(() => {
     setSelectedCaseId(initialCaseNo);
-    if (open && docTypes.length === 0) {
-      fetch("/api/v1/docs/templates", {
-        credentials: "include"
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setDocTypes(data);
-          if (!data.find(d => d.id === docType)) setDocType(data[0].id);
-        }
-      })
-      .catch(console.error);
-    }
-  }, [initialCaseNo, open, token, docType, docTypes.length]);
+  }, [initialCaseNo, open, token, docType]);
 
   if (!open) return null;
 
