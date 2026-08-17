@@ -3528,29 +3528,44 @@ export default function App() {
     if (!officer || !token) return;
     setWsConnected(false);
     
-    const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    // Remove token from query parameters per P1-02
-    const ws = new WebSocket(`${wsProto}//${window.location.host}/api/v1/ws/dashboard`);
+    let reconnectTimer: number;
+    let reconnectAttempts = 0;
+    let ws: WebSocket;
     
-    ws.onopen = () => {
-      // Send the in-memory token if present; otherwise the backend authenticates
-      // via the session cookie sent with the WebSocket handshake.
-      if (token) ws.send(token);
-      setWsConnected(true);
-    };
-    
-    ws.onclose = () => setWsConnected(false);
-    
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "INIT") return;
-        setWsMessages(prev => [data, ...prev].slice(0, 10));
-      } catch (e) {}
+    const connectWs = () => {
+      const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
+      ws = new WebSocket(`${wsProto}//${window.location.host}/api/v1/ws/dashboard`);
+      
+      ws.onopen = () => {
+        if (token) ws.send(token);
+        setWsConnected(true);
+        reconnectAttempts = 0;
+      };
+      
+      ws.onclose = () => {
+        setWsConnected(false);
+        const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+        reconnectAttempts++;
+        reconnectTimer = window.setTimeout(connectWs, timeout);
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "INIT") return;
+          setWsMessages(prev => [data, ...prev].slice(0, 10));
+        } catch (e) {}
+      };
     };
 
+    connectWs();
+
     return () => {
-      ws.close();
+      clearTimeout(reconnectTimer);
+      if (ws) {
+        ws.onclose = null; // Prevent reconnect loop on unmount
+        ws.close();
+      }
       setWsConnected(false);
     };
   }, [officer, token]);

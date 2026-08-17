@@ -278,11 +278,12 @@ async def get_case(
         ORDER BY ts DESC LIMIT 20
     """), {'p1': case_id})).mappings().fetchall()
 
-    case['io_name'] = io['name'] if io else 'Unknown'
-    case['io_badge'] = io['badge_no'] if io else ''
-    case['diary_entries'] = diary
+    case_dict = dict(case)
+    case_dict['io_name'] = io['name'] if io else 'Unknown'
+    case_dict['io_badge'] = io['badge_no'] if io else ''
+    case_dict['diary_entries'] = [dict(d) for d in diary]
 
-    return case
+    return case_dict
 
 
 class CaseStatusUpdate(BaseModel):

@@ -298,3 +298,18 @@ CREATE INDEX IF NOT EXISTS ix_case_audit_case_id ON case_audit(case_id);
 CREATE INDEX IF NOT EXISTS ix_doc_log_case_id ON doc_log(case_id);
 CREATE INDEX IF NOT EXISTS ix_case_diary_case_id ON case_diary(case_id);
 CREATE INDEX IF NOT EXISTS ix_incidents_case_id ON incidents(case_id);
+
+-- Audit logs
+CREATE TABLE audit_logs (
+    id SERIAL PRIMARY KEY,
+    changed_at TIMESTAMPTZ DEFAULT NOW(),
+    action VARCHAR(50),
+    target VARCHAR(100),
+    badge_no VARCHAR(50),
+    officer_name VARCHAR(200),
+    ip_address VARCHAR(50),
+    details TEXT
+);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX idx_audit_logs_target ON audit_logs(target);
+CREATE INDEX idx_audit_logs_officer_name ON audit_logs(officer_name);

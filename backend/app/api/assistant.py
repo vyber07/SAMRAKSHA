@@ -225,6 +225,7 @@ async def voice_query_assistant(
     # Reuse query_assistant logic
     response = await query_assistant(body=body, db=db, officer=officer)
     
-    # Add transcription to response
-    response["transcription"] = transcribed_text
+    # Cannot mutate a StreamingResponse object. Instead, we can inject the transcription 
+    # as a custom HTTP header on the streaming response.
+    response.headers["X-Voice-Transcription"] = transcribed_text
     return response

@@ -46,8 +46,21 @@ class DashboardManager:
 
         empty_officers = []
         for oid, ws_list in list(self.connections.items()):
+            # Simulate fetching officer details (in a real app you'd store this in self.connections or pass it)
+            # For this fix, we assume 'ps_id' is stored alongside connections, but since it's not we'll 
+            # just broadcast to all for now or ideally you'd need the DB. Since we can't easily query DB here,
+            # we will send it to all, BUT we will filter on the frontend or better yet, inject ps_id into ws object
             dead_ws = []
             for ws in list(ws_list):
+                # Filter logic based on websocket state
+                ws_ps_id = getattr(ws.state, 'ps_id', None)
+                ws_role = getattr(ws.state, 'role', None)
+                
+                # If event has ps_id, and officer is not admin/dcp/sho, filter it
+                event_ps_id = enveloped.get('payload', {}).get('ps_id')
+                if event_ps_id and ws_ps_id and ws_ps_id != event_ps_id and ws_role not in ('admin', 'dcp', 'sho'):
+                    continue
+                
                 try:
                     await ws.send_json(enveloped)
                 except Exception as e:
@@ -87,6 +100,8 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         payload = _jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])  # algorithms pinned, no negotiation
         officer_id = payload.get("sub")
+        websocket.state.role = payload.get("role")
+        websocket.state.ps_id = payload.get("ps_id")
         if not officer_id:
             await websocket.close(code=1008, reason="Invalid token payload")
             return

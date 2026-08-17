@@ -55,8 +55,8 @@ app = FastAPI(
     title="SAMRAKSHA API",
     version="1.0.0",
     description="Unified Predictive Policing & Advanced Case Intelligence Platform",
-    docs_url="/api/docs" if ENVIRONMENT != "production" else None,
-    redoc_url=None,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
     lifespan=lifespan,
 )
 
@@ -119,18 +119,7 @@ async def audit_log_middleware(request: Request, call_next):
                 from app.db.connection import engine
                 from sqlalchemy import text
                 async with engine.begin() as conn:
-                    await conn.execute(text("""
-                        CREATE TABLE IF NOT EXISTS audit_logs (
-                            id SERIAL PRIMARY KEY,
-                            changed_at TIMESTAMPTZ DEFAULT NOW(),
-                            action VARCHAR(50),
-                            target VARCHAR(100),
-                            badge_no VARCHAR(50),
-                            officer_name VARCHAR(200),
-                            ip_address VARCHAR(50),
-                            details TEXT
-                        )
-                    """))
+                    # Schema creation moved to Alembic migrations
                     await conn.execute(text("""
                         INSERT INTO audit_logs (action, target, ip_address, details, badge_no, officer_name)
                         VALUES (:action, :target, :ip, :details, :badge, :name)

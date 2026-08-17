@@ -184,12 +184,13 @@ async def login(request: Request, body: LoginRequest, response: Response, db=Dep
 
     # Always verify a hash even if the officer is not found, to blunt timing attacks
     # that would otherwise reveal valid badge numbers.
-    dummy_hash = "$2b$12$p12$p00000000000000000000000000000000000000000000000000000"
+    dummy_hash = "$2b$12$ThisIsAVeryRealBcryptSaltOu/VwK.u9lUoVwZg5ZzO.c.Y"
     stored_hash = officer['password_hash'] if officer else dummy_hash
 
+    from fastapi.concurrency import run_in_threadpool
     is_valid = False
     try:
-        is_valid = bcrypt.checkpw(body.password.encode('utf-8'), stored_hash.encode('utf-8'))
+        is_valid = await run_in_threadpool(bcrypt.checkpw, body.password.encode('utf-8'), stored_hash.encode('utf-8'))
     except Exception as e:
         logger.error("Debug login exception", exc=str(e))
 
