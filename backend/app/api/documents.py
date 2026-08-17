@@ -42,8 +42,20 @@ async def generate_document(
     db = Depends(get_db),
     officer = Depends(auth.require_permission('doc_generate'))
 ):
+    doc_type_mapping = {
+        'chargesheet': 'chargesheet_bns2024',
+        'remand_request': 'remand_request_bnss',
+        'panchanama': 'accused_panchanama',
+        'medical_letter': 'medical_letter',
+        'court_custody': 'court_custody_bnss',
+        'witness_statement': 'witness_statement',
+        'seizure_receipt': 'seizure_receipt',
+        'face_id': 'face_identification'
+    }
+    actual_doc_type = doc_type_mapping.get(body.doc_type, body.doc_type)
+
     available_templates = get_available_templates()
-    if body.doc_type not in available_templates:
+    if actual_doc_type not in available_templates:
         raise HTTPException(400, f"Invalid doc_type. Must be one of: {available_templates}")
 
     case = (await db.execute(text("SELECT * FROM cases WHERE fir_no = :p1"), {'p1': body.case_id})).mappings().fetchone()
@@ -55,7 +67,7 @@ async def generate_document(
        str(case['ps_id']) != str(officer['ps_id']):
         raise HTTPException(403, "Access denied to this case")
 
-    if body.doc_type == 'medical_letter' and not case.get('victim_injury'):
+    if actual_doc_type == 'medical_letter' and not case.get('victim_injury'):
         raise HTTPException(400,
             "Medical letter requires victim_injury flag to be set"
         )
@@ -70,7 +82,7 @@ async def generate_document(
 
         doc_bytes, sha256 = await run_in_threadpool(
             generate_document,
-            doc_type=body.doc_type,
+            doc_type=actual_doc_type,
             case={
                 **dict(case),
                 'ps_name': ps['name'] if ps else 'Unknown PS',
@@ -84,12 +96,12 @@ async def generate_document(
 
     except FileNotFoundError:
         raise HTTPException(500,
-            f"Template for {body.doc_type} not found. "
+            f"Template for {actual_doc_type} not found. "
             f"Ensure template files are in /app/templates/documents/"
         )
     except Exception as e:
         logger.error("Document generation failed",
-                     doc_type=body.doc_type,
+                     doc_type=actual_doc_type,
                      case_id=body.case_id,
                      error=str(e))
         raise HTTPException(500, "Document generation failed")
@@ -126,14 +138,14 @@ async def generate_document(
 
     from app.services.audit import log_activity
     try:
-        await log_activity(db, str(officer['id']), "generate_document", f"Officer {officer['badge_no']} generated document: {body.doc_type} for case: {body.case_id}", request.client.host)
+        await log_activity(db, str(officer['id']), "generate_document", f"Officer {officer['badge_no']} generated document: {actual_doc_type} for case: {body.case_id}", request.client.host)
     except Exception as e:
         logger.error("Audit log failed on generate_document", error=str(e))
 
     await db.commit()
 
     filename = (
-        f"{body.doc_type}_{case['fir_no'].replace('/','_')}"
+        f"{actual_doc_type}_{case['fir_no'].replace('/','_')}"
         f"_{body.language}.docx"
     )
     return Response(

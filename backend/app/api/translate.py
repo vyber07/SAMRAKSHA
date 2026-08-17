@@ -56,6 +56,48 @@ async def translate_text(
         target_lang=body.target_lang,
     )
 
+class BatchTranslateRequest(BaseModel):
+    texts: list[str]
+    target_lang: str
+    source_lang: str = "en"
+
+class BatchTranslateResponse(BaseModel):
+    translations: list[str]
+    source_lang: str
+    target_lang: str
+    model: str = "IndicTrans2"
+
+@router.post("/batch", response_model=BatchTranslateResponse)
+async def batch_translate_text(
+    body: BatchTranslateRequest,
+    officer = Depends(get_current_officer)
+):
+    if body.target_lang not in SUPPORTED_LANGS:
+        raise HTTPException(400, "Unsupported target language")
+    
+    # Ideally batch this through the model, but for now we loop
+    # If the translator_service supports batching, use it!
+    translations = []
+    for text in body.texts:
+        if not text.strip():
+            translations.append(text)
+            continue
+        try:
+            trans = await translator_service.translate(
+                text,
+                target_lang=body.target_lang,
+                source_lang=body.source_lang,
+            )
+            translations.append(trans)
+        except Exception as e:
+            translations.append(text)
+            
+    return BatchTranslateResponse(
+        translations=translations,
+        source_lang=body.source_lang,
+        target_lang=body.target_lang
+    )
+
 @router.get("/languages")
 async def list_languages(officer = Depends(get_current_officer)):
     """List all supported language codes."""

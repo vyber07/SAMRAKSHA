@@ -1,3 +1,4 @@
+import { AutoTranslator } from "./AutoTranslator";
 import React, { useState, useEffect, useRef, createContext, useContext, useCallback, useMemo } from "react";
 import L from "leaflet";
 import DashboardPage from "./pages/DashboardPage";
@@ -3634,11 +3635,14 @@ export default function App() {
   }
 
   return (
-    <Ctx.Provider value={ctx}>   <div style={{ fontFamily: "Inter, sans-serif" }}>
+    <Ctx.Provider value={ctx}>
+      <AutoTranslator language={language} getCsrfToken={getCsrfToken} />
+      <div style={{ fontFamily: "Inter, sans-serif" }}>
         {!officer ? (
           <LoginPage />) : (<AppShell>{renderPage()}</AppShell>
         )}
-      </div>   </Ctx.Provider>
+      </div>   
+    </Ctx.Provider>
   );
 }
 
