@@ -16,7 +16,7 @@ import {
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart } from 'recharts';
 import { useApp, Officer, Case, CCTVAlert, PatrolUnit, CaseStatus, Role, DiaryEntry, Button, Card, Input, Select, Modal, Badge, Chip, QuickViewModal, CrimeGPTDocumentStudio, STATUS_CONFIG, RISK_CONFIG, ROLE_CONFIG, PREDICTIVE_HEATMAP_ZONES, downloadCasesCSV, AppCtx, cn, WS_COLOR, CreatedDocument, NAV_ITEMS, CAMERA_FEEDS, RolePermission, formatDateTime, SegmentedChartCard, HoverTooltip, WSMessage, GenerateDocumentModalProps, PageHeader, Page, createGoogleTeardropPin, ChatMsg, ALERT_COLOR, AdminUser, CCTV_LOCATIONS, LiveCameraGrid, ScenarioSimulationControlDeck, AHMEDABAD_WARD_LOCATIONS, StatCard, TRANSLATIONS, Ctx, Sidebar, RealAhmedabadOpenStreetMap, TopBar, BottomNav, VoiceInputWidget, IAMPolicy, CHART_COLORS, PatrolUnitFull, AICoPilotWidget, NavItem, AHMEDABAD_WARDS, formatTime, formatDate, GenerateDocumentModal, PatrolRouteFull, AppShell, INITIAL_ADMIN_USERS, INITIAL_AUDIT_LOGS, INITIAL_PERMISSIONS, INITIAL_IAM_POLICIES, AuditLog, timeAgo } from '../App';
 export default function DashboardPage() {
-  const { wsMessages, navigate, cases, patrols, cctvAlerts } = useApp();
+  const { wsMessages, navigate, cases, patrols, cctvAlerts, t } = useApp();
   const [quickCase, setQuickCase] = useState<Case | null>(null);
   const [mapRefreshKey, setMapRefreshKey] = useState(0);
   const [summary, setSummary] = useState<any>({});
@@ -43,22 +43,22 @@ export default function DashboardPage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard title="New Cases" value={summary.firs_today || 0} change={summary.firs_today_change || 0} icon={FileText} color="#004B87" tooltip="Total new cases registered today across all police stations" />
-        <StatCard title="Active Cases" value={cases.filter((c) => c.case_status === "open").length} change={4} icon={Activity} color="#006B5E" tooltip="Cases currently under active investigation" />
+        <StatCard title={t("registered_firs")} value={summary.firs_today || 0} change={summary.firs_today_change || 0} icon={FileText} color="#004B87" tooltip="Total new cases registered today across all police stations" />
+        <StatCard title={t("active_cases")} value={cases.filter((c) => c.case_status === "open").length} change={4} icon={Activity} color="#006B5E" tooltip="Cases currently under active investigation" />
         <StatCard title="Predictive Score" value={`${summary.predictive_score || 0}/100`} change={3} icon={Cpu} color="#8B5CF6" tooltip="AI predictive threat score index" />
-        <StatCard title="High Risk Zone" value={summary.high_risk_zones || 0} icon={TriangleAlert} color="#EF4444" tooltip="Wards with high risk score — requiring immediate attention" />
+        <StatCard title={t("high_risk_wards")} value={summary.high_risk_zones || 0} icon={TriangleAlert} color="#EF4444" tooltip="Wards with high risk score — requiring immediate attention" />
         <StatCard title="Open Cases" value={cases.filter((c) => c.case_status === "open").length} change={-5} icon={Clock} color="#D97300" tooltip="Cases awaiting final disposition" />
-        <StatCard title="Closed Cases" value={cases.filter((c) => c.case_status === "closed").length} change={18} icon={CheckCircle} color="#006B5E" tooltip="Successfully resolved or chargesheeted cases" />
+        <StatCard title={t("solved_cases")} value={cases.filter((c) => c.case_status === "closed").length} change={18} icon={CheckCircle} color="#006B5E" tooltip="Successfully resolved or chargesheeted cases" />
       </div>
 
-      {/* Row 2: Separated Recent Notifications & Quick Actions Cards */}
+      {/* Row 2: Separated {t("recent_notifs")} & {t("quick_actions")} Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Recent Notifications Card */}
+        {/* {t("recent_notifs")} Card */}
         <Card className="p-5 animate-fade-in-up flex flex-col justify-between h-[280px]">
           <div className="flex items-center justify-between border-b border-[var(--border)] pb-2">
             <span className="type-title font-bold text-[var(--foreground)] flex items-center gap-2">
               <span className="material-symbols-rounded text-blue-600 dark:text-blue-400 text-lg">notifications</span>
-              Recent Notifications
+              {t("recent_notifs")}
             </span>
             <span className="text-[11px] text-[var(--muted-foreground)] font-medium bg-[var(--input)] px-2 py-0.5 rounded-full border border-[var(--border)]">{wsMessages.length} received</span>
           </div>
@@ -82,14 +82,14 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {/* Quick Actions Card */}
+        {/* {t("quick_actions")} Card */}
         <Card className="p-5 animate-fade-in-up flex flex-col justify-between h-[280px]">
           <div className="border-b border-[var(--border)] pb-2 flex items-center justify-between">
             <span className="type-title font-bold text-[var(--foreground)] flex items-center gap-2">
               <span className="material-symbols-rounded text-amber-500 text-lg">bolt</span>
-              Quick Actions
+              {t("quick_actions")}
             </span>
-            <span className="text-[10px] uppercase font-mono tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 font-bold">Shortcuts</span>
+            <span className="text-[10px] uppercase font-mono tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 font-bold">{t("shortcuts")}</span>
           </div>
           <div className="grid grid-cols-2 grid-rows-2 gap-3 flex-1 pt-3">
             <button

@@ -12,12 +12,23 @@ import structlog
 router = APIRouter()
 logger = structlog.get_logger()
 
-DOC_TYPES = [
-    'chargesheet', 'medical_letter', 'remand_request',
-    'seizure_receipt', 'court_custody', 'panchanama', 'face_id',
-    'witness_statement', 'fir', 'case_diary', 'arrest_memo',
-    'seizure_list', 'search_warrant', 'bail_objection'
-]
+import os
+
+def get_available_templates():
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    templates_dir = os.path.join(base_dir, 'templates', 'documents')
+    if not os.path.exists(templates_dir):
+        return [
+            'chargesheet', 'medical_letter', 'remand_request',
+            'seizure_receipt', 'court_custody', 'panchanama', 'face_id',
+            'witness_statement', 'fir', 'case_diary', 'arrest_memo',
+            'seizure_list', 'search_warrant', 'bail_objection'
+        ]
+    templates = []
+    for f in os.listdir(templates_dir):
+        if f.endswith('.docx') or f.endswith('.pdf'):
+            templates.append(os.path.splitext(f)[0])
+    return list(set(templates))
 
 class GenerateRequest(BaseModel):
     case_id:  str
@@ -31,10 +42,11 @@ async def generate_document(
     db = Depends(get_db),
     officer = Depends(auth.require_permission('doc_generate'))
 ):
-    if body.doc_type not in DOC_TYPES:
-        raise HTTPException(400, f"Invalid doc_type. Must be one of: {DOC_TYPES}")
+    available_templates = get_available_templates()
+    if body.doc_type not in available_templates:
+        raise HTTPException(400, f"Invalid doc_type. Must be one of: {available_templates}")
 
-    case = (await db.execute(text("SELECT * FROM cases WHERE case_id = :p1"), {'p1': body.case_id})).mappings().fetchone()
+    case = (await db.execute(text("SELECT * FROM cases WHERE fir_no = :p1"), {'p1': body.case_id})).mappings().fetchone()
 
     if not case:
         raise HTTPException(404, "Case not found")
@@ -87,7 +99,7 @@ async def generate_document(
         (case_id, doc_type, sha256, generated_by, language)
         VALUES (:p1, :p2, :p3, :p4, :p5)
         RETURNING id
-    """), {'p1': body.case_id, 'p2': body.doc_type, 'p3': sha256, 'p4': str(officer['id']), 'p5': body.language})
+    """), {'p1': str(case['case_id']), 'p2': body.doc_type, 'p3': sha256, 'p4': str(officer['id']), 'p5': body.language})
 
     doc_labels = {
         'chargesheet':       'Purvani Chargesheet',
@@ -109,7 +121,7 @@ async def generate_document(
         INSERT INTO case_diary
         (case_id, entry_type, description, officer_id, auto_generated)
         VALUES (:p1, 'document', :p2, :p3, TRUE)
-    """), {'p1': body.case_id, 'p2': f"{doc_labels[body.doc_type]} generated "
+    """), {'p1': str(case['case_id']), 'p2': f"{doc_labels.get(body.doc_type, body.doc_type)} generated "
         f"(SHA-256: {sha256[:8]}...)", 'p3': str(officer['id'])})
 
     from app.services.audit import log_activity
@@ -141,7 +153,8 @@ async def list_templates(
     officer = Depends(get_current_officer)
 ):
     """Return available document templates."""
-    return [{"id": k, "name": v} for k, v in DOC_TYPES.items()] if isinstance(DOC_TYPES, dict) else [{"id": d, "name": d.replace("_", " ").title()} for d in DOC_TYPES]
+    templates = get_available_templates()
+    return [{"id": d, "name": d.replace("_", " ").title()} for d in templates]
 
 @router.get("")
 async def list_documents(
@@ -152,7 +165,7 @@ async def list_documents(
     if officer['role'] == 'constable':
         raise HTTPException(403, "Access denied")
 
-    case = (await db.execute(text("SELECT ps_id FROM cases WHERE case_id = :p1"), {'p1': case_id})).mappings().fetchone()
+    case = (await db.execute(text("SELECT ps_id, case_id FROM cases WHERE fir_no = :p1"), {'p1': case_id})).mappings().fetchone()
     if not case:
         raise HTTPException(404, "Case not found")
 
@@ -168,6 +181,6 @@ async def list_documents(
         LEFT JOIN officers o ON dl.generated_by = o.id
         WHERE dl.case_id = :p1
         ORDER BY dl.generated_at DESC
-    """), {'p1': case_id})).mappings().fetchall()
+    """), {'p1': str(case['case_id'])})).mappings().fetchall()
 
     return docs

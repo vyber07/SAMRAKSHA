@@ -34,11 +34,23 @@ export default function CasesPage() {
     return matchQ && matchS && matchC;
   });
 
+  // Neutralize spreadsheet formula injection: prefix cells beginning with =,+,-,@
+  // or leading whitespace/tab/CR with a single quote so they are treated as text.
+  function sanitizeCsvCell(value: string): string {
+    const v = String(value ?? "");
+    if (/^[=+\-@\t\r]/.test(v)) return `'${v}`;
+    return v;
+  }
+
   function exportCSV() {
     const header = ["FIR No", "Victim", "Crime Type", "Date", "Status", "IO", "Location"];
-    const rows = filtered.map((c) => [c.fir_no, c.victim_name, c.crime_type, formatDate(c.crime_date), c.case_status, c.io_badge || "", c.crime_location]);
-    const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const rows = filtered.map((c) =>
+      [c.fir_no, c.victim_name, c.crime_type, formatDate(c.crime_date), c.case_status, c.io_badge || "", c.crime_location]
+        .map(sanitizeCsvCell)
+        .map((v) => `"${v.replace(/"/g, '""')}"`)
+    );
+    const csv = [header.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = "cases_export.csv"; a.click();
     URL.revokeObjectURL(url);

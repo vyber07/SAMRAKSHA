@@ -37,9 +37,7 @@ function LoginPage() {
 
       <div className="glass-container sm:p-8 w-full max-w-md p-8 shadow-2xl">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-11 h-11 rounded-xl bg-[#004B87] dark:bg-[#A8CAFF] flex items-center justify-center text-white dark:text-[#001D36] shadow-md">
-            <Shield size={22} />
-          </div>
+          <img src="/logo.svg" alt="SAMRAKSHA Logo" className="w-12 h-12 object-contain" />
           <div>
             <h1 className="font-montserrat text-xl font-bold text-[#004B87] dark:text-[#A8CAFF] tracking-wide">SAMRAKSHA</h1>
             <p className="text-xs text-[var(--muted-foreground)]">Ahmedabad City Police Command</p>

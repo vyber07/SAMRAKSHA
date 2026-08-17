@@ -22,7 +22,7 @@ class LLMConfig:
     """LLM Configuration"""
     def __init__(self):
         self.base_url = os.getenv("LLAMACPP_URL", os.getenv("LLM_URL", "http://llamacpp:8080"))
-        self.timeout = float(os.getenv("LLM_TIMEOUT", "30.0"))
+        self.timeout = float(os.getenv("LLM_TIMEOUT", "300.0"))
         self.temperature = float(os.getenv("LLM_TEMPERATURE", "0.1"))
         self.max_tokens = int(os.getenv("LLM_MAX_TOKENS", "500"))
         self.context_size = int(os.getenv("LLM_CONTEXT_SIZE", "512"))
@@ -35,7 +35,7 @@ class LLMIntegration:
     
     def __init__(self, config: Optional[LLMConfig] = None):
         self.config = config or LLMConfig()
-        logger.info("LLM Integration initialized", base_url=self.config.base_url)
+        logger.info("LLM Integration initialized", base_url=self.config.base_url, timeout=self.config.timeout)
     
     async def health_check(self) -> bool:
         """Check if LLM service is healthy"""

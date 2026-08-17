@@ -14,7 +14,7 @@ import {
   Maximize2, Signal, ZoomIn, Sun, Moon, ShieldCheck, Users, Key, ShieldAlert, FileCode, UserPlus
 } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart } from 'recharts';
-import { useApp, Officer, Case, CCTVAlert, PatrolUnit, CaseStatus, Role, DiaryEntry, Button, Card, Input, Select, Modal, Badge, Chip, QuickViewModal, CrimeGPTDocumentStudio, STATUS_CONFIG, RISK_CONFIG, ROLE_CONFIG, PREDICTIVE_HEATMAP_ZONES, downloadCasesCSV, AppCtx, cn, WS_COLOR, CreatedDocument, NAV_ITEMS, CAMERA_FEEDS, RolePermission, formatDateTime, SegmentedChartCard, HoverTooltip, WSMessage, GenerateDocumentModalProps, PageHeader, Page, createGoogleTeardropPin, ChatMsg, ALERT_COLOR, AdminUser, CCTV_LOCATIONS, LiveCameraGrid, ScenarioSimulationControlDeck, AHMEDABAD_WARD_LOCATIONS, StatCard, TRANSLATIONS, Ctx, Sidebar, RealAhmedabadOpenStreetMap, TopBar, BottomNav, VoiceInputWidget, IAMPolicy, CHART_COLORS, PatrolUnitFull, AICoPilotWidget, NavItem, AHMEDABAD_WARDS, formatTime, formatDate, GenerateDocumentModal, PatrolRouteFull, AppShell, INITIAL_ADMIN_USERS, INITIAL_AUDIT_LOGS, INITIAL_PERMISSIONS, INITIAL_IAM_POLICIES, AuditLog, timeAgo } from '../App';
+import { useApp, Officer, Case, CCTVAlert, PatrolUnit, CaseStatus, Role, DiaryEntry, Button, Card, Input, Select, Modal, Badge, Chip, QuickViewModal, CrimeGPTDocumentStudio, STATUS_CONFIG, RISK_CONFIG, ROLE_CONFIG, PREDICTIVE_HEATMAP_ZONES, downloadCasesCSV, AppCtx, cn, WS_COLOR, CreatedDocument, NAV_ITEMS, CAMERA_FEEDS, RolePermission, formatDateTime, SegmentedChartCard, HoverTooltip, WSMessage, GenerateDocumentModalProps, PageHeader, Page, createGoogleTeardropPin, ChatMsg, ALERT_COLOR, AdminUser, CCTV_LOCATIONS, LiveCameraGrid, ScenarioSimulationControlDeck, AHMEDABAD_WARD_LOCATIONS, StatCard, TRANSLATIONS, Ctx, Sidebar, RealAhmedabadOpenStreetMap, TopBar, BottomNav, VoiceInputWidget, IAMPolicy, CHART_COLORS, PatrolUnitFull, AICoPilotWidget, NavItem, AHMEDABAD_WARDS, formatTime, formatDate, GenerateDocumentModal, PatrolRouteFull, AppShell, INITIAL_ADMIN_USERS, INITIAL_AUDIT_LOGS, INITIAL_PERMISSIONS, INITIAL_IAM_POLICIES, AuditLog, timeAgo, getCsrfToken } from '../App';
 export default function PatrolPage() {
   const { token, navigate, cases, patrols, cctvAlerts } = useApp();
   const [units, setUnits] = useState<PatrolUnitFull[]>(patrols as any);
@@ -26,10 +26,7 @@ export default function PatrolPage() {
   }, [patrols]);
 
   useEffect(() => {
-    const token = localStorage.getItem("samraksha_token");
-    fetch("/api/v1/analytics/resource_status", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    })
+    fetch("/api/v1/analytics/resource_status", { credentials: "include" })
       .then(res => res.json())
       .then(data => setResourceStatus(data))
       .catch(console.error);
@@ -38,7 +35,7 @@ export default function PatrolPage() {
   useEffect(() => {
     async function fetchRoutes() {
       try {
-        const res = await fetch("/api/v1/patrol/routes", { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch("/api/v1/patrol/routes", { credentials: "include", headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) {
           const data = await res.json();
           // Transform backend route format to frontend format
@@ -105,7 +102,8 @@ export default function PatrolPage() {
     try {
       await fetch(`/api/v1/patrol/units/${unitId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ status: newStatus })
       });
     } catch(e) {}
@@ -116,7 +114,8 @@ export default function PatrolPage() {
       try {
         await fetch(`/api/v1/patrol/units/${unitId}`, {
           method: "DELETE",
-          headers: { "Authorization": `Bearer ${token}` }
+          credentials: "include",
+          headers: { "X-CSRF-Token": getCsrfToken(), "Authorization": `Bearer ${token}` }
         });
         setUnits((prev) => prev.filter((u) => u.id !== unitId));
         if (selectedUnitId === unitId) {
@@ -132,7 +131,8 @@ export default function PatrolPage() {
     try {
       await fetch(`/api/v1/patrol/units/${editingUnit.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), "Authorization": `Bearer ${token}` },
         body: JSON.stringify({
           unit_no: editingUnit.name,
           officer_name: editingUnit.officer_in_charge,
@@ -158,7 +158,8 @@ export default function PatrolPage() {
     try {
       const res = await fetch("/api/v1/patrol/units", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), "Authorization": `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
@@ -197,8 +198,9 @@ export default function PatrolPage() {
       const loc = AHMEDABAD_WARD_LOCATIONS[rerouteWard];
       await fetch(`/api/v1/patrol/units/${rerouteUnitId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ 
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({
           status: "responding",
           manual_waypoints: [{ lat: loc?.lat || 23.0225, lon: loc?.lon || 72.5714, name: rerouteLandmark }]
         })

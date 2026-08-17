@@ -254,6 +254,7 @@ async def update_my_profile(
         params.append(val)
         updates_sql.append(f"{col} = :p{len(params)}")
     params.append(officer["id"])
-    await db.execute(text(f"UPDATE officers SET {', '.join(updates_sql)} WHERE id = :p{len(params)}"), {f'p{i+1}': v for i, v in enumerate(params)})
+    query_str = "UPDATE officers SET " + ", ".join(updates_sql) + f" WHERE id = :p{len(params)}"
+    await db.execute(text(query_str), {f'p{i+1}': v for i, v in enumerate(params)})
     return {"message": "Profile updated"}
 

@@ -14,6 +14,7 @@ TEMPLATES = {
 }
 
 def get_template_path(doc_type: str) -> str:
+    doc_type = os.path.basename(doc_type)
     # First check exact match in templates
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     dynamic_path = os.path.join(base_dir, 'templates', 'documents', f'{doc_type}.docx')

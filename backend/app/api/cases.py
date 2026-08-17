@@ -222,16 +222,17 @@ async def search_cases(
         where = ""
         params = [q]
 
-    results = (await db.execute(text(f"""
+    query = """
         SELECT case_id, fir_no, victim_name, accused_name,
                crime_type, crime_date, case_status,
                ts_rank(search_vector, plainto_tsquery('english', CAST(:p1 AS text))) AS rank
         FROM cases
         WHERE search_vector @@ plainto_tsquery('english', CAST(:p1 AS text))
-        {where}
+    """ + where + """
         ORDER BY rank DESC
         LIMIT 20
-    """), {f'p{i+1}': v for i, v in enumerate(params)})).mappings().fetchall()
+    """
+    results = (await db.execute(text(query), {f'p{i+1}': v for i, v in enumerate(params)})).mappings().fetchall()
 
     return results
 

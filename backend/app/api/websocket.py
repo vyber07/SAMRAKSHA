@@ -3,6 +3,9 @@ import jwt as _jwt  # PyJWT — replaces python-jose (CVE-2024-33663, CVE-2024-3
 from collections import defaultdict
 import os
 import structlog
+import time
+
+from app.core.security import SESSION_COOKIE_NAME
 
 SECRET_KEY = os.getenv("SECRET_KEY") or ""
 if not SECRET_KEY:
@@ -66,17 +69,23 @@ manager = DashboardManager()
 
 @router.websocket("/dashboard")
 async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        token = await websocket.receive_text()
-    except Exception:
-        await websocket.close(code=1008, reason="Missing authentication token")
-        return
+    # Prefer the HttpOnly session cookie sent with the handshake; fall back to a
+    # Bearer token sent as the first message (legacy / in-memory clients).
+    token = websocket.cookies.get(SESSION_COOKIE_NAME)
 
-    clean_token = token.split(" ", 1)[1] if token.startswith("Bearer ") else token
+    if not token:
+        await websocket.accept()
+        try:
+            raw = await websocket.receive_text()
+        except Exception:
+            await websocket.close(code=1008, reason="Missing authentication token")
+            return
+        token = raw.split(" ", 1)[1] if raw.startswith("Bearer ") else raw
+    else:
+        await websocket.accept()
 
     try:
-        payload = _jwt.decode(clean_token, SECRET_KEY, algorithms=[ALGORITHM])  # algorithms pinned, no negotiation
+        payload = _jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])  # algorithms pinned, no negotiation
         officer_id = payload.get("sub")
         if not officer_id:
             await websocket.close(code=1008, reason="Invalid token payload")
@@ -92,7 +101,7 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.connections[officer_id] = []
     if websocket not in manager.connections[officer_id]:
         manager.connections[officer_id].append(websocket)
-    
+
     await websocket.send_json({
         'type': 'INIT',
         'payload': {'message': 'Connected'},
@@ -101,7 +110,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         while True:
-            data = await websocket.receive_text()
+            await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket, officer_id)
 

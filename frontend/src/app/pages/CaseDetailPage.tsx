@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ShieldAlert, Info, MapPin, ChevronLeft, ChevronRight, Map, Clock, Zap, Target, LayoutGrid, CheckCircle, FlameKindling, Building, Plus, AlertCircle, FileText, Share2, Printer, Activity, Briefcase, Camera, Video, Navigation, Shield, User, Bot, Send } from "lucide-react";
-import { useApp, PageHeader, Card, Badge, cn, Button, Modal, GenerateDocumentModal, VoiceInputWidget, STATUS_CONFIG, formatDate, formatDateTime } from "../App";
+import { useApp, PageHeader, Card, Badge, cn, Button, Modal, GenerateDocumentModal, VoiceInputWidget, STATUS_CONFIG, formatDate, formatDateTime, getCsrfToken } from "../App";
 
 
 function CaseDetailPage() {
@@ -39,7 +39,7 @@ function CaseDetailPage() {
       const res = await fetch(`/api/v1/cases/${c.case_id}/diary`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         body: JSON.stringify({ entry_type: "note", description: newNote }),
       });
       if (!res.ok) throw new Error("Unable to save diary entry");

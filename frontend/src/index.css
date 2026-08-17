@@ -592,3 +592,8 @@ h1, h2, h3, h4, .font-montserrat {
     display: block !important;
   }
 }
+
+select, select option {
+  color: black !important;
+}
+

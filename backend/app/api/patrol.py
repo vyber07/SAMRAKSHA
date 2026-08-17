@@ -146,7 +146,13 @@ async def list_patrol_units(
     officer = Depends(auth.require_permission('patrol_view'))
 ):
     units = (await db.execute(text("""
-        SELECT id, unit_name as name, officer_name, vehicle, current_lat as lat, current_lon as lon, status
+        SELECT id, unit_name as name, officer_name, vehicle, current_lat as lat, current_lon as lon, 
+        CASE 
+            WHEN status = 'deployed' THEN 'active'
+            WHEN status = 'available' THEN 'idle'
+            WHEN status = 'unavailable' THEN 'idle'
+            ELSE status
+        END as status
         FROM patrol_units
     """), {})).mappings().fetchall()
     return units
@@ -159,12 +165,16 @@ async def create_patrol_unit(
 ):
     # Try basic geocoding from location string if needed, else fallback
     # The frontend will eventually send proper lat/lon if needed.
+    db_status = body.status
+    if db_status == 'active': db_status = 'deployed'
+    elif db_status == 'idle': db_status = 'available'
+
     new_unit = (await db.execute(text("""
         INSERT INTO patrol_units 
         (unit_name, officer_name, vehicle, status, ps_id, current_lat, current_lon)
         VALUES (:p1, :p2, :p3, :p4, :p5, :p6, :p7)
         RETURNING *
-    """), {'p1': body.unit_no, 'p2': body.officer_name, 'p3': body.vehicle, 'p4': body.status, 'p5': str(officer['ps_id']), 'p6': body.current_lat, 'p7': body.current_lon})).mappings().fetchone()
+    """), {'p1': body.unit_no, 'p2': body.officer_name, 'p3': body.vehicle, 'p4': db_status, 'p5': str(officer['ps_id']), 'p6': body.current_lat, 'p7': body.current_lon})).mappings().fetchone()
     await db.commit()
     return {"status": "created", "unit": new_unit}
 

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { User, FileText, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, Mic, HelpCircle, Save, Plus, X, Check, Cpu } from "lucide-react";
-import { useApp, PageHeader, Card, Input, Select, Button, cn, Chip, Badge, Modal, VoiceInputWidget, AICoPilotWidget, AHMEDABAD_WARDS } from "../App";
+import { useApp, PageHeader, Card, Input, Select, Button, cn, Chip, Badge, Modal, VoiceInputWidget, AICoPilotWidget, AHMEDABAD_WARDS, getCsrfToken } from "../App";
 
 
 function FIREntryPage() {
@@ -26,7 +26,7 @@ function FIREntryPage() {
   async function suggestSections() {
     if (!form.crime_narrative) return;
     try {
-      const res = await fetch(`/api/v1/legal/search?q=${encodeURIComponent(form.crime_narrative.slice(0, 50))}`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`/api/v1/legal/search?q=${encodeURIComponent(form.crime_narrative.slice(0, 50))}`, { credentials: "include", headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (Array.isArray(data)) setSuggestedSections(data.map(d => ({ section: d.section || d.title, reason: d.description || d.reason || "Matched from database" })).slice(0, 4));
       else setSuggestedSections([{ section: "BNS 303", reason: "Fallback suggestion" }]);
@@ -41,7 +41,8 @@ function FIREntryPage() {
 
       const res = await fetch("/api/v1/cases", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error("Failed");

@@ -41,6 +41,8 @@ L.Icon.Default.mergeOptions({
 // ─── SAMRAKSHA Logo SVG ───────────────────────────────────────────────────────
 
 function SamrakshaLogo({ size = 32 }: { size?: number }) {
+  const { t } = useApp();
+
   return <img src="/logo.svg" alt="Samraksha Logo" width={size} height={size} style={{ userSelect: 'none' }} />;
 }
 
@@ -165,7 +167,13 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
 // ─── Predictive Risk Zones Data ──────────────────────────────────────────────
 
-export const PREDICTIVE_HEATMAP_ZONES: any[] = [];
+export const PREDICTIVE_HEATMAP_ZONES = [
+  { name: "Satellite Sector B", lat: 23.0270, lon: 72.5220, radius: 600, intensity: 0.78, color: "#EF4444", forecast: "High risk of property theft in the next 4 hours based on historical weekend trends." },
+  { name: "Maninagar Crossing", lat: 22.9980, lon: 72.6050, radius: 450, intensity: 0.82, color: "#EF4444", forecast: "Elevated risk of chain snatching reported by AI pattern analysis." },
+  { name: "Naroda GIDC", lat: 23.0680, lon: 72.6500, radius: 800, intensity: 0.70, color: "#F97316", forecast: "Industrial area showing moderate unauthorized access patterns." },
+  { name: "Naranpura Transit", lat: 23.0600, lon: 72.5450, radius: 400, intensity: 0.65, color: "#F59E0B", forecast: "Traffic violation spike predicted during evening rush hours." },
+  { name: "Isanpur Highway", lat: 22.9750, lon: 72.5920, radius: 550, intensity: 0.72, color: "#EF4444", forecast: "Frequent nighttime traffic incidents historically logged." },
+];
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 
@@ -236,6 +244,18 @@ function timeAgo(iso: string) {
   return `${Math.floor(m / 60)}h ago`;
 }
 
+// Read the double-submit CSRF token set by the backend (non-HttpOnly cookie).
+function getCsrfToken(): string {
+  if (typeof document === "undefined") return "";
+  const m = document.cookie.match(/(?:^|;\s*)samraksha_csrf=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : "";
+}
+
+// Headers for state-changing requests: JSON content-type + CSRF token.
+function mutationHeaders(extra?: Record<string, string>): Record<string, string> {
+  return { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), ...(extra ?? {}) };
+}
+
 const STATUS_CONFIG: Record<CaseStatus, { label: string; color: string; bg: string }> = {
   open: { label: "Open", color: "#60A5FA", bg: "rgba(59,130,246,0.15)" },
   arrested: { label: "Arrested", color: "#FBBF24", bg: "rgba(245,158,11,0.15)" },
@@ -268,6 +288,8 @@ const WS_COLOR: Record<string, string> = {
 // ─── Common Components ────────────────────────────────────────────────────────
 
 function Badge({ children, color = "#3B82F6", bg }: { children: React.ReactNode; color?: string; bg?: string }) {
+  const { t } = useApp();
+
   return (
     <span
       className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
@@ -279,6 +301,8 @@ function Badge({ children, color = "#3B82F6", bg }: { children: React.ReactNode;
 }
 
 function Chip({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  const { t } = useApp();
+
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border" style={{ borderColor: "var(--border)", color: "var(--muted-foreground)", backgroundColor: "var(--input)", ...style }}>
       {children}
@@ -287,6 +311,8 @@ function Chip({ children, style }: { children: React.ReactNode; style?: React.CS
 }
 
 function Card({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  const { t } = useApp();
+
   return (
     <div
       className={cn(
@@ -304,12 +330,10 @@ function StatCard({ title, value, change, icon: Icon, color, loading, tooltip }:
   title: string; value: string | number; change?: number;
   icon: React.ElementType; color: string; loading?: boolean; tooltip?: string;
 }) {
+  const { t } = useApp();
+
   const inner = (
-    <Card className="flex flex-col gap-1.5 sm:gap-2 w-full cursor-default !p-3.5 border border-white/15 bg-slate-900/60 backdrop-blur-xl shadow-lg hover:border-cyan-500/40 hover:shadow-cyan-500/10 transition-all duration-300" style={{ borderRadius: 24 }}>
-      <div className="flex items-center justify-between">
-        <div className="w-8 h-8 rounded-2xl flex items-center justify-center shrink-0 shadow-inner" style={{ backgroundColor: color + "22", border: `1px solid ${color}44` }}>
-          <Icon size={16} style={{ color }} />
-        </div>
+    <Card className="flex flex-col gap-1.5 sm:gap-2 w-full cursor-default !p-3.5 border border-white/15 bg-slate-900/60 backdrop-blur-xl shadow-lg hover:border-cyan-500/40 hover:shadow-cyan-500/10 transition-all duration-300" style={{ borderRadius: 24 }}>   <div className="flex items-center justify-between">   <div className="w-8 h-8 rounded-2xl flex items-center justify-center shrink-0 shadow-inner" style={{ backgroundColor: color + "22", border: `1px solid ${color}44` }}>   <Icon size={16} style={{ color }} />   </div>
         {change !== undefined && (
           <span
             className="flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-white/10"
@@ -324,39 +348,31 @@ function StatCard({ title, value, change, icon: Icon, color, loading, tooltip }:
         )}
       </div>
       {loading ? (
-        <div className="h-6 w-16 rounded-lg animate-pulse bg-white/10" />
-      ) : (
-        <div className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tracking-tight font-display" style={{ fontVariantNumeric: "tabular-nums" }}>{value}</div>
+        <div className="h-6 w-16 rounded-lg animate-pulse bg-white/10" />) : (<div className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tracking-tight font-display" style={{ fontVariantNumeric: "tabular-nums" }}>{value}</div>
       )}
-      <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] truncate">{title}</div>
-    </Card>
+      <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] truncate">{title}</div>   </Card>
   );
   if (tooltip) return <HoverTooltip tip={tooltip} side="bottom"><div className="w-full">{inner}</div></HoverTooltip>;
   return inner;
 }
 
 function PageHeader({ title, subtitle, action, showBack }: { title: string; subtitle?: string; action?: React.ReactNode; showBack?: boolean }) {
+  const { t } = useApp();
+
   const { page, navigate } = useApp();
   const needsBack = showBack !== undefined ? showBack : (page !== "dashboard" && page !== "login");
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">   <div className="flex items-center gap-3">
         {needsBack && (
-          <HoverTooltip tip="Return to Command Center">
-            <button
+          <HoverTooltip tip="Return to Command Center">   <button
               onClick={() => navigate("dashboard")}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:opacity-80 cursor-pointer bg-[transparent] text-[var(--foreground)] border border-[var(--border)] shadow-sm"
-            >
-              <ChevronLeft size={14} /> Back
-            </button>
-          </HoverTooltip>
+            >   <ChevronLeft size={14} />{t("Back", true)}</button>   </HoverTooltip>
         )}
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--foreground)] font-display">{title}</h1>
+        <div>   <h1 className="text-2xl font-bold text-[var(--foreground)] font-display">{title}</h1>
           {subtitle && <p className="text-sm mt-0.5 text-[var(--muted-foreground)]">{subtitle}</p>}
-        </div>
-      </div>
+        </div>   </div>
       {action && <div className="flex items-center gap-2">{action}</div>}
     </div>
   );
@@ -368,11 +384,12 @@ function Input({ label, type = "text", value, onChange, placeholder, className, 
   placeholder?: string; className?: string; rightElement?: React.ReactNode;
   [key: string]: unknown;
 }) {
+  const { t } = useApp();
+
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
       {label && <label className="text-sm font-medium text-[var(--foreground)]">{label}</label>}
-      <div className="relative">
-        <input
+      <div className="relative">   <input
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -386,8 +403,7 @@ function Input({ label, type = "text", value, onChange, placeholder, className, 
         {rightElement && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">{rightElement}</div>
         )}
-      </div>
-    </div>
+      </div>   </div>
   );
 }
 
@@ -395,6 +411,8 @@ function Select({ label, value, onChange, options, className }: {
   label?: string; value: string; onChange: (v: string) => void;
   options: { value: string; label: string }[]; className?: string;
 }) {
+  const { t } = useApp();
+
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
       {label && <label className="text-sm font-medium text-[var(--foreground)]">{label}</label>}
@@ -406,8 +424,7 @@ function Select({ label, value, onChange, options, className }: {
         {options.map((o) => (
           <option key={o.value} value={o.value} className="bg-[transparent] text-[var(--foreground)]">{o.label}</option>
         ))}
-      </select>
-    </div>
+      </select>   </div>
   );
 }
 
@@ -418,6 +435,8 @@ function Button({ children, onClick, variant = "filled", size = "md", disabled, 
   className?: string; style?: React.CSSProperties;
   type?: "button" | "submit" | "reset";
 }) {
+  const { t } = useApp();
+
   const sizeClasses = { sm: "px-3 py-1.5 text-xs", md: "px-4 py-2 text-sm", lg: "px-6 py-2.5 text-base" };
   const variants = {
     filled: { backgroundColor: "var(--color-primary)", color: "var(--color-on-primary)", border: "none" },
@@ -439,6 +458,8 @@ function Button({ children, onClick, variant = "filled", size = "md", disabled, 
 }
 
 function HoverTooltip({ children, tip, side = "top" }: { children: React.ReactNode; tip: string; side?: "top" | "bottom" | "left" | "right" }) {
+  const { t } = useApp();
+
   const [show, setShow] = useState(false);
   const posMap = {
     top: { bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)" },
@@ -468,13 +489,14 @@ function Modal({ open, onClose, title, children, width = 560 }: {
   open: boolean; onClose: () => void; title: string;
   children: React.ReactNode; width?: number;
 }) {
+  const { t } = useApp();
+
   if (!open) return null;
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in"
       onClick={onClose}
-    >
-      <div
+    >   <div
         className="w-full flex flex-col max-h-[85vh] overflow-hidden glass-card text-[var(--foreground)] border border-white/20 rounded-3xl shadow-2xl relative"
         style={{
           maxWidth: width,
@@ -483,16 +505,7 @@ function Modal({ open, onClose, title, children, width = 560 }: {
           WebkitBackdropFilter: "blur(32px)",
         }}
         onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0 border-b border-white/10">
-          <h2 className="text-base font-bold text-[var(--foreground)] font-display tracking-wide">{title}</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-all bg-white/10 text-[var(--foreground)] hover:bg-white/20 cursor-pointer">
-            <X size={14} />
-          </button>
-        </div>
-        <div className="overflow-y-auto px-6 py-5 flex flex-col gap-4">{children}</div>
-      </div>
-    </div>
+      >   <div className="flex items-center justify-between px-6 py-4 flex-shrink-0 border-b border-white/10">   <h2 className="text-base font-bold text-[var(--foreground)] font-display tracking-wide">{title}</h2>   <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-all bg-white/10 text-[var(--foreground)] hover:bg-white/20 cursor-pointer">   <X size={14} />   </button>   </div>   <div className="overflow-y-auto px-6 py-5 flex flex-col gap-4">{children}</div>   </div>   </div>
   );
 }
 
@@ -509,6 +522,8 @@ function GenerateDocumentModal({
   caseNo: initialCaseNo = "FIR JAM/2026/0127",
   onDownload,
 }: GenerateDocumentModalProps) {
+  const { t } = useApp();
+
   const { cases, token } = useApp();
   const [selectedCaseId, setSelectedCaseId] = useState(initialCaseNo);
   const [docType, setDocType] = useState("fir");
@@ -521,7 +536,7 @@ function GenerateDocumentModal({
     setSelectedCaseId(initialCaseNo);
     if (open && docTypes.length === 0) {
       fetch("/api/v1/docs/templates", {
-        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+        credentials: "include"
       })
       .then(res => res.json())
       .then(data => {
@@ -544,6 +559,7 @@ function GenerateDocumentModal({
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          "X-CSRF-Token": getCsrfToken(),
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
@@ -595,8 +611,7 @@ function GenerateDocumentModal({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in"
       onClick={onClose}
-    >
-      <div
+    >   <div
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
@@ -608,8 +623,7 @@ function GenerateDocumentModal({
           flexDirection: "column",
           boxShadow: "rgba(0, 0, 0, 0.5) 0px 24px 64px",
         }}
-      >
-        <div
+      >   <div
           style={{
             padding: "20px 24px",
             borderBottom: "1px solid var(--border)",
@@ -617,8 +631,7 @@ function GenerateDocumentModal({
             justifyContent: "space-between",
             alignItems: "center",
           }}
-        >
-          <h2
+        >   <h2
             style={{
               fontSize: "18px",
               fontFamily: "var(--font-headline, sans-serif)",
@@ -627,8 +640,7 @@ function GenerateDocumentModal({
             }}
           >
             📄 Generate Document
-          </h2>
-          <button
+          </h2>   <button
             onClick={onClose}
             style={{
               background: "transparent",
@@ -642,9 +654,7 @@ function GenerateDocumentModal({
             }}
           >
             ✕
-          </button>
-        </div>
-        <div
+          </button>   </div>   <div
           style={{
             padding: "24px",
             display: "flex",
@@ -653,21 +663,13 @@ function GenerateDocumentModal({
           }}
         >
           {downloaded ? (
-            <div className="p-3.5 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold flex items-center gap-2">
-              <CheckCircle size={16} /> Document generated & download initiated!
-            </div>
-          ) : (
-            <>
-              <div
+            <div className="p-3.5 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold flex items-center gap-2">   <CheckCircle size={16} />{t("Document generated & download initiated!", true)}</div>) : (<>   <div
                 style={{
                   fontSize: "13px",
                   color: "var(--text-muted, var(--muted-foreground))",
                   marginBottom: "4px"
                 }}
-              >
-                Select Case Data:
-              </div>
-              <select
+              >{t("Select Case Data:", true)}</div>   <select
                 value={selectedCaseId}
                 onChange={(e) => setSelectedCaseId(e.target.value)}
                 style={{
@@ -681,14 +683,11 @@ function GenerateDocumentModal({
                   outline: "none",
                   boxSizing: "border-box",
                 }}
-              >
-                <option value={initialCaseNo} className="bg-[var(--card)] text-[var(--foreground)]">{initialCaseNo} (Default)</option>
+              >   <option value={initialCaseNo} className="bg-[var(--card)] text-[var(--foreground)]">{initialCaseNo} (Default)</option>
                 {cases?.map(c => (
                   <option key={c.fir_no} value={c.fir_no} className="bg-[var(--card)] text-[var(--foreground)]">{c.fir_no} - {c.crime_type}</option>
                 ))}
-              </select>
-              <div>
-                <label
+              </select>   <div>   <label
                   style={{
                     fontSize: "11px",
                     color: "var(--text-muted, var(--muted-foreground))",
@@ -697,10 +696,7 @@ function GenerateDocumentModal({
                     marginBottom: "4px",
                     display: "block",
                   }}
-                >
-                  Document Type
-                </label>
-                <select
+                >{t("Document Type", true)}</label>   <select
                   value={docType}
                   onChange={(e) => setDocType(e.target.value)}
                   style={{
@@ -720,10 +716,7 @@ function GenerateDocumentModal({
                       {type.name}
                     </option>
                   ))}
-                </select>
-              </div>
-              <div>
-                <label
+                </select>   </div>   <div>   <label
                   style={{
                     fontSize: "11px",
                     color: "var(--text-muted, var(--muted-foreground))",
@@ -732,10 +725,7 @@ function GenerateDocumentModal({
                     marginBottom: "4px",
                     display: "block",
                   }}
-                >
-                  Language
-                </label>
-                <select
+                >{t("Language", true)}</label>   <select
                   value={docLang}
                   onChange={(e) => setDocLang(e.target.value)}
                   style={{
@@ -749,16 +739,9 @@ function GenerateDocumentModal({
                     outline: "none",
                     boxSizing: "border-box",
                   }}
-                >
-                  <option value="en" className="bg-[var(--card)] text-[var(--foreground)]">English</option>
-                  <option value="hi" className="bg-[var(--card)] text-[var(--foreground)]">Hindi (हिन्दी)</option>
-                  <option value="gu" className="bg-[var(--card)] text-[var(--foreground)]">Gujarati (ગુજરાતી)</option>
-                </select>
-              </div>
-            </>
+                >   <option value="en" className="bg-[var(--card)] text-[var(--foreground)]">{t("English", true)}</option>   <option value="hi" className="bg-[var(--card)] text-[var(--foreground)]">Hindi (हिन्दी)</option>   <option value="gu" className="bg-[var(--card)] text-[var(--foreground)]">Gujarati (ગુજરાતી)</option>   </select>   </div>   </>
           )}
-        </div>
-        <div
+        </div>   <div
           style={{
             padding: "16px 24px",
             borderTop: "1px solid var(--border)",
@@ -766,8 +749,7 @@ function GenerateDocumentModal({
             gap: "12px",
             justifyContent: "flex-end",
           }}
-        >
-          <button
+        >   <button
             onClick={onClose}
             disabled={downloading}
             style={{
@@ -779,10 +761,7 @@ function GenerateDocumentModal({
               fontSize: "13px",
               cursor: "pointer",
             }}
-          >
-            Cancel
-          </button>
-          <button
+          >{t("Cancel", true)}</button>   <button
             onClick={handleDownload}
             disabled={downloading}
             style={{
@@ -800,36 +779,48 @@ function GenerateDocumentModal({
             }}
           >
             {downloading ? "Generating..." : "⬇ Download PDF / DocX"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </button>   </div>   </div>   </div>
   );
+}
+
+// Neutralize spreadsheet formula injection (CSV/Excel) in exported case data.
+function sanitizeCsvCell(value: unknown): string {
+  const v = String(value ?? "");
+  if (/^[=+\-@\t\r]/.test(v)) return `'${v}`;
+  return v;
 }
 
 function downloadCasesCSV(cases: Case[]) {
   const headers = ["FIR No", "Victim Name", "Accused Name", "Crime Type", "Date", "Location", "Status", "IO Name"];
-  const rows = cases.map((c) => [
-    `"${c.fir_no}"`,
-    `"${c.victim_name}"`,
-    `"${c.accused_name || "Unknown"}"`,
-    `"${c.crime_type}"`,
-    `"${c.crime_date}"`,
-    `"${c.crime_location}"`,
-    `"${c.case_status.toUpperCase()}"`,
-    `"${c.io_name || "Unassigned"}"`,
-  ]);
-  const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-  const encodedUri = encodeURI(csvContent);
+  const rows = cases.map((c) =>
+    [
+      c.fir_no,
+      c.victim_name,
+      c.accused_name || "Unknown",
+      c.crime_type,
+      c.crime_date,
+      c.crime_location,
+      c.case_status.toUpperCase(),
+      c.io_name || "Unassigned",
+    ]
+      .map(sanitizeCsvCell)
+      .map((v) => `"${v.replace(/"/g, '""')}"`)
+  );
+  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `samraksha_cases_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.href = url;
+  link.download = `samraksha_cases_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function QuickViewModal({ caseData, onClose }: { caseData: Case | null; onClose: () => void }) {
+  const { t } = useApp();
+
   const { navigate, cases, patrols, cctvAlerts } = useApp();
   if (!caseData) return null;
 
@@ -840,49 +831,23 @@ function QuickViewModal({ caseData, onClose }: { caseData: Case | null; onClose:
   };
 
   return (
-    <Modal open={!!caseData} onClose={onClose} title={`Quick View: ${caseData.fir_no}`} width={680}>
-      <div className="flex flex-col gap-4 printable-area">
+    <Modal open={!!caseData} onClose={onClose} title={`Quick View: ${caseData.fir_no}`} width={680}>   <div className="flex flex-col gap-4 printable-area">
         {/* Printable Official Header */}
-        <div className="hidden print-only mb-4 border-b pb-4 border-black">
-          <h1 className="text-xl font-bold uppercase text-black">AHMEDABAD CITY POLICE — OFFICIAL CASE SUMMARY</h1>
-          <p className="text-xs text-gray-600">Generated via SAMRAKSHA AI Case Intelligence Platform · {new Date().toLocaleString()}</p>
-        </div>
+        <div className="hidden print-only mb-4 border-b pb-4 border-black">   <h1 className="text-xl font-bold uppercase text-black">AHMEDABAD CITY POLICE — OFFICIAL CASE SUMMARY</h1>   <p className="text-xs text-gray-600">Generated via SAMRAKSHA AI Case Intelligence Platform · {new Date().toLocaleString()}</p>   </div>
 
         {/* Top Badges */}
-        <div className="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/10 no-print">
-          <div className="flex items-center gap-2">
-            <Badge color={statusConf.color} bg={statusConf.bg}>
+        <div className="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/10 no-print">   <div className="flex items-center gap-2">   <Badge color={statusConf.color} bg={statusConf.bg}>
               {statusConf.label}
-            </Badge>
-            <Chip><Shield size={12} className="mr-1" /> {caseData.crime_type}</Chip>
-          </div>
-          <p className="text-xs text-[var(--muted-foreground)] font-mono">{caseData.crime_date}</p>
-        </div>
+            </Badge>   <Chip><Shield size={12} className="mr-1" /> {caseData.crime_type}</Chip>   </div>   <p className="text-xs text-[var(--muted-foreground)] font-mono">{caseData.crime_date}</p>   </div>
 
         {/* Key Attributes */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/5">
-            <p className="text-[11px] text-[var(--muted-foreground)]">Victim</p>
-            <p className="text-sm font-semibold text-slate-100 mt-0.5">{caseData.victim_name}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">   <div className="p-3 rounded-2xl bg-white/5 border border-white/5">   <p className="text-[11px] text-[var(--muted-foreground)]">{t("Victim", true)}</p>   <p className="text-sm font-semibold text-slate-100 mt-0.5">{caseData.victim_name}</p>
             {caseData.victim_age && <p className="text-[10px] text-[var(--muted-foreground)]">{caseData.victim_age} yrs · {caseData.victim_gender || "N/A"}</p>}
-          </div>
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/5">
-            <p className="text-[11px] text-[var(--muted-foreground)]">Accused</p>
-            <p className="text-sm font-semibold text-amber-500 mt-0.5">{caseData.accused_name || "Unknown / Under Probe"}</p>
-          </div>
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/5">
-            <p className="text-[11px] text-[var(--muted-foreground)]">Location</p>
-            <p className="text-sm font-semibold text-slate-100 mt-0.5">{caseData.crime_location}</p>
-          </div>
-        </div>
+          </div>   <div className="p-3 rounded-2xl bg-white/5 border border-white/5">   <p className="text-[11px] text-[var(--muted-foreground)]">{t("Accused", true)}</p>   <p className="text-sm font-semibold text-amber-500 mt-0.5">{caseData.accused_name || "Unknown / Under Probe"}</p>   </div>   <div className="p-3 rounded-2xl bg-white/5 border border-white/5">   <p className="text-[11px] text-[var(--muted-foreground)]">{t("Location", true)}</p>   <p className="text-sm font-semibold text-slate-100 mt-0.5">{caseData.crime_location}</p>   </div>   </div>
 
         {/* Legal Sections */}
-        {((caseData.bns_sections && caseData.bns_sections.length > 0) || (caseData.bnss_sections && caseData.bnss_sections.length > 0)) && (
-          <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-            <p className="text-xs font-semibold text-blue-500 mb-1.5 flex items-center gap-1.5">
-              <Gavel size={13} /> Legal Charges &amp; Sections (BNS / BNSS)
-            </p>
-            <div className="flex flex-wrap gap-1.5">
+        {((caseData.bns_sections && caseData.bns_sections.length > 0) || (caseData.bnss_sections && caseData.bnss_sections.length >0)) && (<div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20">   <p className="text-xs font-semibold text-blue-500 mb-1.5 flex items-center gap-1.5">   <Gavel size={13} /> Legal Charges &amp; Sections (BNS / BNSS)
+            </p>   <div className="flex flex-wrap gap-1.5">
               {caseData.bns_sections?.map((sec) => (
                 <span key={sec} className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-blue-500/20 text-blue-300 border border-blue-500/30">
                   BNS {sec}
@@ -893,65 +858,29 @@ function QuickViewModal({ caseData, onClose }: { caseData: Case | null; onClose:
                   BNSS {sec}
                 </span>
               ))}
-            </div>
-          </div>
+            </div>   </div>
         )}
 
         {/* Narrative Summary */}
-        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-          <p className="text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center gap-1.5">
-            <FileText size={13} className="text-blue-500" /> Crime Narrative Summary
-          </p>
-          <p className="text-xs text-[var(--foreground)] leading-relaxed">{caseData.crime_narrative}</p>
-        </div>
+        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">   <p className="text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center gap-1.5">   <FileText size={13} className="text-blue-500" />{t("Crime Narrative Summary", true)}</p>   <p className="text-xs text-[var(--foreground)] leading-relaxed">{caseData.crime_narrative}</p>   </div>
 
         {/* Case Diary Timeline */}
-        {caseData.diary_entries && caseData.diary_entries.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold text-[var(--foreground)] mb-2 flex items-center gap-1.5">
-              <ClipboardList size={13} className="text-amber-500" /> Recent Case Diary Entries
-            </p>
-            <div className="flex flex-col gap-2 max-h-40 overflow-y-auto">
+        {caseData.diary_entries && caseData.diary_entries.length >0 && (<div>   <p className="text-xs font-semibold text-[var(--foreground)] mb-2 flex items-center gap-1.5">   <ClipboardList size={13} className="text-amber-500" />{t("Recent Case Diary Entries", true)}</p>   <div className="flex flex-col gap-2 max-h-40 overflow-y-auto">
               {caseData.diary_entries.map((entry, idx) => (
-                <div key={idx} className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 text-xs">
-                  <div className="flex items-center justify-between text-[var(--muted-foreground)] text-[10px] mb-1">
-                    <span className="font-semibold text-blue-500">{entry.entry_type}</span>
-                    <span>{new Date(entry.ts).toLocaleDateString()}</span>
-                  </div>
-                  <p className="text-[var(--foreground)]">{entry.description}</p>
-                </div>
+                <div key={idx} className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 text-xs">   <div className="flex items-center justify-between text-[var(--muted-foreground)] text-[10px] mb-1">   <span className="font-semibold text-blue-500">{entry.entry_type}</span>   <span>{new Date(entry.ts).toLocaleDateString()}</span>   </div>   <p className="text-[var(--foreground)]">{entry.description}</p>   </div>
               ))}
-            </div>
-          </div>
+            </div>   </div>
         )}
 
         {/* Modal Action Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-white/10 no-print">
-          <div className="flex items-center gap-2">
-            <HoverTooltip tip="Export CSV data for this case file">
-              <Button size="sm" variant="outlined" onClick={() => downloadCasesCSV([caseData])} className="rounded-full">
-                <Download size={13} /> Export CSV
-              </Button>
-            </HoverTooltip>
-            <HoverTooltip tip="Print or save official PDF case sheet">
-              <Button size="sm" variant="outlined" onClick={handlePrintPDF} className="rounded-full">
-                <FileDown size={13} /> Print PDF
-              </Button>
-            </HoverTooltip>
-          </div>
-          <Button
+        <div className="flex items-center justify-between pt-3 border-t border-white/10 no-print">   <div className="flex items-center gap-2">   <HoverTooltip tip="Export CSV data for this case file">   <Button size="sm" variant="outlined" onClick={() => downloadCasesCSV([caseData])} className="rounded-full">   <Download size={13} />{t("Export CSV", true)}</Button>   </HoverTooltip>   <HoverTooltip tip="Print or save official PDF case sheet">   <Button size="sm" variant="outlined" onClick={handlePrintPDF} className="rounded-full">   <FileDown size={13} />{t("Print PDF", true)}</Button>   </HoverTooltip>   </div>   <Button
             size="sm"
             onClick={() => {
               onClose();
               navigate("case-detail", { case_id: caseData.case_id });
             }}
             className="rounded-full bg-blue-600 hover:bg-blue-500 text-white"
-          >
-            Full Case File <ChevronRight size={13} />
-          </Button>
-        </div>
-      </div>
-    </Modal>
+          >{t("Full Case File ", true)}<ChevronRight size={13} />   </Button>   </div>   </div>   </Modal>
   );
 }
 
@@ -960,19 +889,21 @@ function QuickViewModal({ caseData, onClose }: { caseData: Case | null; onClose:
 interface NavItem { id: Page; label: string; icon: React.ElementType; roles: Role[] }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["sho", "dcp", "admin"] },
-  { id: "assistant", label: "AI Assistant", icon: Bot, roles: ["constable", "io", "sho", "dcp", "admin"] },
-  { id: "map", label: "Crime Map", icon: Map, roles: ["constable", "io", "sho", "dcp", "admin"] },
-  { id: "patrol", label: "Patrolling Units", icon: Siren, roles: ["constable", "io", "sho", "dcp", "admin"] },
-  { id: "cases", label: "Cases", icon: FolderOpen, roles: ["io", "sho", "dcp", "admin"] },
-  { id: "fir-entry", label: "New FIR", icon: Plus, roles: ["io", "sho", "admin"] },
-  { id: "cctv", label: "CCTV", icon: Video, roles: ["sho", "dcp", "admin"] },
+  { id: "dashboard", label: "dashboard", icon: LayoutDashboard, roles: ["sho", "dcp", "admin"] },
+  { id: "assistant", label: "assistant", icon: Bot, roles: ["constable", "io", "sho", "dcp", "admin"] },
+  { id: "map", label: "map", icon: Map, roles: ["constable", "io", "sho", "dcp", "admin"] },
+  { id: "patrol", label: "patrol", icon: Siren, roles: ["constable", "io", "sho", "dcp", "admin"] },
+  { id: "cases", label: "cases", icon: FolderOpen, roles: ["io", "sho", "dcp", "admin"] },
+  { id: "fir-entry", label: "fir_entry", icon: Plus, roles: ["io", "sho", "admin"] },
+  { id: "cctv", label: "cctv", icon: Video, roles: ["sho", "dcp", "admin"] },
   
-  { id: "analytics", label: "Analytics", icon: BarChart2, roles: ["dcp", "admin"] },
-  { id: "admin", label: "Admin Controls", icon: ShieldCheck, roles: ["constable", "io", "sho", "dcp", "admin"] },
+  { id: "analytics", label: "analytics", icon: BarChart2, roles: ["dcp", "admin"] },
+  { id: "admin", label: "admin_controls", icon: ShieldCheck, roles: ["constable", "io", "sho", "dcp", "admin"] },
 ];
 
 function Sidebar({ wsConnected }: { wsConnected: boolean }) {
+  const { t } = useApp();
+
   const { officer, logout, page, navigate } = useApp();
   const [isHovered, setIsHovered] = useState(false);
   if (!officer) return null;
@@ -1002,15 +933,9 @@ function Sidebar({ wsConnected }: { wsConnected: boolean }) {
         className="flex items-center gap-3 px-4 py-4 cursor-pointer transition-colors hover:bg-white/5 shrink-0"
         style={{ borderBottom: "1px solid var(--sidebar-border)" }}
         onClick={() => navigate("dashboard")}
-      >
-        <div className="flex-shrink-0">
-          <SamrakshaLogo size={36} />
-        </div>
+      >   <div className="flex-shrink-0">   <SamrakshaLogo size={36} />   </div>
         {isHovered && (
-          <div className="flex flex-col min-w-0 overflow-hidden animate-fadeIn whitespace-nowrap">
-            <span className="text-sm font-bold tracking-tight font-display text-[var(--sidebar-foreground)]">SAMRAKSHA</span>
-            <span className="text-[10px] text-teal-400 font-semibold tracking-wider uppercase">Law Enforcement</span>
-          </div>
+          <div className="flex flex-col min-w-0 overflow-hidden animate-fadeIn whitespace-nowrap">   <span className="text-sm font-bold tracking-tight font-display text-[var(--sidebar-foreground)]">{t("SAMRAKSHA", true)}</span>   <span className="text-[10px] text-teal-400 font-semibold tracking-wider uppercase">{t("Law Enforcement", true)}</span>   </div>
         )}
       </div>
 
@@ -1029,21 +954,16 @@ function Sidebar({ wsConnected }: { wsConnected: boolean }) {
               style={{
                 color: active ? "#FFFFFF" : "var(--sidebar-foreground)",
               }}
-              title={!isHovered ? item.label : undefined}
-            >
-              <item.icon size={18} className="flex-shrink-0 transition-transform group-hover:scale-110" />
+              title={!isHovered ? t(item.label) : undefined}
+            >   <item.icon size={18} className="flex-shrink-0 transition-transform group-hover:scale-110" />
               {isHovered ? (
-                <div className="flex items-center justify-between w-full min-w-0 animate-fadeIn">
-                  <span className="text-xs font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
-                    {item.label}
+                <div className="flex items-center justify-between w-full min-w-0 animate-fadeIn">   <span className="text-xs font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
+                    {t(item.label)}
                   </span>
                   {active && (
                     <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_#ffffff] shrink-0 ml-1.5" />
                   )}
-                </div>
-              ) : (
-                <>
-                  <span className="sr-only">{item.label}</span>
+                </div>) : (<>   <span className="sr-only">{t(item.label)}</span>
                   {active && (
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_#ffffff]" />
                   )}
@@ -1058,45 +978,36 @@ function Sidebar({ wsConnected }: { wsConnected: boolean }) {
       <div
         className="flex items-center justify-between gap-2 p-3 transition-colors shrink-0"
         style={{ borderTop: "1px solid var(--sidebar-border)" }}
-      >
-        <button
+      >   <button
           onClick={() => navigate("profile")}
           className="flex items-center gap-3 w-full text-left cursor-pointer group min-w-0"
-        >
-          <div className="relative flex-shrink-0">
-            <div
+        >   <div className="relative flex-shrink-0">   <div
               className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shadow-md"
               style={{ backgroundColor: roleConf.color + "33", color: roleConf.color }}
             >
               {officer.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-            </div>
-            <span
+            </div>   <span
               className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2"
               style={{ backgroundColor: wsConnected ? "#22C55E" : "#6B7280", borderColor: "#0A0E1A" }}
-            />
-          </div>
+            />   </div>
           {isHovered && (
-            <div className="flex flex-col min-w-0 flex-1 overflow-hidden animate-fadeIn">
-              <p className="text-xs font-bold text-[var(--sidebar-foreground)] truncate group-hover:opacity-100 opacity-90">{officer.name}</p>
-              <p className="text-[10px] text-[var(--muted-foreground)] truncate">{officer.ps_id}</p>
-            </div>
+            <div className="flex flex-col min-w-0 flex-1 overflow-hidden animate-fadeIn">   <p className="text-xs font-bold text-[var(--sidebar-foreground)] truncate group-hover:opacity-100 opacity-90">{officer.name}</p>   <p className="text-[10px] text-[var(--muted-foreground)] truncate">{officer.ps_id}</p>   </div>
           )}
         </button>
         {isHovered && (
           <button
             onClick={logout}
             className="p-2 rounded-lg transition-all hover:bg-red-500/20 text-red-500 hover:text-red-300 flex-shrink-0 cursor-pointer"
-            title="Logout"
-          >
-            <LogOut size={16} />
-          </button>
+            title={t("Logout", true)}
+          >   <LogOut size={16} />   </button>
         )}
-      </div>
-    </div>
+      </div>   </div>
   );
 }
 
 function BottomNav() {
+  const { t } = useApp();
+
   const { officer, page, navigate } = useApp();
   if (!officer) return null;
   const allowed = NAV_ITEMS.filter((i) => i.roles.includes(officer.role)).slice(0, 6);
@@ -1113,10 +1024,7 @@ function BottomNav() {
             onClick={() => navigate(item.id)}
             className="flex flex-col items-center justify-center gap-1 px-2.5 py-1 rounded-xl transition-all min-h-[44px] min-w-[44px]"
             style={{ color: active ? "var(--color-primary)" : "var(--sidebar-foreground)", backgroundColor: active ? "rgba(0,75,135,0.15)" : "transparent" }}
-          >
-            <item.icon size={18} />
-            <span className="text-[10px] font-medium leading-none">{item.label}</span>
-          </button>
+          >   <item.icon size={18} />   <span className="text-[10px] font-medium leading-none">{t(item.label)}</span>   </button>
         );
       })}
     </div>
@@ -1124,6 +1032,8 @@ function BottomNav() {
 }
 
 function TopBar({ wsConnected }: { wsConnected: boolean }) {
+  const { t } = useApp();
+
   const { officer, navigate, themeMode, toggleTheme, cases, language, setLanguage } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
@@ -1138,41 +1048,26 @@ function TopBar({ wsConnected }: { wsConnected: boolean }) {
         WebkitBackdropFilter: "blur(24px)",
         boxShadow: "0 1px 0 rgba(0,0,0,0.04)"
       }}
-    >
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <div className="flex items-center gap-2 md:hidden">
-          <SamrakshaLogo size={26} />
-          <span className="font-bold text-sm font-display text-[var(--foreground)]">SAMRAKSHA</span>
-        </div>
-        <div className="hidden md:flex items-center gap-2">
-          <span className="font-bold text-sm font-display text-[var(--foreground)]">SAMRAKSHA</span>
-          <span className="text-xs text-[var(--muted-foreground)]">Ahmedabad City Police</span>
-        </div>
-      </div>
+    >   <div className="flex items-center gap-3 flex-shrink-0">   <div className="flex items-center gap-2 md:hidden">   <SamrakshaLogo size={26} />   <span className="font-bold text-sm font-display text-[var(--foreground)]">{t("SAMRAKSHA", true)}</span>   </div>   <div className="hidden md:flex items-center gap-2">   <span className="font-bold text-sm font-display text-[var(--foreground)]">{t("SAMRAKSHA", true)}</span>   <span className="text-xs text-[var(--muted-foreground)]">{t("Ahmedabad City Police", true)}</span>   </div>   </div>
 
       {/* Global Search */}
-      <div className="flex-1 max-w-sm hidden sm:block relative">
-        <div
+      <div className="flex-1 max-w-sm hidden sm:block relative">   <div
           className="flex items-center gap-2 px-3 py-1.5 rounded-2xl transition-all"
           style={{
             backgroundColor: searchFocused ? "rgba(0,75,135,0.08)" : "var(--input)",
             border: `1px solid ${searchFocused ? "var(--color-primary)" : "var(--border)"}`,
           }}
-        >
-          <Search size={13} className={searchFocused ? "text-[var(--color-primary)]" : "text-[var(--muted-foreground)]"} />
-          <input
+        >   <Search size={13} className={searchFocused ? "text-[var(--color-primary)]" : "text-[var(--muted-foreground)]"} />   <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-            placeholder="Search cases, wards, officers…"
+            placeholder={t("search_placeholder")}
             className="flex-1 bg-transparent text-xs outline-none text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="opacity-50 hover:opacity-100 text-[var(--foreground)]">
-              <X size={11} />
-            </button>
+            <button onClick={() => setSearchQuery("")} className="opacity-50 hover:opacity-100 text-[var(--foreground)]">   <X size={11} />   </button>
           )}
         </div>
 
@@ -1198,41 +1093,19 @@ function TopBar({ wsConnected }: { wsConnected: boolean }) {
               );
               return (
                 <div className="py-2">
-                  {caseResults.length > 0 && (
-                    <>
-                      <div className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">Cases</div>
+                  {caseResults.length >0 && (<>   <div className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">{t("Cases", true)}</div>
                       {caseResults.map((c) => (
                         <button
                           key={c.case_id}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all hover:bg-slate-500/10 cursor-pointer"
                           onMouseDown={() => { navigate("case-detail", { case_id: c.case_id }); }}
-                        >
-                          <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 bg-blue-500/15">
-                            <FolderOpen size={12} className="text-blue-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium font-mono text-[var(--foreground)]">{c.fir_no}</p>
-                            <p className="text-[10px] truncate text-[var(--muted-foreground)]">{c.victim_name} · {c.crime_type}</p>
-                          </div>
-                          <Badge color={STATUS_CONFIG[c.case_status].color} bg={STATUS_CONFIG[c.case_status].bg}>{STATUS_CONFIG[c.case_status].label}</Badge>
-                        </button>
+                        >   <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 bg-blue-500/15">   <FolderOpen size={12} className="text-blue-500" />   </div>   <div className="flex-1 min-w-0">   <p className="text-xs font-medium font-mono text-[var(--foreground)]">{c.fir_no}</p>   <p className="text-[10px] truncate text-[var(--muted-foreground)]">{c.victim_name} · {c.crime_type}</p>   </div>   <Badge color={STATUS_CONFIG[c.case_status].color} bg={STATUS_CONFIG[c.case_status].bg}>{STATUS_CONFIG[c.case_status].label}</Badge>   </button>
                       ))}
                     </>
                   )}
-                  {wardResults.length > 0 && (
-                    <>
-                      <div className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">Wards</div>
+                  {wardResults.length >0 && (<>   <div className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">{t("Wards", true)}</div>
                       {wardResults.map(([name, data]: [string, any]) => (
-                        <button key={name} className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all hover:bg-slate-500/10 cursor-pointer">
-                          <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: RISK_CONFIG[data.level]?.bg || "#000" }}>
-                            <MapPin size={12} color={RISK_CONFIG[data.level]?.color || "#fff"} />
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-[var(--foreground)]">{name}</p>
-                            <p className="text-[10px] text-[var(--muted-foreground)]">Risk: {data.risk_score}</p>
-                          </div>
-                          <Badge color={RISK_CONFIG[data.level]?.color || "#fff"} bg={RISK_CONFIG[data.level]?.bg || "#000"}>{data.level}</Badge>
-                        </button>
+                        <button key={name} className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all hover:bg-slate-500/10 cursor-pointer">   <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: RISK_CONFIG[data.level]?.bg || "#000" }}>   <MapPin size={12} color={RISK_CONFIG[data.level]?.color || "#fff"} />   </div>   <div>   <p className="text-xs font-medium text-[var(--foreground)]">{name}</p>   <p className="text-[10px] text-[var(--muted-foreground)]">Risk: {data.risk_score}</p>   </div>   <Badge color={RISK_CONFIG[data.level]?.color || "#fff"} bg={RISK_CONFIG[data.level]?.bg || "#000"}>{data.level}</Badge>   </button>
                       ))}
                     </>
                   )}
@@ -1241,19 +1114,13 @@ function TopBar({ wsConnected }: { wsConnected: boolean }) {
             })()}
           </div>
         )}
-      </div>
-
-      <div className="flex items-center gap-2">
+      </div>   <div className="flex items-center gap-2">
         {/* Language Switcher */}
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value as Language)}
           className="bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] text-xs font-semibold px-2 py-1.5 rounded-xl border outline-none cursor-pointer hidden md:block"
-        >
-          <option value="en">English</option>
-          <option value="hi">हिंदी</option>
-          <option value="gu">ગુજરાતી</option>
-        </select>
+        >   <option value="en">{t("English", true)}</option>   <option value="hi">हिंदी</option>   <option value="gu">ગુજરાતી</option>   </select>
 
         {/* Theme Switcher Toggle Button */}
         <button
@@ -1264,40 +1131,28 @@ function TopBar({ wsConnected }: { wsConnected: boolean }) {
           {themeMode === "dark" ? <Sun size={15} /> : <Moon size={15} />}
           <span className="text-xs font-semibold hidden md:inline">
             {themeMode === "dark" ? "Light" : "Dark"}
-          </span>
-        </button>
+          </span>   </button>
 
         {/* Mobile search icon */}
         <button
           className="sm:hidden p-2 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]"
           onClick={() => {}}
-          title="Search"
-        >
-          <Search size={15} />
-        </button>
+          title={t("Search", true)}
+        >   <Search size={15} />   </button>
 
         {officer && (
-          <HoverTooltip tip="Open Officer Profile">
-            <button
+          <HoverTooltip tip="Open Officer Profile">   <button
               onClick={() => navigate("profile")}
               className="flex items-center gap-2 px-2.5 py-1.5 rounded-full transition-all hover:bg-white/10 cursor-pointer border border-white/10"
               style={{ backgroundColor: "var(--input)" }}
-            >
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+            >   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
                 style={{ backgroundColor: ROLE_CONFIG[officer.role].color + "33", color: ROLE_CONFIG[officer.role].color }}>
                 {officer.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-              </div>
-              <div className="hidden sm:block text-left">
-                <p className="text-xs font-semibold leading-none" style={{ color: "var(--muted-foreground)" }}>{officer.name.split(" ")[0]}</p>
-                <p className="text-[10px] leading-none mt-0.5" style={{ color: ROLE_CONFIG[officer.role].color }}>
+              </div>   <div className="hidden sm:block text-left">   <p className="text-xs font-semibold leading-none" style={{ color: "var(--muted-foreground)" }}>{officer.name.split(" ")[0]}</p>   <p className="text-[10px] leading-none mt-0.5" style={{ color: ROLE_CONFIG[officer.role].color }}>
                   {ROLE_CONFIG[officer.role].label}
-                </p>
-              </div>
-            </button>
-          </HoverTooltip>
+                </p>   </div>   </button>   </HoverTooltip>
         )}
-      </div>
-    </div>
+      </div>   </div>
   );
 }
 
@@ -1312,6 +1167,8 @@ function VoiceInputWidget({
   label?: string;
   compact?: boolean;
 }) {
+  const { t } = useApp();
+
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState("");
 
@@ -1348,7 +1205,8 @@ function VoiceInputWidget({
           try {
             const res = await fetch("/api/v1/voice/transcribe", {
               method: "POST",
-              headers: { Authorization: `Bearer ${token}` },
+              credentials: "include",
+              headers: { "X-CSRF-Token": getCsrfToken(), Authorization: `Bearer ${token}` },
               body: formData,
             });
             if (res.ok) {
@@ -1374,9 +1232,7 @@ function VoiceInputWidget({
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <HoverTooltip tip={isListening ? "Stop Voice Dictation" : "Voice Input (Speech-to-Text Dictation)"}>
-        <button
+    <div className="flex items-center gap-2">   <HoverTooltip tip={isListening ? "Stop Voice Dictation" : "Voice Input (Speech-to-Text Dictation)"}>   <button
           type="button"
           onClick={toggleListening}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm ${
@@ -1384,11 +1240,9 @@ function VoiceInputWidget({
               ? "bg-red-500/20 text-red-500 border border-red-500/40 animate-pulse shadow-red-500/20"
               : "bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20"
           }`}
-        >
-          <span className="material-symbols-rounded text-base">{isListening ? "mic_off" : "mic"}</span>
+        >   <span className="material-symbols-rounded text-base">{isListening ? "mic_off" : "mic"}</span>
           {!compact && <span>{isListening ? "Recording..." : label}</span>}
-        </button>
-      </HoverTooltip>
+        </button>   </HoverTooltip>
 
       {/* Animated Audio Equalizer Waveform */}
       {isListening && (
@@ -1403,8 +1257,7 @@ function VoiceInputWidget({
               }}
             />
           ))}
-          <span className="text-[10px] text-red-300 font-mono ml-1.5 truncate max-w-[150px]">{interimText}</span>
-        </div>
+          <span className="text-[10px] text-red-300 font-mono ml-1.5 truncate max-w-[150px]">{interimText}</span>   </div>
       )}
     </div>
   );
@@ -1417,15 +1270,14 @@ function VoiceInputWidget({
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 
 function SegmentedChartCard({ title = "Incident Frequency Dynamics" }: { title?: string }) {
+  const { t } = useApp();
+
   const [timeSeg, setTimeSeg] = useState<"hourly" | "weekly" | "monthly">("hourly");
   const [chartType, setChartType] = useState<"bar" | "area" | "line">("bar");
   const [trends, setTrends] = useState({ hourly: [], weekly: [], monthly: [] });
 
   useEffect(() => {
-    const token = localStorage.getItem("samraksha_token");
-    fetch("/api/v1/analytics/trends", { 
-      headers: token ? { Authorization: `Bearer ${token}` } : {} 
-    })
+    fetch("/api/v1/analytics/trends", { credentials: "include" })
     .then(r => r.json())
     .then(data => {
       if (data && data.hourly) {
@@ -1456,18 +1308,11 @@ function SegmentedChartCard({ title = "Incident Frequency Dynamics" }: { title?:
   const xKey = keyMap[timeSeg];
 
   return (
-    <Card className=" rounded-2xl p-5 h-[360px] flex flex-col justify-between">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2 border-b border-white/5 pb-2">
-        <div>
-          <h3 className="text-sm font-semibold text-[var(--foreground)]">{title}</h3>
-          <p className="text-[11px] text-[var(--muted-foreground)]">Segmented multi-period analytics</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+    <Card className=" rounded-2xl p-5 h-[360px] flex flex-col justify-between">   <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2 border-b border-white/5 pb-2">   <div>   <h3 className="text-sm font-semibold text-[var(--foreground)]">{title}</h3>   <p className="text-[11px] text-[var(--muted-foreground)]">{t("Segmented multi-period analytics", true)}</p>   </div>   <div className="flex flex-wrap items-center gap-2">
           {/* Chart Type Segment */}
           <div className="flex rounded-full overflow-hidden p-0.5 gap-0.5 bg-white/5 border border-white/10">
             {chartSegments.map((s) => (
-              <HoverTooltip key={s.key} tip={`View as ${s.label} Chart`}>
-                <button
+              <HoverTooltip key={s.key} tip={`View as ${s.label} Chart`}>   <button
                   onClick={() => setChartType(s.key)}
                   className="px-2.5 py-1 text-xs font-medium rounded-full transition-all cursor-pointer"
                   style={{
@@ -1476,16 +1321,14 @@ function SegmentedChartCard({ title = "Incident Frequency Dynamics" }: { title?:
                   }}
                 >
                   {s.label}
-                </button>
-              </HoverTooltip>
+                </button>   </HoverTooltip>
             ))}
           </div>
 
           {/* Time Segment */}
           <div className="flex rounded-full overflow-hidden p-0.5 gap-0.5 bg-white/5 border border-white/10">
             {timeSegments.map((s) => (
-              <HoverTooltip key={s.key} tip={`Show ${s.label} trend`}>
-                <button
+              <HoverTooltip key={s.key} tip={`Show ${s.label} trend`}>   <button
                   onClick={() => setTimeSeg(s.key)}
                   className="px-2.5 py-1 text-xs font-medium rounded-full transition-all cursor-pointer"
                   style={{
@@ -1494,49 +1337,15 @@ function SegmentedChartCard({ title = "Incident Frequency Dynamics" }: { title?:
                   }}
                 >
                   {s.label}
-                </button>
-              </HoverTooltip>
+                </button>   </HoverTooltip>
             ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 w-full min-h-0 pt-2">
-        <ResponsiveContainer width="100%" height="100%">
+          </div>   </div>   </div>   <div className="flex-1 w-full min-h-0 pt-2">   <ResponsiveContainer width="100%" height="100%">
           {chartType === "bar" ? (
-            <BarChart data={data} barSize={timeSeg === "hourly" ? 6 : 20}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey={xKey} tick={{ fontSize: 9, fill: "#64748B" }} interval={timeSeg === "hourly" ? 3 : 0} />
-              <YAxis tick={{ fontSize: 9, fill: "#64748B" }} />
-              <Tooltip contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--foreground)", fontSize: 11 }} />
-              <Bar dataKey="count" fill="#3B82F6" radius={[6, 6, 0, 0]} />
-            </BarChart>
+            <BarChart data={data} barSize={timeSeg === "hourly" ? 6 : 20}>   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />   <XAxis dataKey={xKey} tick={{ fontSize: 9, fill: "#64748B" }} interval={timeSeg === "hourly" ? 3 : 0} />   <YAxis tick={{ fontSize: 9, fill: "#64748B" }} />   <Tooltip contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--foreground)", fontSize: 11 }} />   <Bar dataKey="count" fill="#3B82F6" radius={[6, 6, 0, 0]} />   </BarChart>
           ) : chartType === "area" ? (
-            <AreaChart data={data}>
-              <defs>
-                <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey={xKey} tick={{ fontSize: 9, fill: "#64748B" }} interval={timeSeg === "hourly" ? 3 : 0} />
-              <YAxis tick={{ fontSize: 9, fill: "#64748B" }} />
-              <Tooltip contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--foreground)", fontSize: 11 }} />
-              <Area type="monotone" dataKey="count" stroke="#3B82F6" fill="url(#areaGrad)" strokeWidth={2.5} />
-            </AreaChart>
-          ) : (
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey={xKey} tick={{ fontSize: 9, fill: "#64748B" }} interval={timeSeg === "hourly" ? 3 : 0} />
-              <YAxis tick={{ fontSize: 9, fill: "#64748B" }} />
-              <Tooltip contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--foreground)", fontSize: 11 }} />
-              <Line type="monotone" dataKey="count" stroke="#60A5FA" strokeWidth={3} dot={{ r: 3, fill: "#3B82F6" }} />
-            </LineChart>
+            <AreaChart data={data}>   <defs>   <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">   <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.4} />   <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />   </linearGradient>   </defs>   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />   <XAxis dataKey={xKey} tick={{ fontSize: 9, fill: "#64748B" }} interval={timeSeg === "hourly" ? 3 : 0} />   <YAxis tick={{ fontSize: 9, fill: "#64748B" }} />   <Tooltip contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--foreground)", fontSize: 11 }} />   <Area type="monotone" dataKey="count" stroke="#3B82F6" fill="url(#areaGrad)" strokeWidth={2.5} />   </AreaChart>) : (<LineChart data={data}>   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />   <XAxis dataKey={xKey} tick={{ fontSize: 9, fill: "#64748B" }} interval={timeSeg === "hourly" ? 3 : 0} />   <YAxis tick={{ fontSize: 9, fill: "#64748B" }} />   <Tooltip contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--foreground)", fontSize: 11 }} />   <Line type="monotone" dataKey="count" stroke="#60A5FA" strokeWidth={3} dot={{ r: 3, fill: "#3B82F6" }} />   </LineChart>
           )}
-        </ResponsiveContainer>
-      </div>
-    </Card>
+        </ResponsiveContainer>   </div>   </Card>
   );
 }
 
@@ -1579,12 +1388,7 @@ function createGoogleTeardropPin(
     cursor: pointer;
     filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.5));
     transition: transform 0.15s ease;
-  ">
-    <svg width="${size[0]}" height="${size[1]}" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 0C7.16344 0 0 7.16344 0 16C0 28 16 42 16 42C16 42 32 28 32 16C32 7.16344 24.8366 0 16 0Z" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>
-      <circle cx="16" cy="15" r="7.5" fill="#FFFFFF"/>
-    </svg>
-    <div style="
+  ">   <svg width="${size[0]}" height="${size[1]}" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">   <path d="M16 0C7.16344 0 0 7.16344 0 16C0 28 16 42 16 42C16 42 32 28 32 16C32 7.16344 24.8366 0 16 0Z" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>   <circle cx="16" cy="15" r="7.5" fill="#FFFFFF"/>   </svg>   <div style="
       position: absolute;
       top: 5px;
       left: 0;
@@ -1612,6 +1416,7 @@ function RealAhmedabadOpenStreetMap({
   showCCTV = true,
   cctvAlerts = [],
   showHeatmap: initialHeatmap = false,
+  heatmapData = [],
   isDashboard = false,
   activeRoute,
   selectedUnit,
@@ -1639,6 +1444,8 @@ function RealAhmedabadOpenStreetMap({
   activeAltPathIndex?: number;
   wardsData?: Record<string, any> | null;
 }) {
+  const { t } = useApp();
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
@@ -1683,7 +1490,7 @@ function RealAhmedabadOpenStreetMap({
         ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
-        attribution: '&copy; <a href="https://maps.google.com">Google Maps</a> &copy; OpenStreetMap',
+        attribution: '&copy; <a href="https://maps.google.com">{t("Google Maps", true)}</a> &copy; OpenStreetMap',
         maxZoom: 20,
       }
     ).addTo(map);
@@ -1790,11 +1597,7 @@ function RealAhmedabadOpenStreetMap({
         const marker = L.marker([data.lat, data.lon], { icon: customIcon });
 
         marker.bindPopup(`
-          <div style="font-family: 'Google Sans', Roboto, sans-serif; padding: 4px; color: #0f172a; min-width: 160px;">
-            <div style="font-weight: 700; font-size: 13px; color: #1e293b;">📍 ${name} Ward</div>
-            <div style="font-size: 11px; margin-top: 4px;">Risk Score: <strong style="color:${color}">${score}/100 (${level})</strong></div>
-            <div style="font-size: 10px; color: #64748B; margin-top: 3px;">Ahmedabad Police Precinct</div>
-          </div>
+          <div style="font-family: 'Google Sans', Roboto, sans-serif; padding: 4px; color: #0f172a; min-width: 160px;">   <div style="font-weight: 700; font-size: 13px; color: #1e293b;">📍 ${name} Ward</div>   <div style="font-size: 11px; margin-top: 4px;">{t("Risk Score: ", true)}<strong style="color:${color}">${score}/100 (${level})</strong></div>   <div style="font-size: 10px; color: #64748B; margin-top: 3px;">{t("Ahmedabad Police Precinct", true)}</div>   </div>
         `);
 
         layerGroup.addLayer(marker);
@@ -1823,12 +1626,7 @@ function RealAhmedabadOpenStreetMap({
       const marker = L.marker([c.crime_lat, c.crime_lon], { icon: pinIcon });
 
       marker.bindPopup(`
-        <div style="font-family: 'Google Sans', Roboto, sans-serif; min-width: 180px; color: #0f172a; padding: 2px;">
-          <div style="font-weight: 700; font-size: 13px; color: #1a73e8;">${c.fir_no}</div>
-          <div style="font-size: 12px; font-weight: 600; margin-top: 2px; color: ${pinColor};">${c.crime_type}</div>
-          <div style="font-size: 11px; color: #334155; margin-top: 3px;">📍 ${c.crime_location}</div>
-          <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Victim: ${c.victim_name}</div>
-        </div>
+        <div style="font-family: 'Google Sans', Roboto, sans-serif; min-width: 180px; color: #0f172a; padding: 2px;">   <div style="font-weight: 700; font-size: 13px; color: #1a73e8;">${c.fir_no}</div>   <div style="font-size: 12px; font-weight: 600; margin-top: 2px; color: ${pinColor};">${c.crime_type}</div>   <div style="font-size: 11px; color: #334155; margin-top: 3px;">📍 ${c.crime_location}</div>   <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Victim: ${c.victim_name}</div>   </div>
       `);
 
       if (onSelectCase) {
@@ -1859,10 +1657,7 @@ function RealAhmedabadOpenStreetMap({
 
         const marker = L.marker([unit.lat, unit.lon], { icon: customIcon });
         marker.bindPopup(`
-          <div style="font-family: 'Google Sans', Roboto, sans-serif; color: #0f172a; padding: 2px;">
-            <div style="font-weight: 700; font-size: 12px; color: #1a73e8;">🚓 ${unit.name} Patrol Unit</div>
-            <div style="font-size: 11px; color: ${color}; font-weight: bold; text-transform: uppercase; margin-top: 3px;">Status: ${unit.status}</div>
-          </div>
+          <div style="font-family: 'Google Sans', Roboto, sans-serif; color: #0f172a; padding: 2px;">   <div style="font-weight: 700; font-size: 12px; color: #1a73e8;">🚓 ${unit.name} Patrol Unit</div>   <div style="font-size: 11px; color: ${color}; font-weight: bold; text-transform: uppercase; margin-top: 3px;">Status: ${unit.status}</div>   </div>
         `);
         layerGroup.addLayer(marker);
       });
@@ -1881,11 +1676,7 @@ function RealAhmedabadOpenStreetMap({
 
         const marker = L.marker([cam.lat, cam.lon], { icon: customIcon });
         marker.bindPopup(`
-          <div style="font-family: 'Google Sans', Roboto, sans-serif; color: #0f172a; padding: 2px;">
-            <div style="font-weight: 700; font-size: 12px; color: #0284c7;">📹 ${cam.camera_id}</div>
-            <div style="font-size: 11px; color: #334155; margin-top: 2px;">${cam.source}</div>
-            <div style="font-size: 10px; color: #dc2626; margin-top: 3px; font-weight: 600;">⚠️ ${cam.alert_type}</div>
-          </div>
+          <div style="font-family: 'Google Sans', Roboto, sans-serif; color: #0f172a; padding: 2px;">   <div style="font-weight: 700; font-size: 12px; color: #0284c7;">📹 ${cam.camera_id}</div>   <div style="font-size: 11px; color: #334155; margin-top: 2px;">${cam.source}</div>   <div style="font-size: 10px; color: #dc2626; margin-top: 3px; font-weight: 600;">⚠️ ${cam.alert_type}</div>   </div>
         `);
         layerGroup.addLayer(marker);
       });
@@ -1935,15 +1726,11 @@ function RealAhmedabadOpenStreetMap({
 
         const cpMarker = L.marker([cp.lat, cp.lon], { icon: cpIcon });
         cpMarker.bindPopup(`
-          <div style="font-family: 'Google Sans', Roboto, sans-serif; color: #0f172a; padding: 3px;">
-            <div style="font-weight: 800; font-size: 12px; color: ${pinColor};">
+          <div style="font-family: 'Google Sans', Roboto, sans-serif; color: #0f172a; padding: 3px;">   <div style="font-weight: 800; font-size: 12px; color: ${pinColor};">
               ${isFinal ? "🏁 FINAL DESTINATION" : `📍 CHECKPOINT #${idx + 1}`}
-            </div>
-            <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-top: 2px;">${cp.name}</div>
-            <div style="font-size: 11px; color: ${isDone ? "#16a34a" : "#2563eb"}; margin-top: 3px;">
+            </div>   <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-top: 2px;">${cp.name}</div>   <div style="font-size: 11px; color: ${isDone ? "#16a34a" : "#2563eb"}; margin-top: 3px;">
               ${isDone ? `Cleared at ${cp.time}` : "Status: Patrol En Route"}
-            </div>
-          </div>
+            </div>   </div>
         `);
         layerGroup.addLayer(cpMarker);
       });
@@ -2094,27 +1881,20 @@ function RealAhmedabadOpenStreetMap({
     }
 
     // Predictive Risk Heatmap Overlays
-    if (isPredictiveMode) {
-      PREDICTIVE_HEATMAP_ZONES.forEach((zone) => {
+    if (isPredictiveMode && heatmapData.length > 0) {
+      heatmapData.forEach((zone: any) => {
         const circle = L.circle([zone.lat, zone.lon], {
-          color: zone.color,
-          fillColor: zone.color,
+          color: zone.intensity > 0.7 ? "#EF4444" : zone.intensity > 0.4 ? "#F59E0B" : "#34A853",
+          fillColor: zone.intensity > 0.7 ? "#EF4444" : zone.intensity > 0.4 ? "#F59E0B" : "#34A853",
           fillOpacity: zone.intensity * 0.45,
-          radius: zone.radius,
+          radius: 30 + (zone.intensity * 40),
           weight: 2,
         });
 
         circle.bindPopup(`
-          <div style="font-family: 'Google Sans', Roboto, sans-serif; padding: 6px; color: #0f172a; max-width: 200px;">
-            <div style="font-weight: 800; font-size: 12px; color: ${zone.color}; display: flex; items-center: center; gap: 4px;">
+          <div style="font-family: 'Google Sans', Roboto, sans-serif; padding: 6px; color: #0f172a; max-width: 200px;">   <div style="font-weight: 800; font-size: 12px; color: ${zone.intensity > 0.7 ? "#EF4444" : "#F59E0B"}; display: flex; items-center: center; gap: 4px;">
               🔥 AI PREDICTIVE RISK ZONE
-            </div>
-            <div style="font-weight: 700; font-size: 13px; color: #1e293b; margin-top: 2px;">${zone.name}</div>
-            <div style="font-size: 11px; color: #334155; margin-top: 4px;">Predicted Density: <strong>${Math.round(zone.intensity * 100)}% Risk Spike</strong></div>
-            <div style="font-size: 10px; color: #64748B; margin-top: 4px; border-top: 1px solid #e2e8f0; pt: 3px;">
-              ${zone.forecast}
-            </div>
-          </div>
+            </div>   <div style="font-size: 11px; color: #334155; margin-top: 4px;">{t("Predicted Density: ", true)}<strong>${Math.round(zone.intensity * 100)}% Risk Spike</strong></div>   </div>
         `);
 
         layerGroup.addLayer(circle);
@@ -2126,6 +1906,7 @@ function RealAhmedabadOpenStreetMap({
     showPatrols,
     showCCTV,
     isPredictiveMode,
+    heatmapData,
     effectiveRoute,
     selectedUnit,
     currentAltIndex,
@@ -2142,14 +1923,11 @@ function RealAhmedabadOpenStreetMap({
   }, [selectedWard]);
 
   return (
-    <div className={cn("w-full relative overflow-hidden rounded-2xl border border-white/10 bg-[#0F1621]", className)} style={{ height }}>
-      <div ref={containerRef} className="w-full h-full z-0" />
+    <div className={cn("w-full relative overflow-hidden rounded-2xl border border-white/10 bg-[#0F1621]", className)} style={{ height }}>   <div ref={containerRef} className="w-full h-full z-0" />
 
       {/* Dashboard Map Controls */}
       {isDashboard && (
-        <div className="absolute top-2 left-2 z-[400] flex flex-col gap-1.5 max-w-[calc(100%-1rem)]">
-          <div className="flex items-center gap-1 bg-black/70 backdrop-blur-md border border-white/10 p-1 rounded-xl flex-wrap shadow-xl">
-            <button
+        <div className="absolute top-2 left-2 z-[400] flex flex-col gap-1.5 max-w-[calc(100%-1rem)]">   <div className="flex items-center gap-1 bg-black/70 backdrop-blur-md border border-white/10 p-1 rounded-xl flex-wrap shadow-xl">   <button
               type="button"
               onClick={() => setIsPredictiveMode(!isPredictiveMode)}
               className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
@@ -2157,11 +1935,9 @@ function RealAhmedabadOpenStreetMap({
                   ? "bg-red-600 text-white shadow-lg animate-pulse"
                   : "bg-white/5 text-[var(--foreground)] hover:text-white"
               }`}
-            >
-              <span className="material-symbols-rounded text-xs">auto_graph</span>
+            >   <span className="material-symbols-rounded text-xs">auto_graph</span>
               Heatmap {isPredictiveMode ? "ON" : "OFF"}
-            </button>
-            <button
+            </button>   <button
               type="button"
               onClick={() => setShowLegend(!showLegend)}
               className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
@@ -2169,74 +1945,42 @@ function RealAhmedabadOpenStreetMap({
               }`}
             >
               📍 Legend
-            </button>
-            <div className="w-px h-4 bg-white/10 mx-0.5"></div>
-            <button
+            </button>   <div className="w-px h-4 bg-white/10 mx-0.5"></div>   <button
               type="button"
               onClick={() => setMapStyle("google")}
               className={`px-2.5 py-1 text-[10px] font-semibold rounded-lg transition-all cursor-pointer ${
                 mapStyle === "google" ? "bg-blue-600 text-white shadow" : "text-[var(--muted-foreground)] hover:text-white"
               }`}
-            >
-              Google Maps
-            </button>
-            <button
+            >{t("Google Maps", true)}</button>   <button
               type="button"
               onClick={() => setMapStyle("satellite")}
               className={`px-2.5 py-1 text-[10px] font-semibold rounded-lg transition-all cursor-pointer ${
                 mapStyle === "satellite" ? "bg-blue-600 text-white shadow" : "text-[var(--muted-foreground)] hover:text-white"
               }`}
-            >
-              Satellite
-            </button>
-            <button
+            >{t("Satellite", true)}</button>   <button
               type="button"
               onClick={() => setMapStyle("dark")}
               className={`px-2.5 py-1 text-[10px] font-semibold rounded-lg transition-all cursor-pointer ${
                 mapStyle === "dark" ? "bg-blue-600 text-white shadow" : "text-[var(--muted-foreground)] hover:text-white"
               }`}
-            >
-              Dark
-            </button>
-          </div>
+            >{t("Dark", true)}</button>   </div>
 
           {showLegend && (
-            <div className="p-2.5 rounded-xl text-[10px] font-medium backdrop-blur-md bg-black/85 text-white border border-white/20 flex flex-col gap-1.5 shadow-2xl animate-fadeIn w-fit">
-              <div className="font-bold text-xs border-b border-white/10 pb-1 flex justify-between items-center gap-4">
-                <span>Map Legend</span>
-                <button type="button" onClick={() => setShowLegend(false)} className="text-white/60 hover:text-white cursor-pointer">✕</button>
-              </div>
-              <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-[#EA4335]" /> High Risk Ward</div>
-              <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-[#FBBC04]" /> Medium Risk Ward</div>
-              <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-[#34A853]" /> Low Risk Ward</div>
-              <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-red-500/40 border border-red-500" /> AI Predictive Zone</div>
-            </div>
+            <div className="p-2.5 rounded-xl text-[10px] font-medium backdrop-blur-md bg-black/85 text-white border border-white/20 flex flex-col gap-1.5 shadow-2xl animate-fadeIn w-fit">   <div className="font-bold text-xs border-b border-white/10 pb-1 flex justify-between items-center gap-4">   <span>{t("Map Legend", true)}</span>   <button type="button" onClick={() => setShowLegend(false)} className="text-white/60 hover:text-white cursor-pointer">✕</button>   </div>   <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-[#EA4335]" />{t("High Risk Ward", true)}</div>   <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-[#FBBC04]" />{t("Medium Risk Ward", true)}</div>   <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-[#34A853]" />{t("Low Risk Ward", true)}</div>   <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-red-500/40 border border-red-500" />{t("AI Predictive Zone", true)}</div>   </div>
           )}
         </div>
       )}
 
       {/* Floating Tactical Overlay Bar for Route & Path Control */}
       {effectiveRoute && (
-        <div className="absolute top-3 left-3 z-[400] flex flex-col gap-2 max-w-[280px] md:max-w-xs bg-slate-900/90 p-2.5 rounded-2xl border border-white/10 backdrop-blur-md shadow-2xl">
-          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-            <div>
-              <div className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Active Patrol Corridor</div>
-              <div className="text-xs font-bold text-slate-100 truncate max-w-[180px]">{effectiveRoute.name}</div>
-            </div>
-            <button
+        <div className="absolute top-3 left-3 z-[400] flex flex-col gap-2 max-w-[280px] md:max-w-xs bg-slate-900/90 p-2.5 rounded-2xl border border-white/10 backdrop-blur-md shadow-2xl">   <div className="flex items-center justify-between border-b border-white/10 pb-1.5">   <div>   <div className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">{t("Active Patrol Corridor", true)}</div>   <div className="text-xs font-bold text-slate-100 truncate max-w-[180px]">{effectiveRoute.name}</div>   </div>   <button
               onClick={fitRouteOverview}
-              title="Fit Route Overview"
+              title={t("Fit Route Overview", true)}
               className="px-2 py-1 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/40 text-blue-300 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer"
-            >
-              <Navigation size={12} /> Frame Overview
-            </button>
-          </div>
+            >   <Navigation size={12} />{t("Frame Overview", true)}</button>   </div>
 
           {/* Alternative Route Switcher Pills */}
-          <div className="flex flex-col gap-1">
-            <div className="text-[9px] text-[var(--muted-foreground)] font-semibold uppercase">Select Patrol Route Path:</div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
+          <div className="flex flex-col gap-1">   <div className="text-[9px] text-[var(--muted-foreground)] font-semibold uppercase">{t("Select Patrol Route Path:", true)}</div>   <div className="flex items-center gap-1.5 flex-wrap">   <button
                 onClick={() => handleAltSwitch(0)}
                 className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                   currentAltIndex === 0
@@ -2245,8 +1989,7 @@ function RealAhmedabadOpenStreetMap({
                 }`}
               >
                 ⚡ Primary ({effectiveRoute.est_time_mins}m)
-              </button>
-              <button
+              </button>   <button
                 onClick={() => handleAltSwitch(1)}
                 className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                   currentAltIndex === 1
@@ -2255,8 +1998,7 @@ function RealAhmedabadOpenStreetMap({
                 }`}
               >
                 Alt 1 (+3m)
-              </button>
-              <button
+              </button>   <button
                 onClick={() => handleAltSwitch(2)}
                 className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                   currentAltIndex === 2
@@ -2265,10 +2007,7 @@ function RealAhmedabadOpenStreetMap({
                 }`}
               >
                 Alt 2 (+5m)
-              </button>
-            </div>
-          </div>
-        </div>
+              </button>   </div>   </div>   </div>
       )}
 
 
@@ -2282,6 +2021,8 @@ function RealAhmedabadOpenStreetMap({
 // ─── Scenario Simulation Control Deck (Module 4) ────────────────────────────────
 
 function ScenarioSimulationControlDeck() {
+  const { t } = useApp();
+
   const [activePreset, setActivePreset] = useState<"standard" | "festival" | "curfew" | "monsoon">("standard");
   const [patrolMultiplier, setPatrolMultiplier] = useState(1.5);
   const [riskThreshold, setRiskThreshold] = useState(70);
@@ -2295,39 +2036,10 @@ function ScenarioSimulationControlDeck() {
   ];
 
   return (
-    <Card className="rounded-xl p-4 border border-[var(--border)] bg-[var(--card)] shadow-sm text-[var(--foreground)]">
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-mono">
-              AI Spatial Simulator
-            </span>
-            <h3 className="text-sm font-semibold text-[var(--foreground)] flex items-center gap-1.5">
-              <span className="material-symbols-rounded text-blue-500 text-base">tune</span>
-              Command Scenario Simulation
-            </h3>
-          </div>
-          <p className="text-xs text-[var(--muted-foreground)] mt-1">
-            Simulate operational scenarios, patrol density scaling, and predictive threat responses on OpenStreetMap.
-          </p>
-        </div>
+    <Card className="rounded-xl p-4 border border-[var(--border)] bg-[var(--card)] shadow-sm text-[var(--foreground)]">   <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">   <div>   <div className="flex items-center gap-2">   <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-mono">{t("AI Spatial Simulator", true)}</span>   <h3 className="text-sm font-semibold text-[var(--foreground)] flex items-center gap-1.5">   <span className="material-symbols-rounded text-blue-500 text-base">tune</span>{t("Command Scenario Simulation", true)}</h3>   </div>   <p className="text-xs text-[var(--muted-foreground)] mt-1">{t("Simulate operational scenarios, patrol density scaling, and predictive threat responses on OpenStreetMap.", true)}</p>   </div>
 
         {/* Live Metrics Feedback */}
-        <div className="flex items-center gap-2">
-          <div className="px-3 py-1.5 rounded-lg bg-[var(--input)] border border-[var(--border)] text-center">
-            <p className="text-[9px] text-[var(--muted-foreground)] uppercase font-medium">Response Time</p>
-            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">-3.8 mins</p>
-          </div>
-          <div className="px-3 py-1.5 rounded-lg bg-[var(--input)] border border-[var(--border)] text-center">
-            <p className="text-[9px] text-[var(--muted-foreground)] uppercase font-medium">Coverage Index</p>
-            <p className="text-xs font-bold text-blue-600 dark:text-blue-400 font-mono">94.2%</p>
-          </div>
-          <div className="px-3 py-1.5 rounded-lg bg-[var(--input)] border border-[var(--border)] text-center">
-            <p className="text-[9px] text-[var(--muted-foreground)] uppercase font-medium">Simulated Units</p>
-            <p className="text-xs font-bold text-[var(--foreground)] font-mono">{Math.round(18 * patrolMultiplier)} PCRs</p>
-          </div>
-        </div>
-      </div>
+        <div className="flex items-center gap-2">   <div className="px-3 py-1.5 rounded-lg bg-[var(--input)] border border-[var(--border)] text-center">   <p className="text-[9px] text-[var(--muted-foreground)] uppercase font-medium">{t("Response Time", true)}</p>   <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">{t("-3.8 mins", true)}</p>   </div>   <div className="px-3 py-1.5 rounded-lg bg-[var(--input)] border border-[var(--border)] text-center">   <p className="text-[9px] text-[var(--muted-foreground)] uppercase font-medium">{t("Coverage Index", true)}</p>   <p className="text-xs font-bold text-blue-600 dark:text-blue-400 font-mono">94.2%</p>   </div>   <div className="px-3 py-1.5 rounded-lg bg-[var(--input)] border border-[var(--border)] text-center">   <p className="text-[9px] text-[var(--muted-foreground)] uppercase font-medium">{t("Simulated Units", true)}</p>   <p className="text-xs font-bold text-[var(--foreground)] font-mono">{Math.round(18 * patrolMultiplier)} PCRs</p>   </div>   </div>   </div>
 
       {/* Preset Buttons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mt-3">
@@ -2346,28 +2058,18 @@ function ScenarioSimulationControlDeck() {
                 ? "bg-blue-500/10 border-blue-500/40 text-[var(--foreground)]"
                 : "bg-[var(--input)] border-[var(--border)] hover:bg-[var(--accent)] text-[var(--muted-foreground)]"
             }`}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className={`material-symbols-rounded text-base ${activePreset === p.id ? "text-blue-500" : "text-[var(--muted-foreground)]"}`}>
+          >   <div className="flex items-center justify-between mb-1">   <span className={`material-symbols-rounded text-base ${activePreset === p.id ? "text-blue-500" : "text-[var(--muted-foreground)]"}`}>
                 {p.icon}
               </span>
               {activePreset === p.id && (
-                <span className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-blue-600 text-white">Active</span>
+                <span className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-blue-600 text-white">{t("Active", true)}</span>
               )}
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-[var(--foreground)]">{p.label}</p>
-              <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5 line-clamp-1">{p.desc}</p>
-            </div>
-          </button>
+            </div>   <div>   <p className="text-xs font-semibold text-[var(--foreground)]">{p.label}</p>   <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5 line-clamp-1">{p.desc}</p>   </div>   </button>
         ))}
       </div>
 
       {/* Fine-Tuning Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-3 border-t border-[var(--border)] text-xs text-[var(--foreground)]">
-        <div className="flex items-center gap-2.5">
-          <span className="text-[var(--muted-foreground)]">Patrol Multiplier:</span>
-          <input
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-3 border-t border-[var(--border)] text-xs text-[var(--foreground)]">   <div className="flex items-center gap-2.5">   <span className="text-[var(--muted-foreground)]">{t("Patrol Multiplier:", true)}</span>   <input
             type="range"
             min={1.0}
             max={3.0}
@@ -2375,13 +2077,7 @@ function ScenarioSimulationControlDeck() {
             value={patrolMultiplier}
             onChange={(e) => setPatrolMultiplier(parseFloat(e.target.value))}
             className="w-24 accent-blue-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none"
-          />
-          <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold">{patrolMultiplier.toFixed(1)}x</span>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <span className="text-[var(--muted-foreground)]">AI Sensitivity Threshold:</span>
-          <input
+          />   <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold">{patrolMultiplier.toFixed(1)}x</span>   </div>   <div className="flex items-center gap-2.5">   <span className="text-[var(--muted-foreground)]">{t("AI Sensitivity Threshold:", true)}</span>   <input
             type="range"
             min={50}
             max={95}
@@ -2389,27 +2085,20 @@ function ScenarioSimulationControlDeck() {
             value={riskThreshold}
             onChange={(e) => setRiskThreshold(parseInt(e.target.value))}
             className="w-24 accent-blue-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none"
-          />
-          <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold">{riskThreshold}% Risk</span>
-        </div>
-
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input
+          />   <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold">{riskThreshold}% Risk</span>   </div>   <label className="flex items-center gap-2 cursor-pointer select-none">   <input
             type="checkbox"
             checked={autoReroute}
             onChange={(e) => setAutoReroute(e.target.checked)}
             className="rounded accent-blue-600 w-3.5 h-3.5 cursor-pointer"
-          />
-          <span className="text-[var(--foreground)] text-xs">Auto-Reroute PCRs on Anomaly</span>
-        </label>
-      </div>
-    </Card>
+          />   <span className="text-[var(--foreground)] text-xs">{t("Auto-Reroute PCRs on Anomaly", true)}</span>   </label>   </div>   </Card>
   );
 }
 
 // ─── Map Page ─────────────────────────────────────────────────────────────────
 
 function MapPage() {
+  const { t } = useApp();
+
   const { navigate, cases, patrols, cctvAlerts, token } = useApp();
   const [selectedWard, setSelectedWard] = useState<string | null>(null);
   const [filterDays, setFilterDays] = useState(7);
@@ -2417,10 +2106,28 @@ function MapPage() {
   const [showSidebarMobile, setShowSidebarMobile] = useState(false);
   const [showAIHeatmap, setShowAIHeatmap] = useState(false);
 
+  const [heatmapData, setHeatmapData] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!showAIHeatmap) return;
+    const url = new URL("/api/v1/map/hotspots", window.location.origin);
+    url.searchParams.set("days", filterDays.toString());
+    if (selectedCrimeType) url.searchParams.set("crime_type", selectedCrimeType);
+    
+    fetch(url, { credentials: "include" })
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.heatmap) {
+          setHeatmapData(data.heatmap);
+        }
+      })
+      .catch(console.error);
+  }, [showAIHeatmap, filterDays, selectedCrimeType]);
+
   const [wardsData, setWardsData] = useState<Record<string, any>>({});
   
   useEffect(() => {
-    fetch("/api/v1/map/wards", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/v1/map/wards", { credentials: "include" })
       .then(r => r.json())
       .then(data => {
         if (data && typeof data === 'object' && !Array.isArray(data)) {
@@ -2445,52 +2152,34 @@ function MapPage() {
       const matchDays = daysAgo <= filterDays;
       return matchCrime && matchDays;
     });
-  }, [selectedCrimeType, filterDays]);
+  }, [selectedCrimeType, filterDays, cases]);
 
   return (
     <div className="flex flex-col h-full max-h-full min-h-0 justify-between gap-2 sm:gap-3 overflow-hidden">
       {/* Header Row */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shrink-0">
-        <div>
-          <h1 className="text-base sm:text-xl font-bold tracking-tight text-[var(--foreground)] flex items-center gap-2">
-            <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
-            Crime & Risk Heatmap
-          </h1>
-          <p className="text-[10px] sm:text-xs text-[var(--muted-foreground)]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shrink-0">   <div>   <h1 className="text-base sm:text-xl font-bold tracking-tight text-[var(--foreground)] flex items-center gap-2">   <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />{t("Crime & Risk Heatmap", true)}</h1>   <p className="text-[10px] sm:text-xs text-[var(--muted-foreground)]">
             Ahmedabad Precinct Spatial Intelligence · {filteredCases.length} incidents shown
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
+          </p>   </div>   <div className="flex items-center gap-2 flex-wrap">   <button
             onClick={() => setShowAIHeatmap(!showAIHeatmap)}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
               showAIHeatmap 
                 ? "bg-red-600/90 text-white border-red-500/50 shadow-[0_0_15px_rgba(220,38,38,0.4)] animate-pulse" 
                 : "bg-slate-800/80 text-slate-200 border-white/10 hover:bg-slate-800"
             }`}
-          >
-            <span className="material-symbols-rounded text-[14px]">auto_graph</span>
+          >   <span className="material-symbols-rounded text-[14px]">auto_graph</span>
             AI Heatmap {showAIHeatmap ? "ON" : "OFF"}
           </button>
 
           {/* Quick Metrics Badges */}
-          <div className="hidden sm:flex items-center gap-1.5 text-[10px]">
-            <Badge color="#EF4444" bg="rgba(239,68,68,0.12)">{highRiskCount} High Risk Wards</Badge>
-            <Badge color="#22C55E" bg="rgba(34,197,94,0.12)">{activePatrols} Active Patrols</Badge>
-            <Badge color="#F97316" bg="rgba(249,115,22,0.12)">{[].length} Alerts</Badge>
-          </div>
+          <div className="hidden sm:flex items-center gap-1.5 text-[10px]">   <Badge color="#EF4444" bg="rgba(239,68,68,0.12)">{highRiskCount} High Risk Wards</Badge>   <Badge color="#22C55E" bg="rgba(34,197,94,0.12)">{activePatrols} Active Patrols</Badge>   <Badge color="#F97316" bg="rgba(249,115,22,0.12)">{[].length} Alerts</Badge>   </div>
 
           {/* Toggle sidebar button for mobile */}
           <button
             onClick={() => setShowSidebarMobile((v) => !v)}
             className="lg:hidden px-2.5 py-1 rounded-lg text-xs font-medium border border-white/10 bg-slate-800/80 text-slate-200 flex items-center gap-1.5 cursor-pointer"
-          >
-            <SlidersHorizontal size={13} />
+          >   <SlidersHorizontal size={13} />
             {showSidebarMobile ? "Hide Panel" : "Filters & Wards"}
-          </button>
-        </div>
-      </div>
+          </button>   </div>   </div>
 
       {/* Main Container: Split View on Desktop, Map-First on Mobile */}
       <div className="flex-1 flex gap-2 sm:gap-3 min-h-0 overflow-hidden relative">
@@ -2502,28 +2191,20 @@ function MapPage() {
           `}
         >
           {showSidebarMobile && (
-            <div className="flex items-center justify-between pb-2 border-b border-white/10 lg:hidden">
-              <span className="text-xs font-bold text-slate-100">Ward Risk & Analytics Panel</span>
-              <button onClick={() => setShowSidebarMobile(false)} className="text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded bg-white/5">
+            <div className="flex items-center justify-between pb-2 border-b border-white/10 lg:hidden">   <span className="text-xs font-bold text-slate-100">{t("Ward Risk & Analytics Panel", true)}</span>   <button onClick={() => setShowSidebarMobile(false)} className="text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded bg-white/5">
                 Close ✕
-              </button>
-            </div>
+              </button>   </div>
           )}
 
           {/* Ward Risk Scores */}
-          <Card className="!p-0 overflow-hidden shrink-0">
-            <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-[var(--muted-foreground)]">Ward Risk Scores</h3>
+          <Card className="!p-0 overflow-hidden shrink-0">   <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between">   <h3 className="text-xs font-semibold text-[var(--muted-foreground)]">{t("Ward Risk Scores", true)}</h3>
               {selectedWard && (
                 <button
                   onClick={() => setSelectedWard(null)}
                   className="text-[10px] text-blue-400 hover:underline cursor-pointer"
-                >
-                  Clear Selection
-                </button>
+                >{t("Clear Selection", true)}</button>
               )}
-            </div>
-            <div className="divide-y divide-white/5 max-h-48 overflow-y-auto">
+            </div>   <div className="divide-y divide-white/5 max-h-48 overflow-y-auto">
               {wards.map(([name, data]) => {
                 const conf = RISK_CONFIG[data.level];
                 const isSelected = selectedWard === name;
@@ -2536,81 +2217,44 @@ function MapPage() {
                     }}
                     className="w-full flex items-center justify-between px-3 py-2 transition-all text-left cursor-pointer hover:bg-white/[0.03]"
                     style={{ backgroundColor: isSelected ? "rgba(59,130,246,0.15)" : "transparent" }}
-                  >
-                    <div className="flex items-center gap-1.5 truncate pr-2">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: conf.dot }} />
-                      <span className="text-xs text-slate-200 truncate">{name}</span>
-                      {data.festival_flag && <span className="text-[10px]" title="Festival active">🎉</span>}
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[10px] font-mono font-semibold" style={{ color: conf.color }}>{data.risk_score}</span>
-                      <Badge color={conf.color} bg={conf.bg}>{data.level}</Badge>
-                    </div>
-                  </button>
+                  >   <div className="flex items-center gap-1.5 truncate pr-2">   <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: conf.dot }} />   <span className="text-xs text-slate-200 truncate">{name}</span>
+                      {data.festival_flag && <span className="text-[10px]" title={t("Festival active", true)}>🎉</span>}
+                    </div>   <div className="flex items-center gap-1.5 shrink-0">   <span className="text-[10px] font-mono font-semibold" style={{ color: conf.color }}>{data.risk_score}</span>   <Badge color={conf.color} bg={conf.bg}>{data.level}</Badge>   </div>   </button>
                 );
               })}
-            </div>
-          </Card>
+            </div>   </Card>
 
           {/* Filters Card */}
-          <Card className="p-2.5 sm:p-3 shrink-0">
-            <h3 className="text-xs font-semibold mb-2 text-[var(--muted-foreground)]">Heatmap Filters</h3>
-            <div className="flex flex-col gap-2.5 text-xs">
-              <div>
-                <div className="flex justify-between text-[11px] mb-1">
-                  <span className="text-[var(--muted-foreground)]">Time Window</span>
-                  <span className="font-mono text-blue-400 font-semibold">{filterDays} Days</span>
-                </div>
-                <input
+          <Card className="p-2.5 sm:p-3 shrink-0">   <h3 className="text-xs font-semibold mb-2 text-[var(--muted-foreground)]">{t("Heatmap Filters", true)}</h3>   <div className="flex flex-col gap-2.5 text-xs">   <div>   <div className="flex justify-between text-[11px] mb-1">   <span className="text-[var(--muted-foreground)]">{t("Time Window", true)}</span>   <span className="font-mono text-blue-400 font-semibold">{filterDays} Days</span>   </div>   <input
                   type="range"
                   min={1}
                   max={90}
                   value={filterDays}
                   onChange={(e) => setFilterDays(+e.target.value)}
                   className="w-full accent-blue-500 cursor-pointer h-1.5 bg-slate-700 rounded-lg appearance-none"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] mb-1 block text-[var(--muted-foreground)]">Crime Category</label>
-                <select
+                />   </div>   <div>   <label className="text-[11px] mb-1 block text-[var(--muted-foreground)]">{t("Crime Category", true)}</label>   <select
                   value={selectedCrimeType}
                   onChange={(e) => setSelectedCrimeType(e.target.value)}
                   className="w-full rounded-lg px-2.5 py-1.5 text-xs outline-none bg-slate-900 border border-white/10 text-slate-200"
-                >
-                  <option value="">All Crime Categories</option>
+                >   <option value="">{t("All Crime Categories", true)}</option>
                   {["Theft", "Assault", "Robbery", "Cyber Crime", "Stalking", "Murder"].map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
-                </select>
-              </div>
-            </div>
-          </Card>
+                </select>   </div>   </div>   </Card>
 
           {/* Patrol Units */}
-          <Card className="p-2.5 sm:p-3 shrink-0">
-            <h3 className="text-xs font-semibold mb-2 text-[var(--muted-foreground)]">Active PCR Units</h3>
-            <div className="flex flex-col gap-1.5 max-h-36 overflow-y-auto pr-0.5">
+          <Card className="p-2.5 sm:p-3 shrink-0">   <h3 className="text-xs font-semibold mb-2 text-[var(--muted-foreground)]">{t("Active PCR Units", true)}</h3>   <div className="flex flex-col gap-1.5 max-h-36 overflow-y-auto pr-0.5">
               {patrols.map((unit) => (
-                <div key={unit.id} className="flex items-center justify-between p-1.5 rounded-lg bg-white/[0.03] border border-white/5">
-                  <div className="flex items-center gap-1.5">
-                    <Car size={12} style={{ color: unit.status === "active" ? "#22C55E" : unit.status === "responding" ? "#EF4444" : "#64748B" }} />
-                    <span className="text-xs font-medium text-slate-200">{unit.name}</span>
-                  </div>
-                  <Badge
+                <div key={unit.id} className="flex items-center justify-between p-1.5 rounded-lg bg-white/[0.03] border border-white/5">   <div className="flex items-center gap-1.5">   <Car size={12} style={{ color: unit.status === "active" ? "#22C55E" : unit.status === "responding" ? "#EF4444" : "#64748B" }} />   <span className="text-xs font-medium text-slate-200">{unit.name}</span>   </div>   <Badge
                     color={unit.status === "active" ? "#22C55E" : unit.status === "responding" ? "#EF4444" : "#64748B"}
                   >
                     {unit.status}
-                  </Badge>
-                </div>
+                  </Badge>   </div>
               ))}
-            </div>
-          </Card>
-        </div>
+            </div>   </Card>   </div>
 
         {/* Map Container */}
-        <div className="flex-1 relative rounded-xl overflow-hidden border border-white/10 min-h-0 flex flex-col bg-slate-950">
-          <RealAhmedabadOpenStreetMap
+        <div className="flex-1 relative rounded-xl overflow-hidden border border-white/10 min-h-0 flex flex-col bg-slate-950">   <RealAhmedabadOpenStreetMap
             cases={filteredCases}
             selectedWard={selectedWard}
             showWards={true}
@@ -2618,32 +2262,23 @@ function MapPage() {
             patrols={patrols}
             showCCTV={false}
             showHeatmap={showAIHeatmap}
+            heatmapData={heatmapData}
             wardsData={wardsData}
             height="100%"
           />
 
           {/* Ward selection banner overlay */}
           {selectedWard && (
-            <div className="absolute top-2 left-2 z-[1000] px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-600/90 text-white shadow-xl flex items-center gap-2 backdrop-blur-md">
-              <span>Ward Active: {selectedWard}</span>
-              <button
+            <div className="absolute top-2 left-2 z-[1000] px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-600/90 text-white shadow-xl flex items-center gap-2 backdrop-blur-md">   <span>Ward Active: {selectedWard}</span>   <button
                 onClick={() => setSelectedWard(null)}
                 className="ml-1 text-white/80 hover:text-white hover:bg-white/20 px-1.5 py-0.5 rounded text-[10px]"
               >
                 ✕ Clear
-              </button>
-            </div>
+              </button>   </div>
           )}
 
           {/* Map legend */}
-          <div className="absolute bottom-2 right-2 z-[1000] px-2.5 py-1 rounded-xl text-[10px] font-medium backdrop-blur-md bg-slate-900/80 text-white border border-white/15 flex items-center gap-2.5 shadow-lg">
-            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#EA4335]" /> High</div>
-            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#FBBC04]" /> Med</div>
-            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#34A853]" /> Low</div>
-          </div>
-        </div>
-      </div>
-    </div>
+          <div className="absolute bottom-2 right-2 z-[1000] px-2.5 py-1 rounded-xl text-[10px] font-medium backdrop-blur-md bg-slate-900/80 text-white border border-white/15 flex items-center gap-2.5 shadow-lg">   <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#EA4335]" />{t("High", true)}</div>   <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#FBBC04]" />{t("Med", true)}</div>   <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#34A853]" />{t("Low", true)}</div>   </div>   </div>   </div>   </div>
   );
 }
 
@@ -2656,6 +2291,8 @@ function MapPage() {
 // ─── AI Co-Pilot Widget for FIR Entry ──────────────────────────────────────────
 
 function AICoPilotWidget({ form, update }: { form: any; update: (k: string, v: any) => void }) {
+  const { t } = useApp();
+
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
@@ -2678,13 +2315,14 @@ function AICoPilotWidget({ form, update }: { form: any; update: (k: string, v: a
     setLoading(true);
 
     try {
-      const res = await fetch("/api/v1/assistant/chat", {
+      const res = await fetch("/api/v1/assistant/query", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: q, case_data: form })
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ query: q, mode: 'this_case', case_id: form.case_id })
       });
       const data = await res.json();
-      const reply = data.reply || data.response || data.message || "Analysis complete.";
+      const reply = data.answer || data.response || "Analysis complete.";
       setMessages((prev) => [...prev, { role: "ai" as const, text: reply }]);
     } catch (e) {
       setMessages((prev) => [...prev, { role: "ai" as const, text: "Error connecting to AI backend." }]);
@@ -2694,32 +2332,19 @@ function AICoPilotWidget({ form, update }: { form: any; update: (k: string, v: a
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <Button
+    <div className="flex flex-col gap-2">   <Button
         onClick={() => setIsOpen(!isOpen)}
         variant="outlined"
         size="sm"
         className={isOpen ? "bg-[var(--accent)]" : ""}
-      >
-        <Bot size={13} /> AI Co-Pilot
-      </Button>
+      >   <Bot size={13} />{t("AI Co-Pilot", true)}</Button>
 
       {isOpen && (
-        <div className="p-3.5 rounded-2xl bg-[var(--popover)] border border-[var(--border)] shadow-lg flex flex-col gap-3 animate-fadeIn mt-1 w-full col-span-full">
-          <div className="flex items-center justify-between text-xs font-bold text-[var(--foreground)] border-b border-[var(--border)] pb-2">
-            <span className="flex items-center gap-1.5 text-[var(--primary)]">
-              <Bot size={16} /> AI Co-Pilot Assistant
-            </span>
-            <button
+        <div className="p-3.5 rounded-2xl bg-[var(--popover)] border border-[var(--border)] shadow-lg flex flex-col gap-3 animate-fadeIn mt-1 w-full col-span-full">   <div className="flex items-center justify-between text-xs font-bold text-[var(--foreground)] border-b border-[var(--border)] pb-2">   <span className="flex items-center gap-1.5 text-[var(--primary)]">   <Bot size={16} />{t("AI Co-Pilot Assistant", true)}</span>   <button
               type="button"
               onClick={() => setIsOpen(false)}
               className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] cursor-pointer"
-            >
-              <X size={15} />
-            </button>
-          </div>
-
-          <div className="max-h-48 overflow-y-auto flex flex-col gap-2 pr-1 text-xs">
+            >   <X size={15} />   </button>   </div>   <div className="max-h-48 overflow-y-auto flex flex-col gap-2 pr-1 text-xs">
             {messages.map((m, idx) => (
               <div
                 key={idx}
@@ -2733,30 +2358,20 @@ function AICoPilotWidget({ form, update }: { form: any; update: (k: string, v: a
               </div>
             ))}
             {loading && (
-              <div className="p-2 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[11px] text-[var(--primary)] animate-pulse mr-auto">
-                AI Co-Pilot analyzing...
-              </div>
+              <div className="p-2 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[11px] text-[var(--primary)] animate-pulse mr-auto">{t("AI Co-Pilot analyzing...", true)}</div>
             )}
-          </div>
-
-          <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]">
-            <input
+          </div>   <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]">   <input
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleSend())}
-              placeholder="Ask AI Co-Pilot to analyze narrative or suggest sections..."
+              placeholder={t("Ask AI Co-Pilot to analyze narrative or suggest sections...", true)}
               className="flex-1 bg-[var(--input)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
-            />
-            <button
+            />   <button
               type="button"
               onClick={() => handleSend()}
               className="p-2 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer transition-all shadow-md"
-            >
-              <Send size={14} />
-            </button>
-          </div>
-        </div>
+            >   <Send size={14} />   </button>   </div>   </div>
       )}
     </div>
   );
@@ -2769,178 +2384,136 @@ function AICoPilotWidget({ form, update }: { form: any; update: (k: string, v: a
 
 type ChatMsg = { role: "user" | "assistant"; content: string; source?: string; ts: string };
 
+function AssistantBadge({ children, color = "var(--primary)" }: any) {
+  const { t } = useApp();
+
+  return (
+    <span style={{ color: color, backgroundColor: `${color}22` }} className="inline-flex items-center px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold">
+      {children}
+    </span>
+  );
+}
+
+function PageShell({ title, children }: any) {
+  const { t } = useApp();
+
+  return (
+    <div className="flex-1 flex flex-col h-full overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-6 md:p-8" style={{ backgroundColor: 'var(--bg, #0C1220)' }}>   <div className="flex justify-between items-center mb-4 sm:mb-6">   <h1 className="text-xl sm:text-2xl md:text-3xl font-bold m-0" style={{ color: 'var(--text-primary, #E8EFF8)', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+          {title}
+        </h1>   </div>   <div className="flex-1 min-h-0">
+        {children}
+      </div>   </div>
+  );
+}
+
 function AssistantPage() {
-  const [input, setInput] = useState("");
+  const { t } = useApp();
+
+  const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [loading, setLoading] = useState(false);
   const msgEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    msgEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const { token } = useApp();
 
-  async function sendMessage(textOverride?: string) {
-    const textToUse = textOverride || input;
-    if (!textToUse.trim()) return;
-    
-    const userMsg: ChatMsg = { role: "user", content: textToUse, ts: new Date().toISOString() };
-    setMessages((m) => [...m, userMsg]);
-    if (!textOverride) setInput("");
+  const handleSend = async (forcedInput: string | null = null) => {
+    const textToSend = forcedInput !== null ? forcedInput : input;
+    if (!textToSend.trim()) return;
+
+    const userMsg: ChatMsg = { role: 'user', content: textToSend, ts: new Date().toISOString() };
+    setMessages((prev) => [...prev, userMsg]);
+    if (forcedInput === null) setInput('');
     setLoading(true);
 
     try {
       const res = await fetch("/api/v1/assistant/query", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ query: textToUse })
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ query: textToSend, mode: 'all_cases' })
       });
       const data = await res.json();
-      const aiMsg: ChatMsg = {
-        role: "assistant",
-        content: data.response || "No response.",
-        source: "CrimeGPT",
-        ts: new Date().toISOString(),
-      };
-      setMessages((m) => [...m, aiMsg]);
-    } catch (e) {
-      setMessages((m) => [...m, { role: "assistant", content: "Error connecting to CrimeGPT assistant.", ts: new Date().toISOString() }]);
+      const answer = data.response || 'Based on case narratives and legal sections, relevant information points to active crime trends. For official disposition, please consult the IO and legal department.';
+      setMessages((prev) => [...prev, { role: 'assistant', content: answer, source: 'LLM', ts: new Date().toISOString() }]);
+    } catch (err) {
+      setMessages((prev) => [...prev, { role: 'assistant', content: 'Error connecting to AI', source: 'System', ts: new Date().toISOString() }]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }
+  };
 
   return (
-    <div className="flex gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ height: "calc(100vh - 5rem)" }}>
-      {/* Chat panel */}
-      <div className="flex-1 flex flex-col rounded-xl overflow-hidden border bg-[var(--card)] border-[var(--border)] shadow-2xl relative z-10">
-        {/* Header */}
-        <div className="px-6 py-4 border-b flex items-center gap-4 border-[var(--border)] bg-gradient-to-r from-blue-900/40 to-[var(--card)] backdrop-blur-xl">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-            <Bot size={20} className="text-white" />
-          </div>
-          <div>
-            <p className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-200">CrimeGPT Assistant</p>
-            <p className="text-xs font-medium text-blue-200/60">Advanced Legal & Case Intelligence</p>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-             <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-               <span className="text-xs font-bold text-emerald-400">Online</span>
-             </div>
-          </div>
-        </div>
+    <PageShell title={t("AI Assistant", true)}>   <div className="flex gap-2 sm:gap-4 h-full mt-2 sm:mt-4">
+        {/* Chat panel */}
+        <div className="glass-card flex-1 flex flex-col overflow-hidden p-0 rounded-2xl sm:rounded-[24px]" style={{ backgroundColor: 'rgba(168, 202, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.10)' }}>
+          
+          {/* Header */}
+          <div className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3 border-b" style={{ borderBottomColor: 'rgba(147, 143, 153, 0.35)' }}>   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#003D73' }}>   <Bot size={16} color="#A8CAFF" />   </div>   <div className="min-w-0">   <p className="text-sm sm:text-[14px] font-semibold m-0 truncate" style={{ color: '#E8EFF8', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{t("SAMRAKSHA AI", true)}</p>   <p className="text-[10px] sm:text-[12px] m-0 truncate" style={{ color: '#94A3B8' }}>{t("Case Intelligence Assistant", true)}</p>   </div>   <div className="ml-auto shrink-0">   <AssistantBadge color="#81C784">{t("Active", true)}</AssistantBadge>   </div>   </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 text-[var(--foreground)] scroll-smooth">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full gap-4 text-center mt-10">
-              <div className="w-20 h-20 rounded-3xl flex items-center justify-center bg-blue-500/10 border border-blue-500/20 shadow-2xl">
-                <Bot size={40} className="text-blue-500" />
-              </div>
-              <p className="text-2xl font-bold text-[var(--foreground)]">How can I assist your investigation?</p>
-              <p className="text-sm max-w-md text-[var(--muted-foreground)] leading-relaxed">
-                CrimeGPT has access to BNS sections, past FIRs, and cross-district criminal records. 
-                Use voice or text to query evidence.
-              </p>
-              <div className="grid grid-cols-2 gap-3 mt-6 w-full max-w-2xl">
-                {["Suggest applicable BNS sections for robbery with injury", "Summarize the recent SG Highway accident", "List modus operandi for chain snatching in West Zone", "Draft a legal notice for absconding suspect"].map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => { setInput(q); sendMessage(q); }}
-                    className="p-4 rounded-xl text-sm text-left font-medium transition-all bg-[var(--input)] hover:bg-blue-500/10 hover:border-blue-500/50 text-[var(--foreground)] border border-[var(--border)] shadow-sm hover:shadow-md flex items-start gap-3 group"
-                  >
-                    <Search size={16} className="text-blue-500 mt-0.5 group-hover:scale-110 transition-transform" />
-                    <span>{q}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
+            {messages.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full gap-3 sm:gap-4 text-center">   <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#003D73' }}>   <Bot size={24} color="#A8CAFF" />   </div>   <p className="text-sm sm:text-[14px] font-medium" style={{ color: '#E8EFF8', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{t("AI Case Assistant", true)}</p>   <p className="text-xs sm:text-[12px] max-w-[250px]" style={{ color: '#94A3B8' }}>{t("Ask about case evidence, applicable legal sections, crime patterns, or investigation progress.", true)}</p>   <div className="flex flex-col gap-2 mt-2">
+                  {["What sections apply to this case?", "Summarize the crime narrative", "List all open cases by type"].map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => handleSend(q)}
+                      className="px-3 py-2 rounded-lg sm:rounded-xl text-left text-[11px] sm:text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                      style={{ backgroundColor: '#003D73', color: '#A8CAFF', border: '1px solid rgba(147, 143, 153, 0.35)', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>   </div>
+            )}
 
-          {messages.map((msg, i) => (
-            <div key={i} className={cn("flex w-full", msg.role === "user" ? "justify-end" : "justify-start")}>
-              <div className={cn("flex gap-3 max-w-[85%]", msg.role === "user" ? "flex-row-reverse" : "flex-row")}>
-                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-auto", msg.role === "user" ? "bg-slate-700" : "bg-blue-600 shadow-[0_0_10px_rgba(59,130,246,0.5)]")}>
-                  {msg.role === "user" ? <User size={14} className="text-white" /> : <Bot size={14} className="text-white" />}
-                </div>
-                <div
-                  className={cn(
-                    "p-4 rounded-2xl text-sm leading-relaxed shadow-sm border",
-                    msg.role === "user"
-                      ? "bg-blue-600 text-white border-blue-500 rounded-br-sm"
-                      : "bg-[var(--card)] border-[var(--border)] text-[var(--foreground)] rounded-bl-sm"
-                  )}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={cn("text-xs font-bold", msg.role === "user" ? "text-blue-100" : "text-blue-400")}>
-                      {msg.role === "user" ? "Officer" : "CrimeGPT"}
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>   <div 
+                  className={`max-w-[85%] sm:max-w-[75%] p-2 sm:p-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm leading-relaxed`}
+                  style={{
+                    backgroundColor: msg.role === 'user' ? '#003D73' : 'rgba(168, 202, 255, 0.08)',
+                    border: `1px solid ${msg.role === 'user' ? 'rgba(147, 143, 153, 0.35)' : 'rgba(147, 143, 153, 0.35)'}`,
+                    color: '#E8EFF8',
+                    fontFamily: "'IBM Plex Sans', system-ui, sans-serif"
+                  }}
+                >   <div className="flex items-center gap-2 mb-1">   <span className="text-[10px] sm:text-xs font-semibold" style={{ color: msg.role === 'user' ? '#64B5F6' : '#81C784' }}>
+                      {msg.role === 'user' ? 'You' : 'SAMRAKSHA AI'}
                     </span>
                     {msg.source && (
-                      <Badge color={msg.source === "CrimeGPT" ? "#3B82F6" : "#F59E0B"}>{msg.source}</Badge>
+                      <AssistantBadge color={msg.source === 'LLM' ? '#81C784' : '#FFB74D'}>{msg.source}</AssistantBadge>
                     )}
                   </div>
-                  <div className="whitespace-pre-wrap">{msg.content}</div>
-                </div>
-              </div>
-            </div>
-          ))}
+                  {msg.content}
+                </div>   </div>
+            ))}
 
-          {loading && (
-            <div className="flex justify-start w-full">
-              <div className="flex gap-3 max-w-[85%]">
-                 <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-auto bg-blue-600 shadow-[0_0_10px_rgba(59,130,246,0.5)]">
-                    <Bot size={14} className="text-white" />
-                 </div>
-                 <div className="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)] rounded-bl-sm flex items-center h-[52px]">
-                   <div className="flex gap-1.5 items-center">
-                     {[0, 1, 2].map((d) => (
-                       <div key={d} className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: `${d * 0.15}s` }} />
-                     ))}
-                   </div>
-                 </div>
-              </div>
-            </div>
-          )}
-          <div ref={msgEndRef} />
-        </div>
+            {loading && (
+              <div className="flex justify-start">   <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl" style={{ backgroundColor: 'rgba(168, 202, 255, 0.08)', border: '1px solid rgba(147, 143, 153, 0.35)' }}>   <div className="text-[10px] sm:text-xs animate-pulse" style={{ color: '#A8CAFF', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>{t("Thinking...", true)}</div>   </div>   </div>
+            )}
+            <div ref={msgEndRef} />   </div>
 
-        {/* Input Area */}
-        <div className="p-4 border-t border-[var(--border)] bg-[var(--card)] z-20">
-          <div className="relative flex items-end gap-2 bg-[var(--input)] border border-[var(--border)] rounded-2xl p-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all shadow-inner">
-            <div className="pb-1.5 pl-1">
-              <VoiceInputWidget compact onTranscript={(t) => setInput(prev => prev + " " + t)} />
-            </div>
-            <textarea
+          {/* Input */}
+          <div className="p-3 sm:p-4 flex gap-2 border-t" style={{ borderTopColor: 'rgba(147, 143, 153, 0.35)' }}>   <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              placeholder={t("Ask about cases, sections...", true)}
+              className="flex-1 rounded-full px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm outline-none placeholder-gray-500"
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(147, 143, 153, 0.35)', color: '#E8EFF8', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}
+            />   <button
+              onClick={() => handleSend()}
+              disabled={!input.trim() || loading}
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200"
+              style={{
+                backgroundColor: input.trim() ? '#A8CAFF' : 'rgba(168, 202, 255, 0.08)', 
+                border: 'none', 
+                cursor: input.trim() && !loading ? 'pointer' : 'default', 
               }}
-              placeholder="Ask CrimeGPT about cases, laws, or patterns... (Press Enter to send)"
-              className="flex-1 max-h-32 min-h-[44px] bg-transparent resize-none py-3 px-2 text-sm outline-none text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
-              rows={1}
-            />
-            <div className="pb-1 pr-1 flex gap-2">
-              <button
-                onClick={() => sendMessage()}
-                disabled={!input.trim() || loading}
-                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-blue-600 hover:bg-blue-500 text-white cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Send size={18} className={loading ? "animate-pulse" : ""} />
-              </button>
-            </div>
-          </div>
-          <p className="text-[10px] text-center text-[var(--muted-foreground)] mt-3 font-medium">
-            AI generated responses are for investigative reference only and must be verified with official legal documents.
-          </p>
-        </div>
-      </div>
-    </div>
+            >   <Send size={16} color={input.trim() ? '#000000' : '#94A3B8'} />   </button>   </div>   </div>   </div>   </PageShell>
   );
 }
 
@@ -2951,6 +2524,8 @@ const CAMERA_FEEDS: any[] = [];
 const ALERT_COLOR: Record<string, string> = { crowd: "#EF4444", loitering: "#F59E0B", anpr: "#3B82F6" };
 
 function LiveCameraGrid() {
+  const { t } = useApp();
+
   const [active, setActive] = useState("CCTV-SAT-007");
   const [tick, setTick] = useState(0);
   const [nightVision, setNightVision] = useState(false);
@@ -2976,17 +2551,10 @@ function LiveCameraGrid() {
   return (
     <Card className="!p-0 overflow-hidden rounded-2xl flex flex-col h-full max-h-full min-h-0 border border-white/10" style={{ borderRadius: 16 }}>
       {/* Live Controls Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 flex-wrap gap-1.5 bg-slate-900/60 shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-xs sm:text-sm font-semibold text-slate-100 truncate max-w-[180px] sm:max-w-none">{activeCam.name}</span>
-          <Badge color="#EF4444">{CAMERA_FEEDS.filter((c) => c.status === "live").length} Online</Badge>
-        </div>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 flex-wrap gap-1.5 bg-slate-900/60 shrink-0">   <div className="flex items-center gap-2">   <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />   <span className="text-xs sm:text-sm font-semibold text-slate-100 truncate max-w-[180px] sm:max-w-none">{activeCam.name}</span>   <Badge color="#EF4444">{CAMERA_FEEDS.filter((c) => c.status === "live").length} Online</Badge>   </div>
 
         {/* Live Controls */}
-        <div className="flex items-center gap-1.5 flex-wrap text-xs">
-          <HoverTooltip tip={nightVision ? "Switch to Standard View" : "Enable IR Night-Vision"}>
-            <button
+        <div className="flex items-center gap-1.5 flex-wrap text-xs">   <HoverTooltip tip={nightVision ? "Switch to Standard View" : "Enable IR Night-Vision"}>   <button
               onClick={() => setNightVision((v) => !v)}
               className="px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all cursor-pointer flex items-center gap-1"
               style={{
@@ -2994,34 +2562,16 @@ function LiveCameraGrid() {
                 color: nightVision ? "#4ADE80" : "#94A3B8",
                 borderColor: nightVision ? "rgba(34,197,94,0.4)" : "rgba(255,255,255,0.1)",
               }}
-            >
-              <Eye size={10} /> {nightVision ? "IR ON" : "IR OFF"}
-            </button>
-          </HoverTooltip>
-
-          <HoverTooltip tip="Capture HD Evidence Frame">
-            <button
+            >   <Eye size={10} /> {nightVision ? "IR ON" : "IR OFF"}
+            </button>   </HoverTooltip>   <HoverTooltip tip="Capture HD Evidence Frame">   <button
               onClick={captureSnapshot}
               className="px-2 py-0.5 rounded-full text-[10px] font-medium border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all cursor-pointer flex items-center gap-1"
-            >
-              <Camera size={10} /> Snapshot
-            </button>
-          </HoverTooltip>
-
-          <div className="hidden sm:flex items-center gap-1 text-[10px] text-[var(--muted-foreground)] ml-1">
-            <Signal size={10} className="text-emerald-500" /> Live Stream
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row flex-1 min-h-0 overflow-hidden">
+            >   <Camera size={10} />{t("Snapshot", true)}</button>   </HoverTooltip>   <div className="hidden sm:flex items-center gap-1 text-[10px] text-[var(--muted-foreground)] ml-1">   <Signal size={10} className="text-emerald-500" />{t("Live Stream", true)}</div>   </div>   </div>   <div className="flex flex-col sm:flex-row flex-1 min-h-0 overflow-hidden">
         {/* Main feed viewport */}
         <div className="flex-1 relative overflow-hidden min-h-[140px]" style={{ backgroundColor: nightVision ? "#03170c" : "#050810" }}>
           {/* Snapshot Flash & Toast Notification */}
           {snapshotToast && (
-            <div className="absolute top-2 right-2 z-30 px-2.5 py-1 rounded-xl bg-emerald-600/90 text-white text-[10px] font-semibold shadow-xl flex items-center gap-1.5 animate-bounce">
-              <CheckCircle size={12} /> Captured to Vault!
-            </div>
+            <div className="absolute top-2 right-2 z-30 px-2.5 py-1 rounded-xl bg-emerald-600/90 text-white text-[10px] font-semibold shadow-xl flex items-center gap-1.5 animate-bounce">   <CheckCircle size={12} />{t("Captured to Vault!", true)}</div>
           )}
 
           {/* Scanline overlay */}
@@ -3049,15 +2599,7 @@ function LiveCameraGrid() {
             }}
           >
             {activeCam.status === "offline" ? (
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/20">
-                  <Video size={18} className="text-red-500" />
-                </div>
-                <p className="text-xs font-medium text-red-500">FEED OFFLINE</p>
-                <p className="text-[10px] text-[var(--muted-foreground)]">Signal lost — maintenance unit dispatched</p>
-              </div>
-            ) : (
-              <div className="w-full h-full relative flex items-center justify-center">
+              <div className="flex flex-col items-center gap-1.5">   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/20">   <Video size={18} className="text-red-500" />   </div>   <p className="text-xs font-medium text-red-500">{t("FEED OFFLINE", true)}</p>   <p className="text-[10px] text-[var(--muted-foreground)]">Signal lost — maintenance unit dispatched</p>   </div>) : (<div className="w-full h-full relative flex items-center justify-center">
                 {/* Faux IR grid */}
                 <div
                   className="absolute inset-0"
@@ -3071,8 +2613,7 @@ function LiveCameraGrid() {
 
                 {/* AI Detection Bounding Boxes */}
                 {[{ x: "28%", y: "35%", label: "PERSON 98%" }, { x: "58%", y: "50%", label: "VEHICLE GJ-01" }, { x: "75%", y: "30%", label: "PERSON 94%" }].map((pos, i) => (
-                  <div key={i} className="absolute" style={{ left: pos.x, top: pos.y }}>
-                    <div
+                  <div key={i} className="absolute" style={{ left: pos.x, top: pos.y }}>   <div
                       className="border-2 rounded transition-all"
                       style={{
                         width: 20 + (tick % 3) * 2,
@@ -3080,11 +2621,9 @@ function LiveCameraGrid() {
                         borderColor: nightVision ? "#4ADE80" : "#3B82F6",
                         boxShadow: nightVision ? "0 0 8px rgba(74,222,128,0.6)" : "0 0 8px rgba(59,130,246,0.5)",
                       }}
-                    />
-                    <div className="text-[7px] sm:text-[8px] mt-0.5 text-center font-mono font-bold" style={{ color: nightVision ? "#4ADE80" : "#60A5FA" }}>
+                    />   <div className="text-[7px] sm:text-[8px] mt-0.5 text-center font-mono font-bold" style={{ color: nightVision ? "#4ADE80" : "#60A5FA" }}>
                       {pos.label}
-                    </div>
-                  </div>
+                    </div>   </div>
                 ))}
 
                 {/* Alert banner overlay */}
@@ -3096,8 +2635,7 @@ function LiveCameraGrid() {
                       color: ALERT_COLOR[activeCam.alert],
                       border: `1px solid ${ALERT_COLOR[activeCam.alert]}66`,
                     }}
-                  >
-                    <AlertTriangle size={10} />
+                  >   <AlertTriangle size={10} />
                     {activeCam.alert === "crowd" ? "HIGH DENSITY CROWD DETECTED" : activeCam.alert === "loitering" ? "LOITERING ANOMALY" : "ANPR MATCH"}
                   </div>
                 )}
@@ -3106,51 +2644,15 @@ function LiveCameraGrid() {
           </div>
 
           {/* Interactive PTZ Controls overlay */}
-          <div className="absolute bottom-2 right-2 z-20 flex items-center gap-0.5 bg-slate-900/80 p-1 rounded-full border border-white/10 backdrop-blur-md scale-90 sm:scale-100">
-            <HoverTooltip tip="Pan Left">
-              <button onClick={() => setPanOffset((p) => ({ ...p, x: p.x + 15 }))} className="p-0.5 text-slate-300 hover:text-white transition-all cursor-pointer">
-                <ChevronLeft size={12} />
-              </button>
-            </HoverTooltip>
-            <HoverTooltip tip="Pan Up">
-              <button onClick={() => setPanOffset((p) => ({ ...p, y: p.y + 15 }))} className="p-0.5 text-slate-300 hover:text-white transition-all cursor-pointer">
-                <ChevronUp size={12} />
-              </button>
-            </HoverTooltip>
-            <HoverTooltip tip="Pan Down">
-              <button onClick={() => setPanOffset((p) => ({ ...p, y: p.y - 15 }))} className="p-0.5 text-slate-300 hover:text-white transition-all cursor-pointer">
-                <ChevronDown size={12} />
-              </button>
-            </HoverTooltip>
-            <HoverTooltip tip="Pan Right">
-              <button onClick={() => setPanOffset((p) => ({ ...p, x: p.x - 15 }))} className="p-0.5 text-slate-300 hover:text-white transition-all cursor-pointer">
-                <ChevronRight size={12} />
-              </button>
-            </HoverTooltip>
-
-            <span className="w-px h-3 bg-white/15 mx-0.5" />
-
-            <HoverTooltip tip="Zoom In">
-              <button onClick={() => setZoomLevel((z) => Math.min(z + 0.25, 2.5))} className="p-0.5 text-slate-300 hover:text-white transition-all cursor-pointer">
-                <ZoomIn size={12} />
-              </button>
-            </HoverTooltip>
-            <HoverTooltip tip="Reset PTZ View">
-              <button onClick={resetPTZ} className="px-1.5 py-0.5 text-[9px] font-mono text-slate-400 hover:text-white transition-all cursor-pointer">
+          <div className="absolute bottom-2 right-2 z-20 flex items-center gap-0.5 bg-slate-900/80 p-1 rounded-full border border-white/10 backdrop-blur-md scale-90 sm:scale-100">   <HoverTooltip tip="Pan Left">   <button onClick={() => setPanOffset((p) => ({ ...p, x: p.x + 15 }))} className="p-0.5 text-slate-300 hover:text-white transition-all cursor-pointer">   <ChevronLeft size={12} />   </button>   </HoverTooltip>   <HoverTooltip tip="Pan Up">   <button onClick={() => setPanOffset((p) => ({ ...p, y: p.y + 15 }))} className="p-0.5 text-slate-300 hover:text-white transition-all cursor-pointer">   <ChevronUp size={12} />   </button>   </HoverTooltip>   <HoverTooltip tip="Pan Down">   <button onClick={() => setPanOffset((p) => ({ ...p, y: p.y - 15 }))} className="p-0.5 text-slate-300 hover:text-white transition-all cursor-pointer">   <ChevronDown size={12} />   </button>   </HoverTooltip>   <HoverTooltip tip="Pan Right">   <button onClick={() => setPanOffset((p) => ({ ...p, x: p.x - 15 }))} className="p-0.5 text-slate-300 hover:text-white transition-all cursor-pointer">   <ChevronRight size={12} />   </button>   </HoverTooltip>   <span className="w-px h-3 bg-white/15 mx-0.5" />   <HoverTooltip tip="Zoom In">   <button onClick={() => setZoomLevel((z) => Math.min(z + 0.25, 2.5))} className="p-0.5 text-slate-300 hover:text-white transition-all cursor-pointer">   <ZoomIn size={12} />   </button>   </HoverTooltip>   <HoverTooltip tip="Reset PTZ View">   <button onClick={resetPTZ} className="px-1.5 py-0.5 text-[9px] font-mono text-slate-400 hover:text-white transition-all cursor-pointer">
                 {Math.round(zoomLevel * 100)}%
-              </button>
-            </HoverTooltip>
-          </div>
+              </button>   </HoverTooltip>   </div>
 
           {/* HUD Info */}
-          <div className="absolute bottom-2 left-2 z-20 flex flex-col gap-0.5 font-mono text-[9px]" style={{ color: nightVision ? "#4ADE80" : "#94A3B8" }}>
-            <div>{activeCam.id} · 23.0225° N, 72.5714° E</div>
-          </div>
-        </div>
+          <div className="absolute bottom-2 left-2 z-20 flex flex-col gap-0.5 font-mono text-[9px]" style={{ color: nightVision ? "#4ADE80" : "#94A3B8" }}>   <div>{activeCam.id} · 23.0225° N, 72.5714° E</div>   </div>   </div>
 
         {/* Feeds Sidebar / Bottom thumbnail list on mobile */}
-        <div className="flex sm:flex-col gap-2 p-2 overflow-x-auto sm:overflow-y-auto sm:w-40 md:w-48 bg-slate-900/50 border-t sm:border-t-0 sm:border-l border-white/10 shrink-0">
-          <p className="text-[10px] uppercase font-bold text-[var(--muted-foreground)] mb-0.5 hidden sm:block">Available Feeds</p>
+        <div className="flex sm:flex-col gap-2 p-2 overflow-x-auto sm:overflow-y-auto sm:w-40 md:w-48 bg-slate-900/50 border-t sm:border-t-0 sm:border-l border-white/10 shrink-0">   <p className="text-[10px] uppercase font-bold text-[var(--muted-foreground)] mb-0.5 hidden sm:block">{t("Available Feeds", true)}</p>
           {CAMERA_FEEDS.map((cam) => (
             <button
               key={cam.id}
@@ -3161,29 +2663,16 @@ function LiveCameraGrid() {
                 backgroundColor: "rgba(0,0,0,0.4)",
                 border: active === cam.id ? "2px solid #3B82F6" : "1px solid rgba(255,255,255,0.08)",
               }}
-            >
-              <div style={{ height: "100%", background: "radial-gradient(rgba(16, 185, 129, 0.2) 0%, rgba(0, 50, 0, 0.6) 100%)", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ position: "absolute", left: "0px", right: "0px", top: "8%", height: "2px", background: "rgba(16, 185, 129, 0.4)", transition: "none" }}></div>
-                <div style={{ position: "absolute", top: "15px", left: "10px", border: "1px solid rgb(16, 185, 129)", borderRadius: "3px", padding: "2px 6px", fontSize: "9px", fontWeight: 700, fontFamily: "\"JetBrains Mono\"", color: "rgb(16, 185, 129)", background: "rgba(16, 185, 129, 0.1)" }}>PERSON x5</div>
-                <div style={{ position: "absolute", bottom: "10px", right: "6px", border: "1px solid rgb(245, 158, 11)", borderRadius: "3px", padding: "2px 6px", fontSize: "9px", fontWeight: 700, fontFamily: "\"JetBrains Mono\"", color: "rgb(245, 158, 11)", background: "rgba(245, 158, 11, 0.1)" }}>GJ01MN2222</div>
-              </div>
+            >   <div style={{ height: "100%", background: "radial-gradient(rgba(16, 185, 129, 0.2) 0%, rgba(0, 50, 0, 0.6) 100%)", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>   <div style={{ position: "absolute", left: "0px", right: "0px", top: "8%", height: "2px", background: "rgba(16, 185, 129, 0.4)", transition: "none" }}></div>   <div style={{ position: "absolute", top: "15px", left: "10px", border: "1px solid rgb(16, 185, 129)", borderRadius: "3px", padding: "2px 6px", fontSize: "9px", fontWeight: 700, fontFamily: "\"JetBrains Mono\"", color: "rgb(16, 185, 129)", background: "rgba(16, 185, 129, 0.1)" }}>{t("PERSON x5", true)}</div>   <div style={{ position: "absolute", bottom: "10px", right: "6px", border: "1px solid rgb(245, 158, 11)", borderRadius: "3px", padding: "2px 6px", fontSize: "9px", fontWeight: 700, fontFamily: "\"JetBrains Mono\"", color: "rgb(245, 158, 11)", background: "rgba(245, 158, 11, 0.1)" }}>{t("GJ01MN2222", true)}</div>   </div>
               {cam.status === "offline" && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/75 z-10">
-                  <span className="text-[8px] font-bold text-red-500">OFFLINE</span>
-                </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/75 z-10">   <span className="text-[8px] font-bold text-red-500">{t("OFFLINE", true)}</span>   </div>
               )}
               {cam.alert && (
                 <div className="absolute top-1 right-1 w-2 h-2 rounded-full animate-pulse z-10" style={{ backgroundColor: ALERT_COLOR[cam.alert] }} />
               )}
-              <div className="absolute bottom-0 left-0 right-0 p-1 bg-gradient-to-t from-black/90 via-black/60 to-transparent z-10">
-                <p className="text-[8px] font-semibold text-slate-100 truncate">{cam.name}</p>
-                <p className="text-[7px] font-mono text-slate-400">{cam.id}</p>
-              </div>
-            </button>
+              <div className="absolute bottom-0 left-0 right-0 p-1 bg-gradient-to-t from-black/90 via-black/60 to-transparent z-10">   <p className="text-[8px] font-semibold text-slate-100 truncate">{cam.name}</p>   <p className="text-[7px] font-mono text-slate-400">{cam.id}</p>   </div>   </button>
           ))}
-        </div>
-      </div>
-    </Card>
+        </div>   </div>   </Card>
   );
 }
 
@@ -3192,6 +2681,8 @@ function LiveCameraGrid() {
 // ─── CrimeGPT Document Studio ──────────────────────────────────────────────────
 
 export function CrimeGPTDocumentStudio({ selectedCase, form }: { selectedCase?: Case | null; form?: any }) {
+  const { t } = useApp();
+
   const { token } = useApp();
   const [messages, setMessages] = useState<Array<{ role: "user" | "ai"; text: string }>>([
     {
@@ -3205,6 +2696,8 @@ export function CrimeGPTDocumentStudio({ selectedCase, form }: { selectedCase?: 
   const [isCopied, setIsCopied] = useState(false);
   const [showGenModal, setShowGenModal] = useState(false);
   const [showChatDrawer, setShowChatDrawer] = useState(false);
+  const [isTranslatingDraft, setIsTranslatingDraft] = useState(false);
+  const { language } = useApp();
 
   const c = selectedCase || null;
 
@@ -3314,45 +2807,44 @@ export function CrimeGPTDocumentStudio({ selectedCase, form }: { selectedCase?: 
     setTimeout(() => setIsCopied(false), 2000);
   };
 
+  const handleTranslateDraft = async () => {
+    if (language === "en") return;
+    setIsTranslatingDraft(true);
+    try {
+      const res = await fetch("/api/v1/translate/", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
+        body: JSON.stringify({ text: editableDraft, target_lang: language, source_lang: "en" })
+      });
+      const data = await res.json();
+      if (data.translated) {
+        setEditableDraft(data.translated);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsTranslatingDraft(false);
+    }
+  };
+
   return (
     <Card className="p-4 sm:p-5 flex flex-col justify-between border border-blue-500/40 bg-[var(--card)] shadow-xl rounded-2xl w-full h-full min-h-[310px] animate-fade-in-up">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-500 flex items-center justify-center font-bold">
-            <span className="material-symbols-rounded text-base">view_timeline</span>
-          </div>
-          <div>
-            <h4 className="text-xs sm:text-sm font-bold text-[var(--foreground)] flex items-center gap-1.5">
-              AI Co-Pilot Document Studio
-            </h4>
-          </div>
-        </div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">   <div className="flex items-center gap-2">   <div className="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-500 flex items-center justify-center font-bold">   <span className="material-symbols-rounded text-base">view_timeline</span>   </div>   <div>   <h4 className="text-xs sm:text-sm font-bold text-[var(--foreground)] flex items-center gap-1.5">{t("AI Co-Pilot Document Studio", true)}</h4>   </div>   </div>
 
         {/* AI Co-Pilot Toggle */}
-        <div className="flex items-center gap-1">
-          <button
+        <div className="flex items-center gap-1">   <button
             type="button"
             onClick={() => setShowChatDrawer(!showChatDrawer)}
             className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border flex items-center gap-1 ${
               showChatDrawer ? "bg-purple-600 text-white border-purple-500" : "bg-[var(--input)] text-[var(--muted-foreground)] border-[var(--border)] hover:text-[var(--foreground)]"
             }`}
-          >
-            <Bot size={13} /> AI Co-Pilot
-          </button>
-        </div>
-      </div>
+          >   <Bot size={13} />{t("AI Co-Pilot", true)}</button>   </div>   </div>
 
       {/* Expandable CrimeGPT Chat Assistant Drawer */}
       {showChatDrawer && (
-        <div className="my-2 p-3 rounded-xl bg-[var(--popover)] border border-[var(--border)] flex flex-col gap-2">
-          <div className="flex items-center justify-between text-xs font-bold text-[var(--foreground)] border-b border-[var(--border)] pb-1.5">
-            <span className="flex items-center gap-1 text-blue-400"><Bot size={14} /> CrimeGPT Legal Assistant</span>
-            <button type="button" onClick={() => setShowChatDrawer(false)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-              <X size={14} />
-            </button>
-          </div>
-          <div className="max-h-36 overflow-y-auto flex flex-col gap-2 pr-1 text-xs">
+        <div className="my-2 p-3 rounded-xl bg-[var(--popover)] border border-[var(--border)] flex flex-col gap-2">   <div className="flex items-center justify-between text-xs font-bold text-[var(--foreground)] border-b border-[var(--border)] pb-1.5">   <span className="flex items-center gap-1 text-blue-400"><Bot size={14} />{t("CrimeGPT Legal Assistant", true)}</span>   <button type="button" onClick={() => setShowChatDrawer(false)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">   <X size={14} />   </button>   </div>   <div className="max-h-36 overflow-y-auto flex flex-col gap-2 pr-1 text-xs">
             {messages.map((m, idx) => (
               <div
                 key={idx}
@@ -3363,74 +2855,57 @@ export function CrimeGPTDocumentStudio({ selectedCase, form }: { selectedCase?: 
                 {m.text}
               </div>
             ))}
-          </div>
-          <div className="flex items-center gap-2 pt-1 border-t border-[var(--border)]">
-            <input
+          </div>   <div className="flex items-center gap-2 pt-1 border-t border-[var(--border)]">   <input
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleSendPrompt())}
-              placeholder="Ask CrimeGPT to update statutory draft..."
+              placeholder={t("Ask CrimeGPT to update statutory draft...", true)}
               className="flex-1 bg-[var(--input)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--foreground)] outline-none"
-            />
-            <button
+            />   <button
               type="button"
               onClick={() => handleSendPrompt()}
               className="p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 cursor-pointer"
-            >
-              <Send size={13} />
-            </button>
-          </div>
-        </div>
+            >   <Send size={13} />   </button>   </div>   </div>
       )}
 
       {/* Editable Document Draft Pane */}
-      <div className="my-3 flex-1 bg-slate-950/90 border border-[var(--border)] rounded-xl p-3.5 font-mono text-xs font-bold text-slate-100 leading-relaxed shadow-inner flex flex-col min-h-[160px]">
-        <textarea
+      <div className="my-3 flex-1 bg-slate-950/90 border border-[var(--border)] rounded-xl p-3.5 font-mono text-xs font-bold text-slate-100 leading-relaxed shadow-inner flex flex-col min-h-[160px]">   <textarea
           value={editableDraft}
           onChange={(e) => setEditableDraft(e.target.value)}
           className="w-full h-full min-h-[160px] flex-1 bg-transparent outline-none resize-none font-mono text-[11px] sm:text-xs font-semibold text-slate-100 leading-relaxed overflow-y-auto"
-        />
-      </div>
+        />   </div>
 
       {/* Document Actions Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--border)]">
-        <div className="flex items-center gap-1.5 text-[10px] text-[var(--muted-foreground)] font-mono font-bold">
-          <span className="material-symbols-rounded text-xs text-emerald-500">verified</span>
-          BNSS Statutory Compliant
-        </div>
-
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <button
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--border)]">   <div className="flex items-center gap-1.5 text-[10px] text-[var(--muted-foreground)] font-mono font-bold">   <span className="material-symbols-rounded text-xs text-emerald-500">verified</span>{t("BNSS Statutory Compliant", true)}</div>   <div className="flex items-center gap-1.5 flex-wrap">   <button
             type="button"
             onClick={copyToClipboard}
             className="px-2.5 py-1 rounded-lg bg-[var(--input)] hover:bg-[var(--accent)] text-[var(--foreground)] text-[11px] font-bold border border-[var(--border)] flex items-center gap-1 cursor-pointer shadow-sm"
-          >
-            <span className="material-symbols-rounded text-xs">{isCopied ? "check" : "content_copy"}</span>
+          >   <span className="material-symbols-rounded text-xs">{isCopied ? "check" : "content_copy"}</span>
             {isCopied ? "Copied!" : "Copy Text"}
-          </button>
-          <button
+          </button>   <button
             type="button"
             onClick={() => window.print()}
             className="px-2.5 py-1 rounded-lg bg-[var(--input)] hover:bg-[var(--accent)] text-[var(--foreground)] text-[11px] font-bold border border-[var(--border)] flex items-center gap-1 cursor-pointer shadow-sm"
-          >
-            <span className="material-symbols-rounded text-xs">print</span>
-            Print Draft
-          </button>
-          <button
+          >   <span className="material-symbols-rounded text-xs">print</span>{t("Print Draft", true)}</button>   <button
+            type="button"
+            onClick={handleTranslateDraft}
+            disabled={isTranslatingDraft || language === "en"}
+            className="px-2.5 py-1 rounded-lg bg-[var(--input)] hover:bg-[var(--accent)] text-[var(--foreground)] text-[11px] font-bold border border-[var(--border)] flex items-center gap-1 cursor-pointer shadow-sm disabled:opacity-50"
+          >   <span className="material-symbols-rounded text-xs">translate</span>
+            {isTranslatingDraft ? "Translating..." : "Translate Draft"}
+          </button>   <button
             type="button"
             onClick={() => setShowGenModal(true)}
             className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-bold shadow-sm flex items-center gap-1 cursor-pointer transition-all"
-          >
-            <span className="material-symbols-rounded text-xs">description</span> Generate
-          </button>
-          <button
+          >   <span className="material-symbols-rounded text-xs">description</span>{t("Generate", true)}</button>   <button
             type="button"
             onClick={async () => {
               if (!c) { alert("Select a case first"); return; }
               const docRes = await fetch("/api/v1/docs/generate", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                credentials: "include",
+                headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), "Authorization": `Bearer ${token}` },
                 body: JSON.stringify({ case_id: c.case_id, doc_type: activeDocType === "chargesheet" ? "chargesheet" : (activeDocType === "remand" ? "remand_request" : "panchanama"), language: "en" })
               });
               if (docRes.ok) {
@@ -3446,18 +2921,11 @@ export function CrimeGPTDocumentStudio({ selectedCase, form }: { selectedCase?: 
               } else { alert("Failed to generate document"); }
             }}
             className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold shadow-sm flex items-center gap-1 cursor-pointer transition-all"
-          >
-            <Download size={12} /> Export .docx
-          </button>
-        </div>
-      </div>
-
-      <GenerateDocumentModal
+          >   <Download size={12} />{t("Export .docx", true)}</button>   </div>   </div>   <GenerateDocumentModal
         open={showGenModal}
         onClose={() => setShowGenModal(false)}
         caseNo={c?.fir_no || "FIR-STATUTORY-DRAFT"}
-      />
-    </Card>
+      />   </Card>
   );
 }
 
@@ -3476,6 +2944,8 @@ type CreatedDocument = {
 
 
 function DocumentsPage() {
+  const { t } = useApp();
+
   const { cases, token } = useApp();
   const [caseSearch, setCaseSearch] = useState("");
   const [selectedCase, setSelectedCase] = useState<Case | null>([][0] || null);
@@ -3535,223 +3005,102 @@ function DocumentsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Document Studio & Intelligence"
-        subtitle="Official statutory document exporter & legal templates"
+    <div className="flex flex-col gap-6">   <PageHeader
+        title={t("Document Studio & Intelligence", true)}
+        subtitle={t("Official statutory document exporter & legal templates", true)}
         action={
           <button
             onClick={() => setShowGenModal(true)}
             className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <span className="material-symbols-rounded text-sm">description</span> 📄 Generate Document Modal
+          >   <span className="material-symbols-rounded text-sm">description</span> 📄 Generate Document Modal
           </button>
         }
-      />
-
-      <div className="flex flex-col gap-6 animate-fade-in-up">
+      />   <div className="flex flex-col gap-6 animate-fade-in-up">
         {/* Case search */}
-        <Card>
-            <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--muted-foreground)" }}>Select Case Context</h3>
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <Search size={14} color="#64748B" className="absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
+        <Card>   <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--muted-foreground)" }}>{t("Select Case Context", true)}</h3>   <div className="flex gap-2">   <div className="flex-1 relative">   <Search size={14} color="#64748B" className="absolute left-3 top-1/2 -translate-y-1/2" />   <input
                   value={caseSearch}
                   onChange={(e) => setCaseSearch(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && doSearch()}
-                  placeholder="Search by FIR number, victim name, or crime type..."
+                  placeholder={t("Search by FIR number, victim name, or crime type...", true)}
                   className="w-full rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none"
                   style={{ backgroundColor: "var(--input)", border: "1px solid var(--border)", color: "var(--foreground)" }}
-                />
-              </div>
-              <Button onClick={doSearch} size="md"><Search size={14} /></Button>
-            </div>
+                />   </div>   <Button onClick={doSearch} size="md"><Search size={14} /></Button>   </div>
 
-            {searchResults.length > 0 && (
-              <div className="mt-3 flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+            {searchResults.length >0 && (<div className="mt-3 flex flex-col gap-1.5 max-h-40 overflow-y-auto">
                 {searchResults.map((c) => (
                   <button
                     key={c.case_id}
                     onClick={() => { setSelectedCase(c); setSearchResults([]); }}
                     className="flex items-center justify-between p-2.5 rounded-lg text-left transition-all cursor-pointer hover:bg-[var(--accent)]"
                     style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
-                  >
-                    <span className="text-sm font-mono" style={{ color: "#38BDF8" }}>{c.fir_no}</span>
-                    <div className="flex items-center gap-2">
-                      <Badge color="#3B82F6">{c.crime_type}</Badge>
-                      <Badge color={STATUS_CONFIG[c.case_status].color}>{STATUS_CONFIG[c.case_status].label}</Badge>
-                    </div>
-                  </button>
+                  >   <span className="text-sm font-mono" style={{ color: "#38BDF8" }}>{c.fir_no}</span>   <div className="flex items-center gap-2">   <Badge color="#3B82F6">{c.crime_type}</Badge>   <Badge color={STATUS_CONFIG[c.case_status].color}>{STATUS_CONFIG[c.case_status].label}</Badge>   </div>   </button>
                 ))}
               </div>
             )}
           </Card>
 
           {selectedCase && (
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border)] glass-panel">
-              <FileText size={16} color="#38BDF8" />
-              <span className="text-sm font-mono font-medium" style={{ color: "#38BDF8" }}>{selectedCase.fir_no}</span>
-              <span className="text-sm" style={{ color: "var(--muted-foreground)" }}>·</span>
-              <Badge color="#3B82F6">{selectedCase.crime_type}</Badge>
-              <Badge color={STATUS_CONFIG[selectedCase.case_status].color}>{STATUS_CONFIG[selectedCase.case_status].label}</Badge>
-              <button onClick={() => setSelectedCase(null)} className="ml-auto cursor-pointer p-1 hover:bg-white/10 rounded-md transition-colors">
-                <X size={14} color="#94A3B8" />
-              </button>
-            </div>
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border)] glass-panel">   <FileText size={16} color="#38BDF8" />   <span className="text-sm font-mono font-medium" style={{ color: "#38BDF8" }}>{selectedCase.fir_no}</span>   <span className="text-sm" style={{ color: "var(--muted-foreground)" }}>·</span>   <Badge color="#3B82F6">{selectedCase.crime_type}</Badge>   <Badge color={STATUS_CONFIG[selectedCase.case_status].color}>{STATUS_CONFIG[selectedCase.case_status].label}</Badge>   <button onClick={() => setSelectedCase(null)} className="ml-auto cursor-pointer p-1 hover:bg-white/10 rounded-md transition-colors">   <X size={14} color="#94A3B8" />   </button>   </div>
           )}
 
           {/* Created Documents Grid */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-[var(--foreground)] font-display tracking-wide">Created Documents</h3>
-              <Badge color="#3B82F6">{createdDocs.length} Total</Badge>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div>   <div className="flex items-center justify-between mb-4">   <h3 className="text-base font-bold text-[var(--foreground)] font-display tracking-wide">{t("Created Documents", true)}</h3>   <Badge color="#3B82F6">{createdDocs.length} Total</Badge>   </div>   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {createdDocs.map((doc) => {
                 return (
-                  <Card key={doc.id} className="flex flex-col gap-4 relative group">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-blue-500/10 border border-blue-500/20">
-                          <FileText size={18} className="text-blue-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-[var(--foreground)] truncate pr-2">{doc.title}</p>
-                          <p className="text-xs mt-0.5 text-[var(--muted-foreground)]">{doc.type}</p>
-                        </div>
-                      </div>
-                      <Badge color={doc.status === "Final" ? "#10B981" : doc.status === "Signed" ? "#8B5CF6" : "#F59E0B"}>
+                  <Card key={doc.id} className="flex flex-col gap-4 relative group">   <div className="flex items-start justify-between">   <div className="flex items-start gap-3">   <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-blue-500/10 border border-blue-500/20">   <FileText size={18} className="text-blue-400" />   </div>   <div>   <p className="text-sm font-bold text-[var(--foreground)] truncate pr-2">{doc.title}</p>   <p className="text-xs mt-0.5 text-[var(--muted-foreground)]">{doc.type}</p>   </div>   </div>   <Badge color={doc.status === "Final" ? "#10B981" : doc.status === "Signed" ? "#8B5CF6" : "#F59E0B"}>
                         {doc.status}
-                      </Badge>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5 text-xs text-[var(--muted-foreground)]">
-                      <div className="flex items-center gap-2">
-                        <Globe size={12} /> 
-                        <span>
-                          <span className="text-[var(--foreground)] font-medium">{doc.language}</span>
+                      </Badge>   </div>   <div className="flex flex-col gap-1.5 text-xs text-[var(--muted-foreground)]">   <div className="flex items-center gap-2">   <Globe size={12} />   <span>   <span className="text-[var(--foreground)] font-medium">{doc.language}</span>
                           {doc.targetLanguage && (
                             <> <span className="opacity-60">→</span> <span className="text-blue-400 font-medium">{doc.targetLanguage}</span></>
                           )}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar size={12} />
-                        <span>{formatDateTime(doc.createdAt)}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 mt-auto pt-4 border-t border-[var(--border)] flex-wrap">
-                      <Button 
+                        </span>   </div>   <div className="flex items-center gap-2">   <Calendar size={12} />   <span>{formatDateTime(doc.createdAt)}</span>   </div>   </div>   <div className="flex gap-2 mt-auto pt-4 border-t border-[var(--border)] flex-wrap">   <Button 
                         onClick={() => handleDownload(doc, "PDF")} 
                         variant="filled" 
                         size="sm" 
                         className="flex-1 cursor-pointer justify-center"
-                      >
-                        <Download size={14} /> PDF
-                      </Button>
-                      <button 
+                      >   <Download size={14} />{t("PDF", true)}</Button>   <button 
                         onClick={() => handleReDownload(doc)} 
                         className="p-2 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--accent)] cursor-pointer transition-colors tooltip-trigger"
-                        title="Re-fetch / Re-download"
-                      >
-                        <RefreshCw size={14} />
-                      </button>
-                      <button 
+                        title={t("Re-fetch / Re-download", true)}
+                      >   <RefreshCw size={14} />   </button>   <button 
                         onClick={() => handleTranslateOpen(doc)} 
                         className="p-2 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] hover:text-blue-400 cursor-pointer transition-colors tooltip-trigger"
-                        title="Translate & Download"
-                      >
-                        <Globe size={14} />
-                      </button>
-                      <button 
+                        title={t("Translate & Download", true)}
+                      >   <Globe size={14} />   </button>   <button 
                         onClick={() => handleEditOpen(doc)} 
                         className="p-2 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] hover:text-amber-400 cursor-pointer transition-colors tooltip-trigger"
-                        title="Edit Document"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button 
+                        title={t("Edit Document", true)}
+                      >   <Edit2 size={14} />   </button>   <button 
                         onClick={() => handleDelete(doc.id)} 
                         className="p-2 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] hover:text-red-400 hover:bg-red-500/10 cursor-pointer transition-colors tooltip-trigger"
-                        title="Delete Document"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </Card>
+                        title={t("Delete Document", true)}
+                      >   <Trash2 size={14} />   </button>   </div>   </Card>
                 );
               })}
               {createdDocs.length === 0 && (
-                <div className="col-span-full py-12 flex flex-col items-center justify-center text-[var(--muted-foreground)] glass-card">
-                  <FileText size={48} className="mb-4 opacity-20" />
-                  <p className="text-sm font-medium">No documents created yet.</p>
-                  <p className="text-xs opacity-70">Use the Generate Document Modal to create a new one.</p>
-                </div>
+                <div className="col-span-full py-12 flex flex-col items-center justify-center text-[var(--muted-foreground)] glass-card">   <FileText size={48} className="mb-4 opacity-20" />   <p className="text-sm font-medium">{t("No documents created yet.", true)}</p>   <p className="text-xs opacity-70">{t("Use the Generate Document Modal to create a new one.", true)}</p>   </div>
               )}
-            </div>
-          </div>
-        </div>
-
-      <GenerateDocumentModal
+            </div>   </div>   </div>   <GenerateDocumentModal
         open={showGenModal}
         onClose={() => setShowGenModal(false)}
         caseNo={selectedCase?.fir_no || "FIR JAM/2026/0127"}
       />
 
       {/* Edit Document Modal */}
-      <Modal open={!!editDoc} onClose={() => setEditDoc(null)} title="Edit Document Content" width={600}>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2 mb-2 text-sm text-[var(--muted-foreground)]">
-            <span className="font-semibold text-[var(--foreground)]">{editDoc?.title}</span>
-            <span>({editDoc?.type})</span>
-          </div>
-          <textarea
+      <Modal open={!!editDoc} onClose={() => setEditDoc(null)} title={t("Edit Document Content", true)} width={600}>   <div className="flex flex-col gap-4">   <div className="flex items-center gap-2 mb-2 text-sm text-[var(--muted-foreground)]">   <span className="font-semibold text-[var(--foreground)]">{editDoc?.title}</span>   <span>({editDoc?.type})</span>   </div>   <textarea
             value={editingContent}
             onChange={(e) => setEditingContent(e.target.value)}
             className="w-full h-64 p-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] text-sm outline-none focus:border-blue-500 resize-none font-mono"
-            placeholder="Edit document content..."
-          />
-          <div className="flex items-center gap-2 justify-end mt-2">
-            <Button onClick={() => setEditDoc(null)} variant="outlined">Cancel</Button>
-            <Button onClick={handleEditSave} variant="filled" className="bg-blue-600 hover:bg-blue-500 text-white border-blue-500">
-              <Save size={16} /> Save Changes
-            </Button>
-          </div>
-        </div>
-      </Modal>
+            placeholder={t("Edit document content...", true)}
+          />   <div className="flex items-center gap-2 justify-end mt-2">   <Button onClick={() => setEditDoc(null)} variant="outlined">{t("Cancel", true)}</Button>   <Button onClick={handleEditSave} variant="filled" className="bg-blue-600 hover:bg-blue-500 text-white border-blue-500">   <Save size={16} />{t("Save Changes", true)}</Button>   </div>   </div>   </Modal>
 
       {/* Translate Document Modal */}
-      <Modal open={!!translateDoc} onClose={() => setTranslateDoc(null)} title="Translate & Download" width={400}>
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-[var(--muted-foreground)]">
-            Select a target language to translate <span className="font-semibold text-[var(--foreground)]">{translateDoc?.title}</span>.
-          </p>
-          <div className="flex flex-col gap-2 mt-2">
-            <label className="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Target Language</label>
-            <select
+      <Modal open={!!translateDoc} onClose={() => setTranslateDoc(null)} title={t("Translate & Download", true)} width={400}>   <div className="flex flex-col gap-4">   <p className="text-sm text-[var(--muted-foreground)]">{t("Select a target language to translate ", true)}<span className="font-semibold text-[var(--foreground)]">{translateDoc?.title}</span>.
+          </p>   <div className="flex flex-col gap-2 mt-2">   <label className="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">{t("Target Language", true)}</label>   <select
               value={selectedTargetLang}
               onChange={(e) => setSelectedTargetLang(e.target.value)}
               className="w-full p-2.5 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] text-sm outline-none focus:border-blue-500 cursor-pointer"
-            >
-              <option value="Hindi">Hindi</option>
-              <option value="Gujarati">Gujarati</option>
-              <option value="Marathi">Marathi</option>
-              <option value="Tamil">Tamil</option>
-              <option value="Telugu">Telugu</option>
-              <option value="English">English</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-2 justify-end mt-4">
-            <Button onClick={() => setTranslateDoc(null)} variant="outlined">Cancel</Button>
-            <Button onClick={handleTranslateSubmit} variant="filled" className="bg-blue-600 hover:bg-blue-500 text-white border-blue-500">
-              <Globe size={16} /> Translate
-            </Button>
-          </div>
-        </div>
-      </Modal>
-    </div>
+            >   <option value="Hindi">{t("Hindi", true)}</option>   <option value="Gujarati">{t("Gujarati", true)}</option>   <option value="Marathi">{t("Marathi", true)}</option>   <option value="Tamil">{t("Tamil", true)}</option>   <option value="Telugu">{t("Telugu", true)}</option>   <option value="English">{t("English", true)}</option>   </select>   </div>   <div className="flex items-center gap-2 justify-end mt-4">   <Button onClick={() => setTranslateDoc(null)} variant="outlined">{t("Cancel", true)}</Button>   <Button onClick={handleTranslateSubmit} variant="filled" className="bg-blue-600 hover:bg-blue-500 text-white border-blue-500">   <Globe size={16} />{t("Translate", true)}</Button>   </div>   </div>   </Modal>   </div>
   );
 }
 
@@ -3851,6 +3200,8 @@ const []: PatrolRouteFull[] = [
 
 
 function FloatingChatbot() {
+  const { t } = useApp();
+
   const [isOpen, setIsOpen] = React.useState(false);
   const [input, setInput] = React.useState("");
   const [messages, setMessages] = React.useState<ChatMsg[]>([]);
@@ -3872,7 +3223,8 @@ function FloatingChatbot() {
     try {
       const res = await fetch("/api/v1/assistant/query", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), Authorization: `Bearer ${token}` },
         body: JSON.stringify({ query: input })
       });
       const data = await res.json();
@@ -3888,24 +3240,15 @@ function FloatingChatbot() {
       {isOpen && (
         <div className="w-[340px] h-[480px] max-h-[70vh] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] mb-4 flex flex-col overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-200 pointer-events-auto">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-700 to-blue-600 p-3.5 text-white flex justify-between items-center shadow-md">
-            <span className="font-bold flex items-center gap-2 text-sm tracking-wide">
-               <Bot size={18}/> CrimeGPT Copilot
-            </span>
-            <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded-md transition-colors"><X size={18}/></button>
-          </div>
+          <div className="bg-gradient-to-r from-blue-700 to-blue-600 p-3.5 text-white flex justify-between items-center shadow-md">   <span className="font-bold flex items-center gap-2 text-sm tracking-wide">   <Bot size={18}/>{t("CrimeGPT Copilot", true)}</span>   <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded-md transition-colors"><X size={18}/></button>   </div>
           
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 text-sm bg-[var(--background)]">
             {messages.length === 0 && (
-              <div className="text-center text-[var(--muted-foreground)] mt-10 text-xs font-medium">
-                I'm your AI Copilot. Ask me anything about ongoing cases, suspect records, or legal codes.
-              </div>
+              <div className="text-center text-[var(--muted-foreground)] mt-10 text-xs font-medium">{t("I'm your AI Copilot. Ask me anything about ongoing cases, suspect records, or legal codes.", true)}</div>
             )}
             {messages.map((m, i) => (
-              <div key={i} className={cn("p-3 rounded-2xl max-w-[85%] shadow-sm", m.role === 'user' ? 'bg-blue-600 text-white ml-auto rounded-br-sm' : 'bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] mr-auto rounded-bl-sm')}>
-                <div className="whitespace-pre-wrap text-xs leading-relaxed">{m.content}</div>
-              </div>
+              <div key={i} className={cn("p-3 rounded-2xl max-w-[85%] shadow-sm", m.role === 'user' ? 'bg-blue-600 text-white ml-auto rounded-br-sm' : 'bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] mr-auto rounded-bl-sm')}>   <div className="whitespace-pre-wrap text-xs leading-relaxed">{m.content}</div>   </div>
             ))}
             {loading && (
                <div className="bg-[var(--card)] border border-[var(--border)] p-3 rounded-2xl rounded-bl-sm mr-auto max-w-[85%] flex gap-1">
@@ -3914,55 +3257,39 @@ function FloatingChatbot() {
                  ))}
                </div>
             )}
-            <div ref={endRef} />
-          </div>
+            <div ref={endRef} />   </div>
 
           {/* Input */}
-          <div className="p-3 border-t border-[var(--border)] bg-[var(--card)] flex gap-2 items-center">
-            <input 
+          <div className="p-3 border-t border-[var(--border)] bg-[var(--card)] flex gap-2 items-center">   <input 
               value={input} onChange={e => setInput(e.target.value)} 
               onKeyDown={e => e.key === 'Enter' && sendMessage()}
               className="flex-1 bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] px-3 py-2.5 rounded-xl text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-[var(--muted-foreground)]" 
-              placeholder="Message CrimeGPT..." 
-            />
-            <button onClick={sendMessage} disabled={!input.trim() || loading} className="bg-blue-600 text-white h-9 w-9 flex items-center justify-center rounded-xl hover:bg-blue-500 transition-colors shadow-md disabled:opacity-50"><Send size={14}/></button>
-          </div>
-        </div>
+              placeholder={t("Message CrimeGPT...", true)} 
+            />   <button onClick={sendMessage} disabled={!input.trim() || loading} className="bg-blue-600 text-white h-9 w-9 flex items-center justify-center rounded-xl hover:bg-blue-500 transition-colors shadow-md disabled:opacity-50"><Send size={14}/></button>   </div>   </div>
       )}
       
       {/* Floating Button */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="w-14 h-14 bg-gradient-to-tr from-blue-700 to-blue-500 text-white rounded-full flex items-center justify-center shadow-[0_8px_30px_rgb(59,130,246,0.5)] hover:shadow-[0_8px_30px_rgb(59,130,246,0.8)] hover:scale-105 transition-all pointer-events-auto border-2 border-white/10 group"
-      >
-        <Bot size={28} className="group-hover:animate-pulse" />
-      </button>
-    </div>
+      >   <Bot size={28} className="group-hover:animate-pulse" />   </button>   </div>
   );
 }
 
 function AppShell({ children }: { children: React.ReactNode }) {
+  const { t } = useApp();
+
   const { wsConnected, page } = useApp();
   const isCCTV = page === "cctv";
   const isMap = page === "map";
   const isFitViewport = isCCTV || isMap;
 
   return (
-    <div className={`flex ${isFitViewport ? "h-dvh max-h-dvh min-h-dvh overflow-hidden" : "min-h-dvh"} transition-colors duration-300 text-[var(--foreground)] relative overflow-x-hidden w-full`} style={{ fontFamily: "Inter, sans-serif" }}>
-      <Sidebar wsConnected={wsConnected} />
+    <div className={`flex ${isFitViewport ? "h-dvh max-h-dvh min-h-dvh overflow-hidden" : "min-h-dvh"} transition-colors duration-300 text-[var(--foreground)] relative overflow-x-hidden w-full`} style={{ fontFamily: "Inter, sans-serif" }}>   <Sidebar wsConnected={wsConnected} />
       {/* Permanent non-moving layout spacer for fixed sidebar */}
-      <div className="hidden md:block w-[72px] shrink-0 h-dvh pointer-events-none" />
-      <div className={`flex-1 flex flex-col min-w-0 w-full ${isFitViewport ? "h-dvh max-h-dvh overflow-hidden" : "min-h-dvh"}`}>
-        <TopBar wsConnected={wsConnected} />
-        <main className={`flex-1 w-full ${isFitViewport ? "p-2 sm:p-3 md:p-4 pb-16 md:pb-3 h-full max-h-full min-h-0 overflow-hidden flex flex-col" : "p-2 sm:p-4 md:p-6 pb-20 md:pb-6 flex flex-col"} max-w-7xl 2xl:max-w-[1750px] mx-auto animate-fadeIn`}>
-          <div className={`glass-container w-full flex-1 ${isFitViewport ? "p-2 sm:p-3 md:p-4 h-full max-h-full min-h-0 overflow-hidden flex flex-col justify-between" : "p-3 sm:p-5 md:p-8 flex flex-col min-h-[calc(100dvh-6.5rem)]"} shadow-2xl`}>
+      <div className="hidden md:block w-[72px] shrink-0 h-dvh pointer-events-none" />   <div className={`flex-1 flex flex-col min-w-0 w-full ${isFitViewport ? "h-dvh max-h-dvh overflow-hidden" : "min-h-dvh"}`}>   <TopBar wsConnected={wsConnected} />   <main className={`flex-1 w-full ${isFitViewport ? "p-2 sm:p-3 md:p-4 pb-16 md:pb-3 h-full max-h-full min-h-0 overflow-hidden flex flex-col" : "p-2 sm:p-4 md:p-6 pb-20 md:pb-6 flex flex-col"} max-w-7xl 2xl:max-w-[1750px] mx-auto animate-fadeIn`}>   <div className={`glass-container w-full flex-1 ${isFitViewport ? "p-2 sm:p-3 md:p-4 h-full max-h-full min-h-0 overflow-hidden flex flex-col justify-between" : "p-3 sm:p-5 md:p-8 flex flex-col min-h-[calc(100dvh-6.5rem)]"} shadow-2xl`}>
             {children}
-          </div>
-        </main>
-      </div>
-      <BottomNav />
-      <FloatingChatbot />
-    </div>
+          </div>   </main>   </div>   <FloatingChatbot />   <BottomNav />   </div>
   );
 }
 
@@ -4033,26 +3360,11 @@ export default function App() {
   const [patrols, setPatrols] = useState<PatrolUnit[]>([]);
   const [cctvAlerts, setCctvAlerts] = useState<CCTVAlert[]>([]);
 
-  const [officer, setOfficer] = useState<Officer | null>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("samraksha_officer");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          localStorage.removeItem("samraksha_officer");
-          return null;
-        }
-      }
-    }
-    return null;
-  });
-  const [token, setToken] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("samraksha_token");
-    }
-    return null;
-  });
+  // Session state lives in memory only. Script-accessible bearer tokens are NEVER
+  // persisted to localStorage — the HttpOnly cookie is the source of truth.
+  const [officer, setOfficer] = useState<Officer | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
   const [page, setPage] = useState<Page>(() => {
     if (typeof window !== "undefined") {
       const path = window.location.pathname.replace(/^\//, "");
@@ -4061,7 +3373,11 @@ export default function App() {
     return "dashboard";
   });
   const [params, setParams] = useState<Record<string, string>>({});
-  const [wsMessages, setWsMessages] = useState<WSMessage[]>([]);
+  const [wsMessages, setWsMessages] = useState<WSMessage[]>([
+    { type: "CCTV_ALERT", payload: "ANPR Match: GJ01AB1234 on SG Highway", ts: new Date(Date.now() - 5 * 60000).toISOString() },
+    { type: "NEW_FIR", payload: "FIR-2026-042 registered at Vastrapur", ts: new Date(Date.now() - 12 * 60000).toISOString() },
+    { type: "PCR_INCIDENT", payload: "PCR Unit 4 dispatched to CG Road", ts: new Date(Date.now() - 25 * 60000).toISOString() }
+  ]);
   const [wsConnected, setWsConnected] = useState(false);
   const [language, setLanguage] = useState<Language>("en");
   const [themeMode, setThemeMode] = useState<"dark" | "light">(() => {
@@ -4073,15 +3389,26 @@ export default function App() {
   });
   const wsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Restore the session from the HttpOnly cookie on load (no localStorage).
   useEffect(() => {
-    if (!token || !officer) return;
+    if (officer) return;
+    fetch("/api/v1/auth/me", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.officer) setOfficer(data.officer);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!officer) return;
     async function fetchData() {
       try {
         const headers = { "Authorization": `Bearer ${token}` };
         const [casesRes, patrolsRes, cctvRes] = await Promise.all([
-          fetch("/api/v1/cases", { headers }).catch(() => null),
-          fetch("/api/v1/patrol/units", { headers }).catch(() => null),
-          fetch("/api/v1/cctv", { headers }).catch(() => null)
+          fetch("/api/v1/cases", { credentials: "include" }).catch(() => null),
+          fetch("/api/v1/patrol/units", { credentials: "include" }).catch(() => null),
+          fetch("/api/v1/cctv", { credentials: "include" }).catch(() => null)
         ]);
         if (casesRes?.status === 401 || patrolsRes?.status === 401 || cctvRes?.status === 401) {
           logout();
@@ -4126,10 +3453,54 @@ export default function App() {
     setThemeMode((prev) => (prev === "dark" ? "light" : "dark"));
   }, []);
 
-  const t = useCallback((key: string): string => {
-    return TRANSLATIONS[language]?.[key] || key;
-  }, [language]);
+  const [dynamicTranslations, setDynamicTranslations] = useState<Record<string, Record<string, string>>>({
+    en: {}, hi: {}, gu: {}
+  });
+  const translateQueue = useRef<Set<string>>(new Set());
 
+  const t = useCallback((key: string, isLiteralString: boolean = false): string => {
+    if (!key) return key;
+    
+    // 1. Check hardcoded dictionary first (if it's a key like "active_cases")
+    if (!isLiteralString && TRANSLATIONS[language]?.[key]) {
+      return TRANSLATIONS[language][key];
+    }
+    
+    // 2. If English, return original key or text
+    if (language === "en") return key;
+
+    // 3. Check dynamic cache
+    if (dynamicTranslations[language]?.[key]) {
+      return dynamicTranslations[language][key];
+    }
+
+    // 4. Fetch async translation from IndicTrans2 backend
+    if (!translateQueue.current.has(key)) {
+      translateQueue.current.add(key);
+      fetch("/api/v1/translate/", {
+        method: "POST",
+        credentials: "include",
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCsrfToken()
+        },
+        body: JSON.stringify({ text: key, target_lang: language, source_lang: "en" })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.translated) {
+          setDynamicTranslations(prev => ({
+            ...prev,
+            [language]: { ...prev[language], [key]: data.translated }
+          }));
+        }
+      })
+      .catch(e => console.error("Translation error for", key, e));
+    }
+
+    // Return original English text while translating
+    return key;
+  }, [language, dynamicTranslations]);
   // Real WebSocket events
   useEffect(() => {
     if (!officer || !token) return;
@@ -4140,8 +3511,9 @@ export default function App() {
     const ws = new WebSocket(`${wsProto}//${window.location.host}/api/v1/ws/dashboard`);
     
     ws.onopen = () => {
-      // Send token immediately upon connection
-      ws.send(token);
+      // Send the in-memory token if present; otherwise the backend authenticates
+      // via the session cookie sent with the WebSocket handshake.
+      if (token) ws.send(token);
       setWsConnected(true);
     };
     
@@ -4204,23 +3576,20 @@ export default function App() {
     const data = await res.json();
     setOfficer(data.officer);
     setToken(data.access_token);
-    localStorage.setItem("samraksha_officer", JSON.stringify(data.officer));
-    localStorage.setItem("samraksha_token", data.access_token);
+    setCsrfToken(data.csrf_token);
     const allowed = NAV_ITEMS.find((i) => i.roles.includes(data.officer.role));
     navigate(allowed?.id || "dashboard");
   }
 
   async function logout() {
-    if (token) {
-      await fetch("/api/v1/auth/logout", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
-      }).catch(() => {});
-    }
+    await fetch("/api/v1/auth/logout", {
+      method: "POST",
+      credentials: "include",
+      headers: { "X-CSRF-Token": getCsrfToken() },
+    }).catch(() => {});
     setOfficer(null);
     setToken(null);
-    localStorage.removeItem("samraksha_officer");
-    localStorage.removeItem("samraksha_token");
+    setCsrfToken(null);
     setWsMessages([]);
     navigate("login");
   }
@@ -4265,19 +3634,15 @@ export default function App() {
   }
 
   return (
-    <Ctx.Provider value={ctx}>
-      <div style={{ fontFamily: "Inter, sans-serif" }}>
+    <Ctx.Provider value={ctx}>   <div style={{ fontFamily: "Inter, sans-serif" }}>
         {!officer ? (
-          <LoginPage />
-        ) : (
-          <AppShell>{renderPage()}</AppShell>
+          <LoginPage />) : (<AppShell>{renderPage()}</AppShell>
         )}
-      </div>
-    </Ctx.Provider>
+      </div>   </Ctx.Provider>
   );
 }
 
 export {
-  timeAgo, MapPage, cn, WS_COLOR, Chip, QuickViewModal, Select, NAV_ITEMS, LoginPage, CAMERA_FEEDS, Modal, formatDateTime, SegmentedChartCard, HoverTooltip, AnalyticsPage, Button, PageHeader, AssistantPage, createGoogleTeardropPin, ALERT_COLOR, Card, CCTV_LOCATIONS, ROLE_CONFIG, LiveCameraGrid, DocumentsPage, ScenarioSimulationControlDeck, AHMEDABAD_WARD_LOCATIONS, FIREntryPage, StatCard, Badge, Ctx, Sidebar, RealAhmedabadOpenStreetMap, CaseDetailPage, STATUS_CONFIG, TopBar, BottomNav, VoiceInputWidget, CHART_COLORS, AICoPilotWidget, AHMEDABAD_WARDS, formatTime, formatDate, GenerateDocumentModal, Input, RISK_CONFIG, AppShell, INITIAL_ADMIN_USERS, useApp, downloadCasesCSV, INITIAL_AUDIT_LOGS, INITIAL_PERMISSIONS, INITIAL_IAM_POLICIES
+  timeAgo, MapPage, cn, WS_COLOR, Chip, QuickViewModal, Select, NAV_ITEMS, LoginPage, CAMERA_FEEDS, Modal, formatDateTime, SegmentedChartCard, HoverTooltip, AnalyticsPage, Button, PageHeader, AssistantPage, createGoogleTeardropPin, ALERT_COLOR, Card, CCTV_LOCATIONS, ROLE_CONFIG, LiveCameraGrid, DocumentsPage, ScenarioSimulationControlDeck, AHMEDABAD_WARD_LOCATIONS, FIREntryPage, StatCard, Badge, Ctx, Sidebar, RealAhmedabadOpenStreetMap, CaseDetailPage, STATUS_CONFIG, TopBar, BottomNav, VoiceInputWidget, CHART_COLORS, AICoPilotWidget, AHMEDABAD_WARDS, formatTime, formatDate, GenerateDocumentModal, Input, RISK_CONFIG, AppShell, INITIAL_ADMIN_USERS, useApp, downloadCasesCSV, INITIAL_AUDIT_LOGS, INITIAL_PERMISSIONS, INITIAL_IAM_POLICIES, getCsrfToken, mutationHeaders
 };
 export type { DiaryEntry, AuditLog, AppCtx, CreatedDocument, RolePermission, Officer, WSMessage, GenerateDocumentModalProps, Page, ChatMsg, AdminUser, CCTVAlert, Case, IAMPolicy, Role, PatrolUnitFull, NavItem, PatrolRouteFull, PatrolUnit, CaseStatus };

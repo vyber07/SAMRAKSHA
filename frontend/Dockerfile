@@ -16,10 +16,13 @@ RUN echo 'server { \
     } \
     location /api/ { \
         proxy_pass http://api:8000/api/; \
-        proxy_set_header Host $host; \
+        proxy_set_header Host "localhost"; \
         proxy_set_header X-Real-IP $remote_addr; \
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
         proxy_set_header X-Forwarded-Proto $scheme; \
+        proxy_read_timeout 300; \
+        proxy_connect_timeout 300; \
+        proxy_send_timeout 300; \
     } \
 }' > /etc/nginx/conf.d/default.conf
 

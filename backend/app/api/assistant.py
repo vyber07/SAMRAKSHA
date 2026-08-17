@@ -32,6 +32,15 @@ async def query_assistant(
 ):
     question_lower = body.get_question().lower()
 
+    # Fast-path for simple greetings to avoid slow CPU LLM timeout on edge proxies
+    q = body.get_question().lower().strip()
+    import re
+    if re.match(r'^(hi+|hello+|hey+|hola|greetings)', q) and len(q.split()) < 4:
+        return {
+            "response": "Hello! I am SAMRAKSHA AI, your police intelligence assistant. How can I help you analyze the case data today?",
+            "mode": body.mode,
+            "source": "system"
+        }
 
     if body.mode == 'this_case':
         if not body.case_id:
@@ -89,29 +98,26 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
     else:  # all_cases mode
         if officer['role'] == 'io':
             cases = (await db.execute(text("""
-                SELECT fir_no, crime_type, crime_date, case_status,
-                       ward, victim_name, accused_name, bns_sections
+                SELECT fir_no, crime_type, crime_date, case_status, ward
                 FROM cases WHERE ps_id = :p1
-                ORDER BY crime_date DESC LIMIT 30
+                ORDER BY crime_date DESC LIMIT 10
             """), {'p1': str(officer['ps_id'])})).mappings().fetchall()
         elif officer['role'] == 'sho':
             cases = (await db.execute(text("""
-                SELECT fir_no, crime_type, crime_date, case_status,
-                       ward, victim_name, accused_name, bns_sections
+                SELECT fir_no, crime_type, crime_date, case_status, ward
                 FROM cases WHERE ps_id = :p1
-                ORDER BY crime_date DESC LIMIT 50
+                ORDER BY crime_date DESC LIMIT 10
             """), {'p1': str(officer['ps_id'])})).mappings().fetchall()
         else:  # dcp, admin
             cases = (await db.execute(text("""
-                SELECT fir_no, crime_type, crime_date, case_status,
-                       ward, victim_name, accused_name, bns_sections
+                SELECT fir_no, crime_type, crime_date, case_status, ward
                 FROM cases
-                ORDER BY crime_date DESC LIMIT 100
+                ORDER BY crime_date DESC LIMIT 15
             """), {})).mappings().fetchall()
 
         if not cases:
             return {
-                "answer": "No cases found in your jurisdiction.",
+                "response": "No cases found in your jurisdiction.",
                 "mode": body.mode,
                 "source": "system"
             }
@@ -119,45 +125,66 @@ Arrest Date: {case['arrest_date'] or 'Not yet arrested'}
         context = f"CASES DATA ({len(cases)} cases):\n"
         for c in cases:
             context += (
-                f"FIR {c['fir_no']}: {c['crime_type']} in {c['ward']}, "
-                f"status={c['case_status']}, date={c['crime_date']}\n"
+                f"FIR Number: {c['fir_no']} | Case Type: {c['crime_type']} | "
+                f"Location: {c['ward']} | Status: {c['case_status']} | Date: {c['crime_date']}\n"
             )
 
         system_prompt = (
             "You are a police intelligence assistant. "
-            "Analyze and summarize the provided case data. "
+            "Analyze and summarize the provided case data based on the user's question. "
             "Always cite FIR numbers for specific claims. "
             "Do not speculate beyond the data provided. "
+            "If the user just says 'hi' or greets you, politely introduce yourself and ask how you can help with the cases. "
             "Be concise and structured in your response."
         )
 
-    source = "llm"
-    answer = ""
-    try:
-        from app.services.llm_integration import get_llm
-        llm = get_llm()
-        messages = [
-            {"role": "user", "content": f"{context}\n\nQuestion: {body.get_question()}"}
-        ]
-        answer = await llm.chat_completion(
-            messages=messages,
-            system=system_prompt,
-            temperature=0.1,
-            max_tokens=500
-        )
-        if not answer or answer == "I'm having trouble processing your request. Please try again.":
-            raise ValueError("LLM response empty or fallback triggered")
-        answer = str(answer).strip()
-    except Exception as e:
-        logger.warning("LLM unavailable, using fallback", error=str(e))
-        answer = simple_keyword_answer(body.get_question(), context)
-        source = "fallback"
+    from fastapi.responses import StreamingResponse
+    import json
+    import asyncio
 
-    return {
-        "response": answer,
-        "mode":   body.mode,
-        "source": source
-    }
+    async def generate_response():
+        # Keep connection alive by yielding spaces
+        yield b" "
+        
+        try:
+            from app.services.llm_integration import get_llm
+            llm = get_llm()
+            messages = [
+                {"role": "user", "content": f"{context}\n\nQuestion: {body.get_question()}"}
+            ]
+            
+            task = asyncio.create_task(llm.chat_completion(
+                messages=messages,
+                system=system_prompt,
+                temperature=0.1,
+                max_tokens=150
+            ))
+            
+            # While the task is running, yield a space every 2 seconds to prevent 60s proxy timeouts
+            while not task.done():
+                yield b" "
+                await asyncio.sleep(2)
+                
+            answer = task.result()
+            
+            if not answer or answer == "I'm having trouble processing your request. Please try again.":
+                raise ValueError("LLM response empty or fallback triggered")
+            final_answer = str(answer).strip()
+            source = "llm"
+        except Exception as e:
+            logger.warning("LLM unavailable, using fallback", error=str(e))
+            final_answer = simple_keyword_answer(body.get_question(), context)
+            source = "fallback"
+
+        # After LLM finishes, yield the final JSON (which parsers will read properly ignoring the leading spaces)
+        res_dict = {
+            "response": final_answer,
+            "mode": body.mode,
+            "source": source
+        }
+        yield json.dumps(res_dict).encode('utf-8')
+
+    return StreamingResponse(generate_response(), media_type="application/json")
 
 def simple_keyword_answer(question: str, context: str) -> str:
     """Simple fallback when LLM is not available"""

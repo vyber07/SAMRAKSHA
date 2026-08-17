@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Activity, Zap, BadgeCheck, CheckCircle } from "lucide-react";
-import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { Activity, Zap, BadgeCheck, CheckCircle, ShieldAlert, Cpu } from "lucide-react";
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { useApp, PageHeader, StatCard, SegmentedChartCard, Card } from "../App";
 
 function AnalyticsPage() {
@@ -11,10 +11,15 @@ function AnalyticsPage() {
     { title: "Patrol Active", value: "-", icon: BadgeCheck, color: "#3B82F6", change: 0 },
     { title: "High Risk Zones", value: "-", icon: CheckCircle, color: "#8B5CF6", change: 0 },
   ]);
-  const [weeklyData, setWeeklyData] = useState<{ day: string; count: number }[]>([]);
+
+  const [resourceStatus, setResourceStatus] = useState<any>(null);
+  const [surges, setSurges] = useState<any[]>([]);
+  const [patterns, setPatterns] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("/api/v1/analytics/summary", { credentials: "include", headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    fetch("/api/v1/analytics/summary", { credentials: "include", headers })
       .then(r => r.json())
       .then(data => {
         if (data && data.firs_today !== undefined) {
@@ -28,13 +33,27 @@ function AnalyticsPage() {
       })
       .catch(console.error);
 
-    fetch("/api/v1/analytics/trends", { credentials: "include", headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    fetch("/api/v1/analytics/resource_status", { credentials: "include", headers })
+      .then(r => r.json())
+      .then(data => setResourceStatus(data))
+      .catch(console.error);
+
+    fetch("/api/v1/analytics/hotspot_surge", { credentials: "include", headers })
       .then(r => r.json())
       .then(data => {
-        if (Array.isArray(data.weekly)) setWeeklyData(data.weekly.map((d: any) => ({ ...d, count: Number(d.count) })));
+        if (data && data.surges) setSurges(data.surges);
+      })
+      .catch(console.error);
+
+    fetch("/api/v1/analytics/pattern_matches", { credentials: "include", headers })
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.patterns) setPatterns(data.patterns);
       })
       .catch(console.error);
   }, [token]);
+
+  const COLORS = ['#3B82F6', '#22C55E', '#EF4444', '#F59E0B'];
 
   return (
     <div className="flex flex-col gap-6">
@@ -46,28 +65,100 @@ function AnalyticsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        <SegmentedChartCard title="Incident Frequency Tracking" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <SegmentedChartCard title="Incident Frequency Tracking" />
+        </div>
+        
+        <Card>
+          <h3 className="text-sm font-semibold mb-4 text-[var(--foreground)] flex items-center gap-2">
+            <BadgeCheck size={16} className="text-blue-500" />
+            Resource Allocation Status
+          </h3>
+          {resourceStatus ? (
+            <div className="flex flex-col items-center justify-center h-full pb-6">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={resourceStatus.breakdown}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="count"
+                    nameKey="status"
+                  >
+                    {resourceStatus.breakdown.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--foreground)", fontSize: 12 }}
+                    itemStyle={{ color: "var(--foreground)" }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex justify-around w-full mt-2 text-xs">
+                <div className="text-center">
+                  <span className="block text-[var(--muted-foreground)]">Engaged</span>
+                  <span className="font-bold text-lg">{resourceStatus.engaged_pct}%</span>
+                </div>
+                <div className="text-center">
+                  <span className="block text-[var(--muted-foreground)]">Available</span>
+                  <span className="font-bold text-lg">{resourceStatus.available_pct}%</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-48 text-[var(--muted-foreground)]">Loading...</div>
+          )}
+        </Card>
       </div>
 
-      {weeklyData.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card>
-            <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--muted-foreground)" }}>Weekly Incident Pattern</h3>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={weeklyData} barSize={24}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#64748B" }} />
-                <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
-                <Tooltip contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--foreground)", fontSize: 11 }} />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {weeklyData.map((_, i) => <Cell key={i} fill={i === 5 || i === 6 ? "#EF4444" : "#3B82F6"} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </div>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <h3 className="text-sm font-semibold mb-4 text-[var(--foreground)] flex items-center gap-2">
+            <ShieldAlert size={16} className="text-red-500" />
+            Immediate Hotspot Surges
+          </h3>
+          <div className="space-y-3">
+            {surges.length > 0 ? surges.map((s, idx) => (
+              <div key={idx} className="flex justify-between items-center p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
+                <div>
+                  <div className="font-semibold text-sm">{s.ward}</div>
+                  <div className="text-xs text-[var(--muted-foreground)]">Hour Slot: {s.hour_slot}:00</div>
+                </div>
+                <div className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400">
+                  Risk: {s.risk_score}
+                </div>
+              </div>
+            )) : (
+              <div className="text-sm text-[var(--muted-foreground)] text-center py-8">No immediate surges predicted.</div>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <h3 className="text-sm font-semibold mb-4 text-[var(--foreground)] flex items-center gap-2">
+            <Cpu size={16} className="text-purple-500" />
+            AI Pattern Matches (CCTV & Telecom)
+          </h3>
+          <div className="space-y-3">
+            {patterns.length > 0 ? patterns.map((p, idx) => (
+              <div key={idx} className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
+                <div className="flex justify-between items-center mb-1">
+                  <div className="font-semibold text-sm capitalize">{p.type.replace('_', ' ')}</div>
+                  <div className="text-xs text-[var(--muted-foreground)]">{new Date(p.timestamp).toLocaleTimeString()}</div>
+                </div>
+                <div className="text-xs text-[var(--muted-foreground)]">{p.description}</div>
+              </div>
+            )) : (
+              <div className="text-sm text-[var(--muted-foreground)] text-center py-8">No critical AI patterns detected.</div>
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

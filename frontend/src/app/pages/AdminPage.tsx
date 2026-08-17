@@ -126,9 +126,10 @@ export default function AdminPage() {
     }
     
     try {
+      const { mutationHeaders } = await import('../App');
       const res = await fetch("/api/v1/admin/officers", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: mutationHeaders({ Authorization: `Bearer ${token}` }),
         body: JSON.stringify({
           badge_no: badgeFormatted,
           name: newName.trim(),
@@ -170,9 +171,10 @@ export default function AdminPage() {
     
     const nextStatus = user.status === "Active" ? "Inactive" : "Active";
     try {
+      const { mutationHeaders } = await import('../App');
       const res = await fetch(`/api/v1/admin/officers/${badge}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: mutationHeaders({ Authorization: `Bearer ${token}` }),
         body: JSON.stringify({ is_active: nextStatus === "Active" })
       });
       if (!res.ok) throw new Error("Failed");
@@ -186,9 +188,10 @@ export default function AdminPage() {
   const handleDeleteUser = async (badge: string) => {
     if (confirm(`Are you sure you want to remove user ${badge}?`)) {
       try {
+        const { mutationHeaders } = await import('../App');
         const res = await fetch(`/api/v1/admin/officers/${badge}`, {
           method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` }
+          headers: mutationHeaders({ Authorization: `Bearer ${token}` })
         });
         if (!res.ok) throw new Error("Failed");
         setUsers(users.filter((u) => u.badge !== badge));
@@ -201,9 +204,10 @@ export default function AdminPage() {
 
   const handleUpdateUserRole = async (badge: string, role: Role) => {
     try {
+      const { mutationHeaders } = await import('../App');
       const res = await fetch(`/api/v1/admin/officers/${badge}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: mutationHeaders({ Authorization: `Bearer ${token}` }),
         body: JSON.stringify({ role })
       });
       if (!res.ok) throw new Error("Failed");
@@ -717,18 +721,25 @@ export default function AdminPage() {
               { value: "admin", label: "System Administrator" },
             ]}
           />
-          <Input
-            label="Police Station / Unit Name"
-            placeholder="e.g. Satellite PS or City Police HQ"
-            value={newStation}
-            onChange={(val) => setNewStation(val)}
-          />
-          <Input
-            label="Police Station UUID (ps_id)"
-            placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+          <Select
+            label="Police Station"
             value={newPsId}
-            onChange={(val) => setNewPsId(val)}
-            required
+            onChange={(val) => {
+              setNewPsId(val);
+              setNewStation(
+                val === '359cbad8-3844-4c21-9dbd-a9b478e96c00' ? 'Navrangpura Police Station' :
+                val === '3d464062-86b7-48af-b334-d75c5782ac7a' ? 'Vastrapur Police Station' :
+                val === 'dc71c59e-5271-4a98-b6c7-34af630bdef0' ? 'Satellite Police Station' :
+                val === 'b6eb7c21-ead0-42c7-aa64-2ef46dbebf22' ? 'Maninagar Police Station' : 'City Police HQ'
+              );
+            }}
+            options={[
+              { value: "", label: "Select Police Station..." },
+              { value: "359cbad8-3844-4c21-9dbd-a9b478e96c00", label: "Navrangpura Police Station" },
+              { value: "3d464062-86b7-48af-b334-d75c5782ac7a", label: "Vastrapur Police Station" },
+              { value: "dc71c59e-5271-4a98-b6c7-34af630bdef0", label: "Satellite Police Station" },
+              { value: "b6eb7c21-ead0-42c7-aa64-2ef46dbebf22", label: "Maninagar Police Station" },
+            ]}
           />
           <Input
             label="Initial Password"
