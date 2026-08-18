@@ -195,32 +195,56 @@ async def list_templates(
     templates = get_available_templates()
     return [{"id": d, "name": d.replace("_", " ").title()} for d in templates]
 
+from typing import Optional
+
 @router.get("")
 async def list_documents(
-    case_id: str,
+    case_id: Optional[str] = None,
     db = Depends(get_db),
     officer = Depends(get_current_officer)
 ):
     if officer['role'] == 'constable':
         raise HTTPException(403, "Access denied")
 
-    case_query = "SELECT ps_id, case_id FROM cases WHERE case_id::text = :p1 OR fir_no = :p1"
-    case = (await db.execute(text(case_query), {'p1': str(case_id)})).mappings().fetchone()
-    if not case:
-        raise HTTPException(404, "Case not found")
+    if case_id:
+        case_query = "SELECT ps_id, case_id FROM cases WHERE case_id::text = :p1 OR fir_no = :p1"
+        case = (await db.execute(text(case_query), {'p1': str(case_id)})).mappings().fetchone()
+        if not case:
+            raise HTTPException(404, "Case not found")
 
-    if officer['role'] in ('io', 'sho') and \
-       str(case['ps_id']) != str(officer['ps_id']):
-        raise HTTPException(403, "Access denied")
+        if officer['role'] in ('io', 'sho') and \
+           str(case['ps_id']) != str(officer['ps_id']):
+            raise HTTPException(403, "Access denied")
 
-    docs = (await db.execute(text("""
-        SELECT dl.id, dl.doc_type, dl.sha256,
-               dl.language, dl.generated_at,
-               o.name as generated_by_name
-        FROM doc_log dl
-        LEFT JOIN officers o ON dl.generated_by = o.id
-        WHERE dl.case_id = :p1
-        ORDER BY dl.generated_at DESC
-    """), {'p1': str(case['case_id'])})).mappings().fetchall()
+        docs = (await db.execute(text("""
+            SELECT dl.id, dl.doc_type, dl.sha256,
+                   dl.language, dl.generated_at,
+                   o.name as generated_by_name, o.badge_no
+            FROM doc_log dl
+            LEFT JOIN officers o ON dl.generated_by = o.id
+            WHERE dl.case_id = :p1
+            ORDER BY dl.generated_at DESC
+        """), {'p1': str(case['case_id'])})).mappings().fetchall()
+    else:
+        if officer['role'] in ('io', 'sho'):
+            docs = (await db.execute(text("""
+                SELECT dl.id, dl.doc_type, dl.sha256,
+                       dl.language, dl.generated_at,
+                       o.name as generated_by_name, o.badge_no
+                FROM doc_log dl
+                LEFT JOIN officers o ON dl.generated_by = o.id
+                JOIN cases c ON dl.case_id = c.case_id
+                WHERE c.ps_id = :p1
+                ORDER BY dl.generated_at DESC
+            """), {'p1': str(officer['ps_id'])})).mappings().fetchall()
+        else:
+            docs = (await db.execute(text("""
+                SELECT dl.id, dl.doc_type, dl.sha256,
+                       dl.language, dl.generated_at,
+                       o.name as generated_by_name, o.badge_no
+                FROM doc_log dl
+                LEFT JOIN officers o ON dl.generated_by = o.id
+                ORDER BY dl.generated_at DESC
+            """))).mappings().fetchall()
 
     return docs

@@ -36,8 +36,16 @@ function FIREntryPage() {
   async function submit() {
     setSubmitting(true);
     try {
-      const payload = { ...form, bns_sections: suggestedSections.map(s => s.section) };
+      const payload: any = { ...form, bns_sections: suggestedSections.map(s => s.section) };
       if (payload.crime_code === "") delete payload.crime_code;
+      if (payload.victim_age === "") delete payload.victim_age;
+      else payload.victim_age = parseInt(payload.victim_age, 10);
+      if (payload.accused_age === "") delete payload.accused_age;
+      else payload.accused_age = parseInt(payload.accused_age, 10);
+      
+      payload.severity = parseInt(payload.severity, 10);
+      payload.crime_lat = parseFloat(payload.crime_lat);
+      payload.crime_lon = parseFloat(payload.crime_lon);
 
       const res = await fetch("/api/v1/cases", {
         method: "POST",

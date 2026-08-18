@@ -123,9 +123,31 @@ def translate(text, lang):
     from app.services.translation import translator_service
     if not text: return ''
     if lang == 'en': return text
+    
+    # 1. Try IndicTrans2 first (expects pure English source)
+    res = None
     if hasattr(translator_service, 'translate_sync'):
-        return translator_service.translate_sync(text, lang)
-    return translator_service.translate(text, lang)
+        res = translator_service.translate_sync(text, lang)
+    else:
+        res = translator_service.translate(text, lang)
+        
+    # If IndicTrans2 succeeded and actually changed the text, return it
+    if res and res != text and res != getattr(translator_service, '_apply_glossary', lambda x: x)(text):
+        return res
+
+    # 2. Fallback: Apply local domain GLOSSARY if IndicTrans2 failed or returned English
+    fallback_text = text
+    if isinstance(text, str):
+        for eng_key, translations in GLOSSARY.items():
+            replacement = translations.get(lang)
+            if replacement:
+                # Basic string replacement fallback
+                fallback_text = fallback_text.replace(eng_key, replacement)
+                fallback_text = fallback_text.replace(eng_key.title(), replacement)
+                fallback_text = fallback_text.replace(eng_key.upper(), replacement)
+                fallback_text = fallback_text.replace(eng_key.lower(), replacement)
+                
+    return fallback_text
 
 def format_landmark_cases(cases):
     if not cases: return ''

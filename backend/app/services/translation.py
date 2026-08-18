@@ -58,11 +58,8 @@ def _get_model_and_processor(direction: str):
         from IndicTransToolkit import IndicProcessor
         from unittest.mock import MagicMock
 
-        if isinstance(IndicProcessor, MagicMock) or isinstance(AutoModelForSeq2SeqLM, MagicMock):
-            logger.info("IndicTrans2 modules are mocked, falling back")
-            _models[direction] = None
-            _processors[direction] = None
-            return None, None
+        if isinstance(IndicProcessor, type(MagicMock())) or isinstance(AutoModelForSeq2SeqLM, type(MagicMock())):
+            logger.info("IndicTrans2 modules appear mocked, but attempting to load anyway per user request")
 
         processor = IndicProcessor(inference=True)
         tokenizer = AutoTokenizer.from_pretrained(
