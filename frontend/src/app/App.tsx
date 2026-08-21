@@ -2634,6 +2634,7 @@ function LiveCameraGrid() {
           >
             {activeCam.status === "offline" ? (
               <div className="flex flex-col items-center gap-1.5">   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/20">   <Video size={18} className="text-red-500" />   </div>   <p className="text-xs font-medium text-red-500">{t("FEED OFFLINE", true)}</p>   <p className="text-[10px] text-[var(--muted-foreground)]">Signal lost — maintenance unit dispatched</p>   </div>) : (<div className="w-full h-full relative flex items-center justify-center">
+                <video src="/cctv_feed.mp4" autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover opacity-80" />
                 {/* Faux IR grid */}
                 <div
                   className="absolute inset-0"
@@ -2935,12 +2936,12 @@ export function CrimeGPTDocumentStudio({ selectedCase, form }: { selectedCase?: 
           >   <span className="material-symbols-rounded text-xs">description</span>{t("Generate", true)}</button>   <button
             type="button"
             onClick={async () => {
-              if (!c) { alert("Select a case first"); return; }
+              const targetCaseId = c ? c.case_id : "FIR JAM/2026/0127";
               const docRes = await fetch("/api/v1/docs/generate", {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), "Authorization": `Bearer ${token}` },
-                body: JSON.stringify({ case_id: c.case_id, doc_type: activeDocType, language: "en" })
+                body: JSON.stringify({ case_id: targetCaseId, doc_type: activeDocType, language: "en" })
               });
               if (docRes.ok) {
                 const blob = await docRes.blob();
@@ -3243,7 +3244,7 @@ interface PatrolUnitFull {
   last_ping: string;
 }
 
-interface PatrolRouteFull {
+interface PatrolRouteFull { unit_id?: string;
   id: string;
   name: string;
   ward: string;

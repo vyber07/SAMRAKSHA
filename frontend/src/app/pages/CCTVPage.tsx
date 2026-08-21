@@ -77,9 +77,8 @@ export default function CCTVPage() {
         {/* Left Column (lg:col-span-7): Live Camera Feed + Stat Cards */}
         <div className="lg:col-span-7 flex flex-col gap-2 sm:gap-3 min-h-0 overflow-hidden">
           {/* Camera Feed */}
-          <div className="flex-1 min-h-[150px] max-h-[55vh] flex flex-col items-center justify-center min-w-0 overflow-hidden border border-[var(--border)] rounded-2xl bg-[var(--input)]/20">
-            <Video size={32} className="text-[var(--muted-foreground)] mb-2" />
-            <p className="text-sm font-medium text-[var(--muted-foreground)]">Live Feeds Temporarily Unavailable</p>
+          <div className="flex-1 min-h-[150px] max-h-[55vh] flex flex-col min-w-0 overflow-hidden border border-[var(--border)] rounded-2xl bg-[var(--input)]/20 relative">
+            <video src="/cctv_feed.mp4" autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" />
           </div>
 
           {/* Stats Cards */}

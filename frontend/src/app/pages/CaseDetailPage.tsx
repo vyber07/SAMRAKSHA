@@ -240,15 +240,33 @@ function CaseDetailPage() {
               <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ color: "var(--muted-foreground)" }}>
                 <MapPin size={14} color="#F97316" /> Crime Details
               </h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Crime Type</p><p style={{ color: "var(--muted-foreground)" }}>{c.crime_type}</p></div>
                 <div><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Date & Time</p><p style={{ color: "var(--muted-foreground)" }}>{formatDateTime(c.crime_date)}</p></div>
                 <div className="col-span-2"><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Location</p><p style={{ color: "var(--muted-foreground)" }}>{c.crime_location}</p></div>
+                
+                <div><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Accused Name</p><p style={{ color: "var(--muted-foreground)" }}>{c.accused_name || "Unknown/Pending"}</p></div>
                 <div><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Coordinates</p><p className="text-xs font-mono" style={{ color: "var(--muted-foreground)" }}>{c.crime_lat?.toFixed(4) || "N/A"}, {c.crime_lon?.toFixed(4) || "N/A"}</p></div>
+                <div className="col-span-2"><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Applied Law Sections (BNS/BNSS)</p><p style={{ color: "var(--muted-foreground)" }}>
+                  {c.bns_sections?.length || c.bnss_sections?.length 
+                    ? [...(c.bns_sections || []), ...(c.bnss_sections || [])].join(", ") 
+                    : "Not specified"}
+                </p></div>
               </div>
               <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
                 <p className="text-xs mb-1" style={{ color: "var(--muted-foreground)" }}>Narrative</p>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{c.crime_narrative}</p>
+              </div>
+
+              <h3 className="text-sm font-semibold mt-6 mb-4 flex items-center gap-2" style={{ color: "var(--muted-foreground)" }}>
+                <User size={14} color="#3B82F6" /> Victim Details
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                <div><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Name</p><p style={{ color: "var(--muted-foreground)" }}>{c.victim_name}</p></div>
+                <div><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Phone</p><p style={{ color: "var(--muted-foreground)" }}>{c.victim_phone || "—"}</p></div>
+                <div><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Age/Gender</p><p style={{ color: "var(--muted-foreground)" }}>{c.victim_age ? `${c.victim_age} yrs` : "—"} / {c.victim_gender || "—"}</p></div>
+                <div className="col-span-2"><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Address</p><p style={{ color: "var(--muted-foreground)" }}>{c.victim_address}</p></div>
+                <div><p className="text-xs mb-0.5" style={{ color: "var(--muted-foreground)" }}>Injury</p><p style={{ color: c.victim_injury ? "#EF4444" : "#CBD5E1" }}>{c.victim_injury ? "Yes" : "No"}</p></div>
               </div>
             </Card>
           </div>

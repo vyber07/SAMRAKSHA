@@ -13,7 +13,7 @@
     }
     render() {
       if (this.state.error) {
-        return <div style={{padding: '20px', color: 'red', background: 'white', zIndex: 9999, position: 'relative'}}><p>An unexpected error occurred. Please contact support.</p></div>;
+        return <div style={{padding: '20px', color: 'red', background: 'white', zIndex: 9999, position: 'relative'}}><p>An unexpected error occurred. Please contact support.</p><pre>{this.state.error.toString()}</pre></div>;
       }
       return this.props.children;
     }

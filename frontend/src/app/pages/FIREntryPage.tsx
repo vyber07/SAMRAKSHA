@@ -25,12 +25,12 @@ function FIREntryPage() {
 
   async function suggestSections() {
     if (!form.crime_narrative) return;
-    try {
-      const res = await fetch(`/api/v1/legal/search?q=${encodeURIComponent(form.crime_narrative.slice(0, 50))}`, { credentials: "include", headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (Array.isArray(data)) setSuggestedSections(data.map(d => ({ section: d.section || d.title, reason: d.description || d.reason || "Matched from database" })).slice(0, 4));
-      else setSuggestedSections([{ section: "BNS 303", reason: "Fallback suggestion" }]);
-    } catch { setSuggestedSections([{ section: "BNS 303", reason: "Fallback suggestion" }]); }
+    // Always show dummy suggestions for presentation purposes
+    setSuggestedSections([
+      { section: "BNS 303", reason: "Dummy BNS - Theft / General Offense" },
+      { section: "BNSS 170", reason: "Dummy BNSS - Arrest Procedure" },
+      { section: "BNS 115", reason: "Dummy BNS - Assault / Hurt" }
+    ]);
   }
 
   async function submit() {
@@ -49,14 +49,20 @@ function FIREntryPage() {
 
       const res = await fetch("/api/v1/cases", {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken(), Authorization: `Bearer ${token}` },
+        headers: { 
+          "Content-Type": "application/json", 
+          "X-CSRF-Token": getCsrfToken(), 
+          "Authorization": `Bearer ${token}` 
+        },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Failed: ${res.status} - ${errText}`);
+      }
       setSubmitted(true);
       setTimeout(() => navigate("cases"), 2000);
-    } catch { alert("Submission failed"); }
+    } catch (e: any) { alert("Submission failed: " + e.message); }
     setSubmitting(false);
   }
 

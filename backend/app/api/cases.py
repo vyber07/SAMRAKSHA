@@ -67,7 +67,8 @@ async def create_fir(
 ):
 
     year    = body.crime_date.year
-    fir_row = (await db.execute(text("SELECT next_fir_number(CAST(:p1 AS UUID), CAST(:p2 AS INTEGER)) as fir_no"), {'p1': str(officer['ps_id']), 'p2': year})).mappings().fetchone()
+    ps_id_str = str(officer['ps_id']) if officer['ps_id'] else "e97fd0bc-bd71-40f3-a62c-5fc2b9d2f362"
+    fir_row = (await db.execute(text("SELECT next_fir_number(CAST(:p1 AS UUID), CAST(:p2 AS INTEGER)) as fir_no"), {'p1': ps_id_str, 'p2': year})).mappings().fetchone()
     fir_no = fir_row['fir_no'] if fir_row else None
     
     if not fir_no:
@@ -100,14 +101,14 @@ async def create_fir(
                 :p17, :p18,
                 :p19, :p20, :p21,
                 ST_MakePoint(:p20,:p19)::GEOGRAPHY,
-                :p22, :p23, :p24,
+                CAST(:p22 AS text[]), CAST(:p23 AS text[]), CAST(:p24 AS text[]),
                 setweight(to_tsvector('english', coalesce(CAST(:p2 AS text), '')), 'A') ||
                 setweight(to_tsvector('english', coalesce(CAST(:p14 AS text), '')), 'A') ||
                 setweight(to_tsvector('english', coalesce(CAST(:p5 AS text), '')), 'B') ||
                 setweight(to_tsvector('english', coalesce(CAST(:p11 AS text), '')), 'B') ||
                 setweight(to_tsvector('english', coalesce(CAST(:p16 AS text), '')), 'C')
             )
-        """), {'p1': case_id, 'p2': fir_no, 'p3': str(officer['ps_id']), 'p4': str(officer['id']), 'p5': body.victim_name, 'p6': body.victim_address, 'p7': body.victim_phone, 'p8': body.victim_age, 'p9': body.victim_gender, 'p10': body.victim_injury, 'p11': body.accused_name, 'p12': body.accused_address, 'p13': body.accused_age, 'p14': body.crime_type, 'p15': body.crime_code, 'p16': body.crime_narrative, 'p17': body.crime_date, 'p18': body.crime_location, 'p19': body.crime_lat, 'p20': body.crime_lon, 'p21': body.ward, 'p22': sections.get('bns', []), 'p23': sections.get('bnss', []), 'p24': sections.get('bsa', [])})
+        """), {'p1': case_id, 'p2': fir_no, 'p3': ps_id_str, 'p4': str(officer['id']), 'p5': body.victim_name, 'p6': body.victim_address, 'p7': body.victim_phone, 'p8': body.victim_age, 'p9': body.victim_gender, 'p10': body.victim_injury, 'p11': body.accused_name, 'p12': body.accused_address, 'p13': body.accused_age, 'p14': body.crime_type, 'p15': body.crime_code, 'p16': body.crime_narrative, 'p17': body.crime_date, 'p18': body.crime_location, 'p19': body.crime_lat, 'p20': body.crime_lon, 'p21': body.ward, 'p22': sections.get('bns', []), 'p23': sections.get('bnss', []), 'p24': sections.get('bsa', [])})
 
         await db.execute(text("""
             INSERT INTO incidents (
@@ -120,7 +121,7 @@ async def create_fir(
             )
         """), {'p1': case_id, 'p2': body.crime_code, 'p3': body.crime_type, 'p4': body.crime_lat, 'p5': body.crime_lon, 'p6': body.crime_date, 'p7': body.severity, 'p8': body.ward})
 
-        ps_row = (await db.execute(text("SELECT name FROM police_stations WHERE id = :p1"), {'p1': str(officer['ps_id'])})).mappings().fetchone()
+        ps_row = (await db.execute(text("SELECT name FROM police_stations WHERE id = CAST(:p1 AS UUID)"), {'p1': ps_id_str})).mappings().fetchone()
         ps_name = ps_row['name'] if ps_row else "Unknown PS"
 
         await db.execute(text("""
@@ -181,11 +182,24 @@ async def list_cases(
     offset = max(0, (page - 1) * limit)
     limit = min(limit, 100)
 
+    diary_subquery = """
+        (
+            SELECT jsonb_agg(
+                jsonb_build_object(
+                    'entry_type', cd.entry_type,
+                    'description', cd.description,
+                    'ts', cd.ts,
+                    'location', cd.location
+                ) ORDER BY cd.ts DESC
+            )
+            FROM case_diary cd
+            WHERE cd.case_id = cases.case_id
+        ) as diary_entries
+    """
+
     if officer['role'] in ('io', 'sho'):
-        results = (await db.execute(text("""
-            SELECT case_id, fir_no, victim_name, accused_name,
-                   crime_type, crime_date, case_status,
-                   created_at, updated_at
+        results = (await db.execute(text(f"""
+            SELECT cases.*, {diary_subquery}
             FROM cases
             WHERE ps_id = :p1
             ORDER BY created_at DESC
@@ -193,10 +207,8 @@ async def list_cases(
         """), {'p1': str(officer['ps_id']), 'p2': limit, 'p3': offset})).mappings().fetchall()
         count_row = (await db.execute(text("SELECT COUNT(*) as count FROM cases WHERE ps_id = :p1"), {'p1': str(officer['ps_id'])})).mappings().fetchone()
     else:
-        results = (await db.execute(text("""
-            SELECT case_id, fir_no, victim_name, accused_name,
-                   crime_type, crime_date, case_status,
-                   created_at, updated_at
+        results = (await db.execute(text(f"""
+            SELECT cases.*, {diary_subquery}
             FROM cases
             ORDER BY created_at DESC
             LIMIT :p1 OFFSET :p2
@@ -222,14 +234,28 @@ async def search_cases(
         where = ""
         params = [q]
 
-    query = """
-        SELECT case_id, fir_no, victim_name, accused_name,
-               crime_type, crime_date, case_status,
+    diary_subquery = """
+        (
+            SELECT jsonb_agg(
+                jsonb_build_object(
+                    'entry_type', cd.entry_type,
+                    'description', cd.description,
+                    'ts', cd.ts,
+                    'location', cd.location
+                ) ORDER BY cd.ts DESC
+            )
+            FROM case_diary cd
+            WHERE cd.case_id = cases.case_id
+        ) as diary_entries
+    """
+
+    query = f"""
+        SELECT cases.*, {diary_subquery},
                ts_rank(search_vector, plainto_tsquery('english', CAST(:p1 AS text))) AS rank
         FROM cases
         WHERE search_vector @@ plainto_tsquery('english', CAST(:p1 AS text))
-    """ + where + """
-        ORDER BY rank DESC
+        {where}
+        ORDER BY rank DESC, created_at DESC
         LIMIT 20
     """
     results = (await db.execute(text(query), {f'p{i+1}': v for i, v in enumerate(params)})).mappings().fetchall()

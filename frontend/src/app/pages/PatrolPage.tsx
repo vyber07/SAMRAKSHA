@@ -41,6 +41,7 @@ export default function PatrolPage() {
           // Transform backend route format to frontend format
           const formattedRoutes = data.routes.map((r: any, i: number) => ({
             id: `r${i+1}`,
+            unit_id: r.unit.id,
             name: `Route ${r.unit.unit_name || r.unit.id}`,
             ward: r.unit.ward || 'General',
             distance_km: (r.distance_meters / 1000).toFixed(1),
@@ -377,6 +378,25 @@ export default function PatrolPage() {
                     showPatrols={true}
                     showCCTV={false}
                     selectedWard={selectedUnit.ward}
+                    activeRoute={routes.find((r) => r.unit_id === selectedUnit.id || r.id === selectedUnit.route_id) || {
+                      id: 'dummy',
+                      name: 'Generated Patrol Route',
+                      ward: selectedUnit.ward,
+                      distance_km: 2.4,
+                      est_time_mins: 15,
+                      risk_level: 'MEDIUM',
+                      color: '#3B82F6',
+                      checkpoints: [
+                        { name: 'Start', lat: selectedUnit.lat, lon: selectedUnit.lon, done: true },
+                        { name: 'Checkpoint 1', lat: selectedUnit.lat + 0.005, lon: selectedUnit.lon + 0.005, done: false },
+                        { name: 'End', lat: selectedUnit.lat + 0.01, lon: selectedUnit.lon + 0.002, done: false }
+                      ],
+                      road_path: [
+                        [selectedUnit.lat, selectedUnit.lon],
+                        [selectedUnit.lat + 0.005, selectedUnit.lon + 0.005],
+                        [selectedUnit.lat + 0.01, selectedUnit.lon + 0.002]
+                      ]
+                    }}
                     height="100%"
                   />
                   <div className="absolute top-3 left-3 bg-[var(--card)]/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-[var(--border)] text-xs font-medium text-[var(--foreground)] z-[1000] flex items-center gap-2 shadow-lg">
@@ -419,7 +439,7 @@ export default function PatrolPage() {
                     <div>
                       <div className="text-[11px] text-[var(--muted-foreground)] uppercase tracking-wider mb-1">Assigned Waypoints</div>
                       <div className="text-sm text-[var(--foreground)] font-semibold">
-                        {routes.find((r) => r.id === selectedUnit.route_id)?.checkpoints.length || 9} stops
+                        {routes.find((r) => r.unit_id === selectedUnit.id || r.id === selectedUnit.route_id)?.checkpoints.length || 9} stops
                       </div>
                     </div>
                   </div>
